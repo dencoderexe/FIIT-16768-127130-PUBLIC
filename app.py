@@ -3,7 +3,7 @@ from dash import Dash, html, dcc, Input, Output, State, callback, no_update, cli
 import dash_mantine_components as dmc
 from components.appshell import make_appshell, make_appshell_callbacks
 
-app = Dash(use_pages=True)
+app = Dash(use_pages=True, suppress_callback_exceptions=True)
 
 make_appshell_callbacks(app)
 
