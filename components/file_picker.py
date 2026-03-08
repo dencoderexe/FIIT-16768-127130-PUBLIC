@@ -94,10 +94,10 @@ def make_file_picker():
             dmc.Group(
                 gap="xs",
                 children=[
-                    dmc.Button("Browse...", id="modal_file_picker_button", variant="outline"),
+                    dmc.Button("Browse...", id="modal-file-picker-button", variant="outline"),
                     dmc.ActionIcon(
                         DashIconify(icon="bi:x-lg", height=14),
-                        id="clear_selected_file",
+                        id="clear-selected-file",
                         variant="subtle",
                         color="red",
                         disabled=True,
@@ -106,32 +106,32 @@ def make_file_picker():
             ),
             dmc.Modal(
                 title="File picker",
-                id="modal_file_picker",
+                id="modal-file-picker",
                 centered=True,
                 size="lg",
                 children=[
                     dmc.TextInput(
-                        id="file_tree_search",
+                        id="file-tree-search",
                         placeholder="Search files/folders…",
                         leftSection=DashIconify(icon="bi:search", height=16),
                         mb="sm",
                     ),
-                    dcc.Store(id="selected_file"),
-                    dcc.Store(id="temp_selected_file"),
+                    dcc.Store(id="selected-file"),
+                    dcc.Store(id="temp-selected-file"),
                     dmc.Stack(
                         style={"height": 400},
                         children=[
                             dmc.ScrollArea(
                                 style={"flex": 1},
-                                children=dmc.Stack(id="file_tree_container"),
+                                children=dmc.Stack(id="file-tree-container"),
                             ),
                         ]
                     ),
                     
-                    dmc.Text(id="temp_selected_file_label",
+                    dmc.Text(id="temp-selected-file-label",
                         children="Selected: (none)"
                     ),
-                    dmc.Button("Choose file", id="modal_submit_button"),
+                    dmc.Button("Choose file", id="modal-submit-button"),
                 ]
             )
         ]
@@ -139,18 +139,18 @@ def make_file_picker():
 
 def make_file_picker_callbacks():
     @callback(
-        Output("modal_file_picker", "opened", allow_duplicate=True),
-        Output("temp_selected_file", "data", allow_duplicate=True),
-        Output("temp_selected_file_label", "children", allow_duplicate=True),
-        Input("modal_file_picker_button", "n_clicks"),
+        Output("modal-file-picker", "opened", allow_duplicate=True),
+        Output("temp-selected-file", "data", allow_duplicate=True),
+        Output("temp-selected-file-label", "children", allow_duplicate=True),
+        Input("modal-file-picker-button", "n_clicks"),
         prevent_initial_call=True,
     )
     def modal_file_picker(_n):
         return True, None, "Selected: (none)"
 
     @callback(
-        Output("temp_selected_file", "data"),
-        Output("temp_selected_file_label", "children"),
+        Output("temp-selected-file", "data"),
+        Output("temp-selected-file-label", "children"),
         Input({"type": "file", "path": ALL}, "n_clicks"),
         prevent_initial_call=True,
     )
@@ -166,10 +166,10 @@ def make_file_picker_callbacks():
         return path, f"Selected: {path}"
 
     @callback(
-        Output("selected_file", "data"),
-        Output("modal_file_picker", "opened"),
-        Input("modal_submit_button", "n_clicks"),
-        State("temp_selected_file", "data"),
+        Output("selected-file", "data"),
+        Output("modal-file-picker", "opened"),
+        Input("modal-submit-button", "n_clicks"),
+        State("temp-selected-file", "data"),
         prevent_initial_call=True,
     )
     def confirm_selection(n_clicks, temp_path):
@@ -178,9 +178,9 @@ def make_file_picker_callbacks():
         return temp_path, False
 
     @callback(
-        Output("modal_file_picker_button", "children"),
-        Output("clear_selected_file", "disabled"),
-        Input("selected_file", "data"),
+        Output("modal-file-picker-button", "children"),
+        Output("clear-selected-file", "disabled"),
+        Input("selected-file", "data"),
     )
     def update_browse_button(selected):
         if not selected:
@@ -190,18 +190,18 @@ def make_file_picker_callbacks():
         return [DashIconify(icon="bi:file-earmark", height=16), " ", name], False
 
     @callback(
-        Output("selected_file", "data", allow_duplicate=True),
-        Output("temp_selected_file", "data", allow_duplicate=True),
-        Output("temp_selected_file_label", "children", allow_duplicate=True),
-        Input("clear_selected_file", "n_clicks"),
+        Output("selected-file", "data", allow_duplicate=True),
+        Output("temp-selected-file", "data", allow_duplicate=True),
+        Output("temp-selected-file-label", "children", allow_duplicate=True),
+        Input("clear-selected-file", "n_clicks"),
         prevent_initial_call=True,
     )
     def clear_selection(_n):
         return None, None, "Selected: (none)"
 
     @callback(
-        Output("file_tree_container", "children"),
-        Input("file_tree_search", "value"),
+        Output("file-tree-container", "children"),
+        Input("file-tree-search", "value"),
     )
     def update_tree(query):
         return FileTree("/home/danilovd/data", query=query).render()
