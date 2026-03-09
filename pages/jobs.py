@@ -3,78 +3,49 @@ from dash import Input, Output, State, callback, dcc, html, no_update
 import dash_mantine_components as dmc
 from dash_iconify import DashIconify
 from services.job_signal import get_signal
+from services.job_manager import get_jobs, Status, Tool, Job, Step#, create_job
 
 dash.register_page(__name__, path="/jobs")
 
-STATUS = {
-    "running": {
-        "icon": "bi:arrow-repeat",
-        "color": "yellow",
-    },
-    "failed": {
-        "icon": "bi:x-circle-fill",
-        "color": "red",
-    },
-    "success": {
-        "icon": "bi:check-circle-fill",
-        "color": "green",
-    },
-    "pending": {
-        "icon": "bi:clock-history",
-        "color": "gray",
-    },
-}
-
-def get_jobs():
-    jobs = [
-
-    ]
-
-    return jobs
-
-def make_status_icon(status: str):
-    s = STATUS.get(status)
+def make_status_icon(status: Status):
     return dmc.ThemeIcon(
-        DashIconify(icon=s["icon"], height=18),
-        color=s["color"],
+        DashIconify(icon=status.icon, height=18),
+        color=status.color,
         variant="light",
         radius="xl",
         size="md",
     )
 
-def make_step_row(step: dict):
-    s = STATUS.get(step["status"])
+def make_step_row(step: Step):
     return dmc.Group(
         children=[
             dmc.ThemeIcon(
-                DashIconify(icon=s["icon"], height=14),
-                color=s["color"],
+                DashIconify(icon=step.status.icon, height=14),
+                color=step.status.color,
                 variant="light",
                 radius="xl",
                 size="sm",
             ),
-            dmc.Text(step["name"], size="sm"),
+            dmc.Text(step.name, size="sm"),
         ],
         gap="sm",
         align="center",
     )
 
-def make_job_item(job: dict):
+def make_job_item(job: Job):
     """
-    process = {
 
-    }
     """
     header = dmc.Group(
         children=[
             dmc.Stack(
                 [
-                    dmc.Text(job["started_at"], size="xs", c="dimmed"),
-                    dmc.Text(job["tool_name"], size="sm", fw=600),
+                    dmc.Text(job.started_at.strftime("%d.%m.%Y %H:%M:%S"), size="xs", c="dimmed"),
+                    dmc.Text(job.tool.tool_name, size="sm", fw=600),
                 ],
                 gap=2,
             ),
-            make_status_icon(job["status"]),
+            make_status_icon(job.status),
         ],
         justify="space-between",
         align="center",
@@ -83,10 +54,10 @@ def make_job_item(job: dict):
 
     body = dmc.Stack(
         children=[
-            dmc.Text(job["description"], size="sm", c="dimmed"),
+            dmc.Text(job.tool.tool_description, size="sm", c="dimmed"),
             dmc.Divider(),
             dmc.Stack(
-                [make_step_row(step) for step in job["steps"]],
+                [make_step_row(step) for step in job.steps],
                 gap="xs",
             ),
         ],
@@ -98,7 +69,7 @@ def make_job_item(job: dict):
             dmc.AccordionControl(header),
             dmc.AccordionPanel(body),
         ],
-        value=job["id"],
+        value=job.id,
     )
 
 layout = dmc.Container(
@@ -138,7 +109,7 @@ def update_jobs(_):
 
     if not jobs:
         return dmc.Alert(
-            "There are no running or completed jobs.",
+            "There are no running or finished jobs.",
             color="gray",
             variant="light",
         )
@@ -149,3 +120,10 @@ def update_jobs(_):
         variant="separated",
         radius="md",
     )
+
+# @callback(
+#     Input("jobs-poll-interval", "n_intervals"),
+#     prevent_initial_call=True,
+# )
+# def auto_create_job(n_intervals):
+#     create_job()
