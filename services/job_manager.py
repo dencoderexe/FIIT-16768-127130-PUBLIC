@@ -114,6 +114,13 @@ class Job:
         self.status = status
         if status in (Status.SUCCESS, Status.FAILED):
             self.finished_at = datetime.now()
+        bump_signal()
+
+    def set_step_status(self, step: Step, status: Status):
+        for i in range(len(self.steps)):
+            if self.steps[i].name == step.name:
+                self.steps[i].status = status
+        bump_signal()
 
 jobs = []
 
@@ -123,3 +130,8 @@ def get_jobs() -> List[Job]:
 def create_job():
     jobs.append(Job(Tool.MSISENSOR, "exec"))
     bump_signal()
+
+# create_job()
+# jobs[0].set_status(Status.RUNNING)
+# jobs[0].set_step_status(jobs[0].steps[0], Status.SUCCESS)
+# jobs[0].set_step_status(jobs[0].steps[1], Status.RUNNING)
