@@ -1,4 +1,4 @@
-from dash import Dash, html, dcc, Input, Output, State, callback, no_update, clientside_callback
+from dash import Dash, dcc, Input, Output, State, callback, no_update, clientside_callback
 import dash_mantine_components as dmc
 from dash_iconify import DashIconify
 
@@ -62,7 +62,6 @@ def make_appshell(content):
                         ],
                     ),
                     dmc.NavLink(label="Jobs", href="/jobs", leftSection=DashIconify(icon="bi:terminal-fill", height=16)),
-                    dmc.NavLink(label="Results", href="/results", leftSection=DashIconify(icon="bi:bar-chart-fill", height=16)),
                 ],
                 p="md",
             ),
