@@ -7,7 +7,7 @@ from dash import Input, Output, State, callback, dcc, html, no_update, ALL, ctx
 from dash_iconify import DashIconify
 
 from services.job_signal import get_signal
-from services.job_manager import get_jobs, get_job, delete_job, Status, Tool, Command, Job, Step
+from services.job_manager import get_jobs, get_saved_jobs, get_job_by_id, delete_job, Status, Tool, Command, Job, Step
 
 dash.register_page(__name__, path="/jobs")
 
@@ -199,6 +199,21 @@ def make_job_item(job: Job):
         value=job.id,
     )
 
+def make_jobs_list(jobs: list[Job], no_jobs_text: str):
+    if not jobs:
+        return dmc.Alert(
+            no_jobs_text,
+            color="gray",
+            variant="light",
+        )
+
+    return dmc.Accordion(
+        children=[make_job_item(job) for job in jobs],
+        multiple=True,
+        variant="separated",
+        radius="md",
+    )
+
 layout = dmc.Container(
     children=[
         dcc.Interval(id="jobs-poll-interval", interval=1000, n_intervals=0, max_intervals=-1),
@@ -206,7 +221,11 @@ layout = dmc.Container(
         dcc.Download(id="job-download"),
         dmc.Title("Running jobs", order=2, mb="md"),
             dmc.ScrollArea(
-                html.Div(id="jobs-list"),
+                children=[
+                    html.Div(id="current-jobs-list"),
+                    dmc.Divider(label="Previous sessions", labelPosition="center"),
+                    html.Div(id="saved-jobs-list"),
+                ],
                 offsetScrollbars=True,
                 type="scroll",
         ),
@@ -246,25 +265,25 @@ def poll_signal(_, current):
     return signal
 
 @callback(
-    Output("jobs-list", "children"),
+    Output("current-jobs-list", "children"),
+    Output("saved-jobs-list", "children"),
     Input("jobs-signal", "data"),
 )
 def update_jobs(_):
     jobs = get_jobs()
+    saved_jobs = get_saved_jobs()
 
-    if not jobs:
-        return dmc.Alert(
+    return [
+        make_jobs_list(
+            jobs,
             "There are no running or finished jobs.",
-            color="gray",
-            variant="light",
-        )
+        ),
+        make_jobs_list(
+            saved_jobs,
+            "There are no jobs from previous sessions.",
+        ),
+    ]
 
-    return dmc.Accordion(
-        children=[make_job_item(job) for job in jobs],
-        multiple=True,
-        variant="separated",
-        radius="md",
-    )
 
 @callback(
         Output("notification-container", "sendNotifications"),
@@ -320,7 +339,7 @@ def download_job_file(log_clicks, output_clicks):
 
     job_id = triggered["job_id"]
     button_type = triggered["type"]
-    job = get_job(job_id)
+    job = get_job_by_id(job_id)
 
     if not job:
         return no_update
@@ -386,7 +405,7 @@ def delete_job_and_files(n_clicks, job_id):
     if not job_id:
         return False, None, no_update
 
-    job = get_job(job_id)
+    job = get_job_by_id(job_id)
 
     if not job:
         return False, None, no_update
