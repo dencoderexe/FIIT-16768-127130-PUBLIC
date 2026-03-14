@@ -1,11 +1,12 @@
+import os
 import dash
 import dash_mantine_components as dmc
 
 from dash import Input, Output, State, callback, dcc, html, no_update, ALL, ctx
 from dash_iconify import DashIconify
 
-from services.job_manager import TOOLS
-from services.file_manager import get_files, get_dirs
+from services.job_manager import TOOLS, Job, create_job
+from services.file_manager import root_path, get_files, get_dirs
 
 dash.register_page(__name__, path="/msisensor2")
 
@@ -37,7 +38,7 @@ def make_msi():
                     label="Tumor .BAM file",
                     id="bam-file-select",
                     data=[
-                        {"value": str(file), "label": str(file)}
+                        {"value": str(file), "label": str(file).replace(root_path, "")}
                         for file in get_files(extensions=[".bam"])
                     ],
                     nothingFoundMessage="Nothing found",
@@ -47,7 +48,7 @@ def make_msi():
                     withAsterisk=True,
                 ),
                 dmc.Space(h="xl"),
-                dmc.Button("Start", id="start-button"),
+                dmc.Button("Start", id="start-button", disabled=True),
             ],
             gap="md",
             justify="space-between",
@@ -164,3 +165,68 @@ def select_command(value):
         return make_msi()
     else:
         return None
+    
+@callback(
+    Output("start-button", "disabled"),
+    Input("model-select", "value"),
+    Input("bam-file-select", "value"),
+)
+def toggle_start_button(model, tumor_bam):
+    return not (model and tumor_bam)
+
+@callback(
+    Output("notification-container", "sendNotifications", allow_duplicate=True),
+    Input("start-button", "n_clicks"),
+    State("command-select", "value"),
+    State("model-select", "value"),
+    State("bam-file-select", "value"),
+    State("coverage-select", "value"),
+    State("threads", "value"),
+    State("homopolymer-only", "checked"),
+    State("microsatellite-only", "checked"),
+    prevent_initial_call=True,
+)
+def start_job(
+    n_clicks,
+    command_key,
+    model,
+    tumor_bam,
+    coverage,
+    threads,
+    homopolymer_only,
+    microsatellite_only,
+):
+    if not n_clicks:
+        return no_update
+
+    try:
+        create_job(
+            tool=tool,
+            command=tool.commands.get(command_key),
+            model=model,
+            tumor_bam=tumor_bam,
+            output=os.path.splitext(os.path.basename(tumor_bam))[0],
+            coverage=coverage,
+            threads=threads,
+            homopolymer_only=int(bool(homopolymer_only)),
+            microsatellite_only=int(bool(microsatellite_only)),
+        )
+
+        return [dict(
+            title="Job started",
+            action="show",
+            color="yellow",
+            message=f"{tool.name} started",
+            autoClose=3000,
+            icon=DashIconify(icon="bi:arrow-repeat"),
+        )]
+
+    except Exception as e:
+        return [dict(
+            title="Failed to start job",
+            action="show",
+            color="red",
+            message=str(e),
+            autoClose=4000,
+            icon=DashIconify(icon="bi:x-circle-fill"),
+        )]
