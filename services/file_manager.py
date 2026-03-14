@@ -1,6 +1,6 @@
 import os
 
-root_path: str = "/home/danilovd/data"
+root_path: str = "/home/danilovd/data/"
 
 def is_within_root(path: str) -> bool:
     real_path = os.path.realpath(path)

@@ -24,7 +24,7 @@ def make_step_row(step: Step):
     return dmc.Group(
         justify="space-between",
         align="center",
-        w="50%",
+        w="100%",
         children=[
             dmc.Group(
                 gap="sm",
@@ -220,14 +220,14 @@ layout = dmc.Container(
         dcc.Store(id="jobs-signal"),
         dcc.Download(id="job-download"),
         dmc.Title("Running jobs", order=2, mb="md"),
-            dmc.ScrollArea(
-                children=[
-                    html.Div(id="current-jobs-list"),
-                    dmc.Divider(label="Previous sessions", labelPosition="center"),
-                    html.Div(id="saved-jobs-list"),
-                ],
-                offsetScrollbars=True,
-                type="scroll",
+        dmc.ScrollArea(
+            children=[
+                html.Div(id="current-jobs-list"),
+                dmc.Divider(label="Previous sessions", labelPosition="center"),
+                html.Div(id="saved-jobs-list"),
+            ],
+            offsetScrollbars=True,
+            type="scroll",
         ),
         dcc.Store(id="delete-job-id"),
         dmc.Modal(
@@ -286,8 +286,9 @@ def update_jobs(_):
 
 
 @callback(
-        Output("notification-container", "sendNotifications"),
+        Output("notification-container", "sendNotifications", allow_duplicate=True),
         Input("jobs-signal", "data"),
+        prevent_initial_call=True,
 )
 def notify_jobs(_):
     jobs = get_jobs()
@@ -306,7 +307,7 @@ def notify_jobs(_):
                 id=f"job-{job.id}",
                 action="show",
                 color="green",
-                message=f"{job.tool.name} completed successfully",
+                message=f"{job.tool.name} finished successfully",
                 autoClose=3000,
                 icon=DashIconify(icon=Status.SUCCESS.icon),
             )]

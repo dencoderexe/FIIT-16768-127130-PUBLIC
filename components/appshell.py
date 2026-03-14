@@ -56,7 +56,7 @@ def make_appshell(content):
                         children=[
                             dmc.NavLink(label="Samtools", href="/samtools"),
                             dmc.NavLink(label="MSISensor", href="/msisensor"),
-                            dmc.NavLink(label="MSISensor-2", href="/msisensor-2"),
+                            dmc.NavLink(label="MSISensor2", href="/msisensor2"),
                             dmc.NavLink(label="MSISensor-Pro", href="/msisensor-pro"),
                             dmc.NavLink(label="MANTIS", href="/mantis"),
                         ],

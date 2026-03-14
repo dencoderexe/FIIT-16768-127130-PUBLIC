@@ -4,6 +4,8 @@ from dash_iconify import DashIconify
 from dash.exceptions import PreventUpdate
 import os
 
+root_path: str = "/home/danilovd/data"
+
 class FileTree:
     """
     The original code that inspired me : https://community.plotly.com/t/file-explorer-tree-generator-for-local-files/68732
@@ -204,4 +206,4 @@ def make_file_picker_callbacks():
         Input("file-tree-search", "value"),
     )
     def update_tree(query):
-        return FileTree("/home/danilovd/data", query=query).render()
+        return FileTree(root_path, query=query).render()
