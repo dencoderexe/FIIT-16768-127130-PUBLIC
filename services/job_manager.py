@@ -532,19 +532,3 @@ def get_job_by_id(job_id: str) -> Job|None:
             return job
 
     return None
-
-# create_job(
-#     TOOLS["msisensor2"], 
-#     TOOLS["msisensor2"].commands["msi"], 
-#     model="models_hg38/",
-#     tumor_bam="/home/danilovd/data/L.1936.01/L.1936.01.T.bam",
-#     output="L.1936.01.T",
-# )
-
-# create_job(
-#     TOOLS["msisensor2"], 
-#     TOOLS["msisensor2"].commands["msi"], 
-#     model="models_b37_HumanG1Kv37",
-#     tumor_bam="/home/danilovd/data/L.1936.01/L.1936.01.T.bam",
-#     output="L.1936.01.T",
-# )
