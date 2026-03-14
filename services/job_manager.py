@@ -5,6 +5,7 @@ from typing import Optional, List, Dict
 
 import os
 import re
+import json
 import uuid
 import shutil
 import threading
@@ -171,6 +172,12 @@ TOOLS = {
     # ),
 }
 
+def datetime_to_str(dt) -> str|None:
+    return datetime.isoformat(dt) if dt else None
+
+def datetime_from_str(dt_str) -> datetime|None:
+    return datetime.fromisoformat(dt_str) if dt_str else None
+
 @dataclass
 class Step:
     name: str
@@ -188,6 +195,25 @@ class Step:
     def set_progress(self, progress: int):
         self.progress_current = progress
         bump_signal()
+
+    def to_dict(self):
+        return {
+            "name": self.name,
+            "status": self.status.name,
+            "progress_current": self.progress_current,
+            "progress_total": self.progress_total,
+            "finished_at": datetime_to_str(self.finished_at),
+        }
+
+    @classmethod
+    def from_dict(cls, data) -> Step:
+        return cls(
+            name=data["name"],
+            status=Status[data["status"]],
+            progress_current=data.get("progress_current"),
+            progress_total=data.get("progress_total"),
+            finished_at=datetime_from_str(data.get("finished_at")),
+        )
 
 @dataclass
 class Job:
@@ -232,6 +258,57 @@ class Job:
             if step.status == Status.PENDING:
                 return i, step
         return None, None
+    
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "tool_key": self.tool.key,
+            "command_key": self.command.key,
+            "cmd": self.cmd,
+            "error_message": self.error_message,
+            "started_at": datetime_to_str(self.started_at),
+            "finished_at": datetime_to_str(self.finished_at),
+            "notified": self.notified,
+            "status": self.status.name,
+            "steps": [step.to_dict() for step in self.steps],
+        }
+    
+    @classmethod
+    def from_dict(cls, data) -> Job:
+        tool = TOOLS[data["tool_key"]]
+        command = tool.commands[data["command_key"]]
+
+        job = cls(
+            tool=tool,
+            command=command,
+            cmd=data["cmd"],
+            error_message=data.get("error_message", ""),
+            thread=None,
+            id=data["id"],
+            started_at=datetime_from_str(data.get("started_at")),
+            finished_at=datetime_from_str(data.get("finished_at")),
+            notified=data.get("notified"),
+            status=Status[data.get("status")],
+        )
+
+        job.steps = [Step.from_dict(item) for item in data.get("steps", [])]
+
+        if not job.steps:
+            job.steps = [Step(step_name, job.status) for step_name in command.steps]
+
+        return job
+    
+    def serialize(self):
+        os.makedirs(self.job_dir, exist_ok=True)
+        file = os.path.join(self.job_dir, f"{self.id}.json")
+        with open(file, "w", encoding="utf-8") as f:
+            json.dump(self.to_dict(), f, ensure_ascii=False, indent=2)
+
+    @classmethod
+    def deserialize(cls, path: str) -> Job:
+        with open(path, "r", encoding="utf-8") as file:
+            data = json.load(file)
+        return cls.from_dict(data)
 
 jobs = []
 jobs_lock = threading.Lock()
@@ -239,6 +316,38 @@ jobs_lock = threading.Lock()
 def get_jobs() -> List[Job]:
     with jobs_lock:
         return list(jobs)
+    
+def get_saved_jobs():    
+    if not os.path.isdir(jobs_path):
+        return []
+    
+    saved_jobs = []
+
+    for item in os.listdir(jobs_path):
+        job_dir = os.path.join(jobs_path, item)
+
+        if not os.path.isdir(job_dir):
+            continue
+
+        file = os.path.join(job_dir, f"{item}.json")
+        if not os.path.isfile(file):
+            continue
+
+        try:
+            job = Job.deserialize(file)
+            saved_jobs.append(job)
+        except Exception as e:
+            print(f"Failed to load job from {file}: {e}")
+
+    job_ids = {job.id for job in jobs}
+    saved_jobs = [job for job in saved_jobs if job.id not in job_ids]
+
+    saved_jobs.sort(
+        key=lambda job: job.started_at,
+        reverse=True
+    )
+
+    return saved_jobs
     
 def parse_job_output(job: Job, line: str):
     if job.tool.key == "msisensor":
@@ -364,6 +473,8 @@ def run_job(job: Job):
                 if current_step is not None:
                     current_step.set_status(Status.FAILED)
                 job.set_status(Status.FAILED)
+
+        job.serialize()
     except Exception as e:
         job.error_message += f"{e}\n"
         _, current_step = job.get_current_step()
@@ -411,25 +522,29 @@ def delete_job(job: Job):
 
     bump_signal()
 
-def get_job(job_id: str) -> Job|None:
+def get_job_by_id(job_id: str) -> Job|None:
     for job in jobs:
+        if job.id == job_id:
+            return job
+
+    for job in get_saved_jobs():
         if job.id == job_id:
             return job
 
     return None
 
-create_job(
-    TOOLS["msisensor2"], 
-    TOOLS["msisensor2"].commands["msi"], 
-    model="models_hg38/",
-    tumor_bam="/home/danilovd/data/L.1936.01/L.1936.01.T.bam",
-    output="L.1936.01.T",
-)
+# create_job(
+#     TOOLS["msisensor2"], 
+#     TOOLS["msisensor2"].commands["msi"], 
+#     model="models_hg38/",
+#     tumor_bam="/home/danilovd/data/L.1936.01/L.1936.01.T.bam",
+#     output="L.1936.01.T",
+# )
 
-create_job(
-    TOOLS["msisensor2"], 
-    TOOLS["msisensor2"].commands["msi"], 
-    model="models_b37_HumanG1Kv37",
-    tumor_bam="/home/danilovd/data/L.1936.01/L.1936.01.T.bam",
-    output="L.1936.01.T",
-)
+# create_job(
+#     TOOLS["msisensor2"], 
+#     TOOLS["msisensor2"].commands["msi"], 
+#     model="models_b37_HumanG1Kv37",
+#     tumor_bam="/home/danilovd/data/L.1936.01/L.1936.01.T.bam",
+#     output="L.1936.01.T",
+# )
