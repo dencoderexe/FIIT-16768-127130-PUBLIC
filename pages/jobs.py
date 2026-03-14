@@ -24,7 +24,7 @@ def make_step_row(step: Step):
     return dmc.Group(
         justify="space-between",
         align="center",
-        w="100%",
+        w="50%",
         children=[
             dmc.Group(
                 gap="sm",
@@ -349,14 +349,21 @@ def download_job_file(log_clicks, output_clicks):
 
     if button_type == "job-output-button":
         def write_zip(bytes_io):
+            excluded_files = {}
+            excluded_extensions = {".log", ".json",
+            }
+            
             with zipfile.ZipFile(bytes_io, "w", zipfile.ZIP_DEFLATED) as z:
                 for file in os.listdir(job.job_dir):
-                    if file.endswith(".log"):
-                        continue
-
                     full_path = os.path.join(job.job_dir, file)
 
                     if not os.path.isfile(full_path):
+                        continue
+
+                    if file in excluded_files:
+                        continue
+
+                    if os.path.splitext(file)[1] in excluded_extensions:
                         continue
 
                     z.write(full_path, arcname=file)
