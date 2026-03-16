@@ -7,6 +7,7 @@ from dash_iconify import DashIconify
 
 from services.job_manager import TOOLS, Job, create_job
 from services.file_manager import root_path, get_files, get_dirs
+from components.helper import helper
 
 dash.register_page(__name__, path="/msisensor2")
 
@@ -22,20 +23,33 @@ def make_msi():
             [
                 dmc.Title("Required options", order=4),
                 dmc.Select(
-                    label="Model",
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Model", size="sm", fw=500),
+                            dmc.Text("*", c="red", size="sm", fw=700),
+                            helper(""),
+                        ],
+                        gap=6,
+                    ),
                     id="model-select",
                     data=[
                         {"value": "models_b37_HumanG1Kv37", "label": "b37 (HumanG1Kv37)"},
                         {"value": "models_hg19_GRCh37", "label": "hg19 / GRCh37"},
                         {"value": "models_hg38", "label": "hg38 / GRCh38"},
                     ],
-                    withAsterisk=True,
                     allowDeselect=False,
                     checkIconPosition="right",
                     placeholder="Select model",
                 ),
                 dmc.Select(
-                    label="Tumor .BAM file",
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Tumor .BAM file", size="sm", fw=500),
+                            dmc.Text("*", c="red", size="sm", fw=700),
+                            helper(""),
+                        ],
+                        gap=6,
+                    ),
                     id="bam-file-select",
                     data=[
                         {"value": str(file), "label": str(file).replace(root_path, "")}
@@ -45,7 +59,6 @@ def make_msi():
                     checkIconPosition="right",
                     placeholder="Select .BAM file",
                     searchable=True,
-                    withAsterisk=True,
                 ),
                 dmc.Space(h="xl"),
                 dmc.Button("Start", id="start-button", disabled=True),
@@ -65,7 +78,13 @@ def make_msi():
             [
                 dmc.Title("Additional options", order=4),
                 dmc.Select(
-                    label="Coverage",
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Coverage", size="sm", fw=500),
+                            helper(""),
+                        ],
+                        gap=6,
+                    ),
                     id="coverage-select",
                     value="20",
                     data=[
@@ -76,19 +95,37 @@ def make_msi():
                     checkIconPosition="right",
                 ),
                 dmc.NumberInput(
-                    label="Threads",
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Threads", size="sm", fw=500),
+                            helper(""),
+                        ],
+                        gap=6,
+                    ),
                     id="threads",
                     value=1,
                     min=1,
                     allowDecimal=False,
                 ),
                 dmc.Switch(
-                    label="Homopolymer only",
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Homopolymer only", size="sm", fw=500),
+                            helper(""),
+                        ],
+                        gap=6,
+                    ),
                     id="homopolymer-only",
                     checked=False,
                 ),
                 dmc.Switch(
-                    label="Microsatellite only",
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Microsatellite only", size="sm", fw=500),
+                            helper(""),
+                        ],
+                        gap=6,
+                    ),
                     id="microsatellite-only",
                     checked=False,
                 ),
@@ -230,3 +267,21 @@ def start_job(
             autoClose=4000,
             icon=DashIconify(icon="bi:x-circle-fill"),
         )]
+    
+@callback(
+    Output("homopolymer-only", "checked"),
+    Output("microsatellite-only", "checked"),
+    Input("homopolymer-only", "checked"),
+    Input("microsatellite-only", "checked"),
+    prevent_initial_call=True,
+)
+def homopolymer_microsatellite_only_switch(homopolymer_only, microsatellite_only):
+    triggered = ctx.triggered_id
+
+    if triggered == "homopolymer-only" and homopolymer_only:
+        return True, False
+
+    if triggered == "microsatellite-only" and microsatellite_only:
+        return False, True
+
+    return homopolymer_only, microsatellite_only
