@@ -228,6 +228,7 @@ class Job:
     finished_at: Optional[datetime] = None
 
     notified: bool = False
+    terminated: bool = False
 
     status: Status = Status.PENDING
 
@@ -268,7 +269,6 @@ class Job:
             "error_message": self.error_message,
             "started_at": datetime_to_str(self.started_at),
             "finished_at": datetime_to_str(self.finished_at),
-            "notified": self.notified,
             "status": self.status.name,
             "steps": [step.to_dict() for step in self.steps],
         }
@@ -279,18 +279,15 @@ class Job:
         command = tool.commands[data["command_key"]]
 
         job = cls(
+            id=data["id"],
             tool=tool,
             command=command,
             cmd=data["cmd"],
             error_message=data.get("error_message", ""),
-            thread=None,
-            id=data["id"],
             started_at=datetime_from_str(data.get("started_at")),
             finished_at=datetime_from_str(data.get("finished_at")),
-            notified=data.get("notified"),
             status=Status[data.get("status")],
         )
-
         job.steps = [Step.from_dict(item) for item in data.get("steps", [])]
 
         if not job.steps:
@@ -454,6 +451,10 @@ def run_job(job: Job):
             job.set_status(Status.RUNNING)
 
             for line in proc.stdout:
+                if job.terminated:
+                    proc.terminate()
+                    delete_job(job)
+
                 log.write(line)
                 log.flush()
 

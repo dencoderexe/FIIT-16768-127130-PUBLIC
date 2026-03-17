@@ -71,7 +71,18 @@ def make_step_row(step: Step):
 def make_job_actions(job: Job):
     actions = []
 
-    if job.status == Status.SUCCESS:
+    if job.status == Status.RUNNING or job.status == Status.PENDING:
+        actions.append(
+            dmc.Button(
+                "Cancel",
+                id={"type": "job-cancel-button", "job_id": job.id},
+                variant="subtle",
+                color="red",
+                leftSection=DashIconify(icon="bi:x-octagon-fill"),
+                fullWidth=True,
+            )
+        )
+    elif job.status == Status.SUCCESS:
         actions.append(
             dmc.Button(
                 "Log",
@@ -100,8 +111,7 @@ def make_job_actions(job: Job):
                 fullWidth=True,
             ),
         )
-
-    if job.status == Status.FAILED:
+    elif job.status == Status.FAILED:
         actions.append(
             dmc.Button(
                 "Log",
@@ -121,6 +131,8 @@ def make_job_actions(job: Job):
                 fullWidth=True,
             ),
         )
+    else:
+        return
 
     return dmc.Stack(
         gap="xs",
@@ -235,12 +247,29 @@ layout = dmc.Container(
             title="Delete job",
             centered=True,
             children=[
-                dmc.Text("Are you sure you want to delete this job and all its files??"),
+                dmc.Text("Are you sure you want to delete this job and all its files?"),
                 dmc.Space(h=15),
                 dmc.Group(
                     [
                         dmc.Button("Cancel", id="delete-job-cancel", variant="outline"),
                         dmc.Button("Delete", id="delete-job-confirm", color="red"),
+                    ],
+                    justify="flex-end",
+                ),
+            ],
+        ),
+        dcc.Store(id="cancel-job-id"),
+        dmc.Modal(
+            id="cancel-job-modal",
+            title="Cancel job",
+            centered=True,
+            children=[
+                dmc.Text("Are you sure you want to cancel this job?"),
+                dmc.Space(h=15),
+                dmc.Group(
+                    [
+                        dmc.Button("No", id="cancel-job-no", variant="outline"),
+                        dmc.Button("Yes", id="cancel-job-yes", color="red"),
                     ],
                     justify="flex-end",
                 ),
@@ -431,5 +460,66 @@ def delete_job_and_files(n_clicks, job_id):
             message=f"{job.tool.name} deleted",
             autoClose=3000,
             icon=DashIconify(icon="bi:trash"),
+        )]
+    )
+
+@callback(
+    Output("cancel-job-modal", "opened"),
+    Output("cancel-job-id", "data"),
+    Input({"type": "job-cancel-button", "job_id": ALL}, "n_clicks"),
+    prevent_initial_call=True,
+)
+def open_cancel_modal(n_clicks):
+    if not n_clicks or not any(n_clicks):
+        return no_update, no_update
+
+    triggered = ctx.triggered_id
+    if not triggered:
+        return no_update, no_update
+
+    return True, triggered["job_id"]
+
+@callback(
+    Output("cancel-job-modal", "opened", allow_duplicate=True),
+    Output("cancel-job-id", "data", allow_duplicate=True),
+    Input("cancel-job-no", "n_clicks"),
+    prevent_initial_call=True,
+)
+def close_cacncel_modal(_):
+    return False, None
+
+@callback(
+    Output("cancel-job-modal", "opened", allow_duplicate=True),
+    Output("cancel-job-id", "data", allow_duplicate=True),
+    Output("notification-container", "sendNotifications", allow_duplicate=True),
+    Input("cancel-job-yes", "n_clicks"),
+    State("cancel-job-id", "data"),
+    prevent_initial_call=True,
+)
+def cancel_job(n_clicks, job_id):
+    if not n_clicks:
+        return no_update, no_update, no_update
+
+    if not job_id:
+        return False, None, no_update
+
+    job = get_job_by_id(job_id)
+
+    if not job:
+        return False, None, no_update
+
+    job.terminated = True
+
+    return (
+        False,
+        None,
+        [dict(
+            title="Job canceled",
+            id=f"job-{job.id}",
+            action="show",
+            color="grey",
+            message=f"{job.tool.name} canceled",
+            autoClose=3000,
+            icon=DashIconify(icon="bi:x-octagon-fill"),
         )]
     )

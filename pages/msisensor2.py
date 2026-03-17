@@ -264,7 +264,7 @@ def start_job(
             action="show",
             color="red",
             message=str(e),
-            autoClose=4000,
+            autoClose=3000,
             icon=DashIconify(icon="bi:x-circle-fill"),
         )]
     
