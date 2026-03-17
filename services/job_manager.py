@@ -45,8 +45,9 @@ class Command:
     description: str
     template: str
     steps: List[str] = field(default_factory=list)
-    required: List[str] = field(default_factory=list)
+    # required: List[str] = field(default_factory=list)
     defaults: Dict[str, object] = field(default_factory=dict)
+    link_output_to_input_arg: Optional[str] = None
 
 @dataclass(frozen=True)
 class Tool:
@@ -89,11 +90,11 @@ TOOLS = {
                     "Preparing analysis windows",
                     "Computing homopolymer and microsatellite distributions",
                 ],
-                required=[
-                    "model",
-                    "tumor_bam",
-                    "output",
-                ],
+                # required=[
+                #     "model",
+                #     "tumor_bam",
+                #     "output",
+                # ],
                 defaults={
                     "coverage": 20,
                     "threads": 1,
@@ -103,35 +104,73 @@ TOOLS = {
             )
         }
     ),
-    # "msisensor": Tool(
-    #     key="msisensor",
-    #     name="MSIsensor",
-    #     description=(
-    #         "MSIsensor is a C++ program to detect replication slippage variants at "
-    #         "microsatellite regions, and differentiate them as somatic or germline. "
-    #         "Given paired tumor and normal sequence data, it builds a distribution "
-    #         "for expected (normal) and observed (tumor) lengths of repeated sequence "
-    #         "per microsatellite, and compares them using Pearson's Chi-Squared Test. "
-    #         "Comprehensive testing indicates MSIsensor is an efficient and effective "
-    #         "tool for deriving microsatellite instability (MSI) status from standard "
-    #         "tumor-normal paired sequence data."
-    #     ),
-    #     path="/home/danilovd/tools/msisensor/",#TODO
-    #     commands={
-    #         "scan": Command(
-                
-    #         ),
-    #         "msi": Command(
-    #             steps=[
-    #                 "Loading BED regions",
-    #                 "Loading BAM files",
-    #                 "Loading homopolymer and microsatellite sites",
-    #                 "Preparing analysis windows",
-    #                 "Computing homopolymer and microsatellite distributions",
-    #             ]
-    #         ),
-    #     }
-    # ),
+    "msisensor": Tool(
+        key="msisensor",
+        name="MSIsensor",
+        description=(
+            "MSIsensor is a C++ program to detect replication slippage variants at "
+            "microsatellite regions, and differentiate them as somatic or germline. "
+            "Given paired tumor and normal sequence data, it builds a distribution "
+            "for expected (normal) and observed (tumor) lengths of repeated sequence "
+            "per microsatellite, and compares them using Pearson's Chi-Squared Test. "
+            "Comprehensive testing indicates MSIsensor is an efficient and effective "
+            "tool for deriving microsatellite instability (MSI) status from standard "
+            "tumor-normal paired sequence data."
+        ),
+        dir="/home/danilovd/tools/msisensor/", #TODO
+        commands={
+            "scan": Command(
+                key="scan",
+                name="scan",
+                description="scan homopolymers and miscrosatelites",
+                template=(
+                    "./msisensor.linux scan "
+                    "-d {reference_genome} "
+                    "-o {output} "
+                    "-l {min_homo_size} "
+                    "-m {max_homo_size} "
+                    "-c {context_len} "
+                    "-s {max_microsat_len} "
+                    "-r {min_microsat_rep} "
+                    "-p {homopolymer_only} "
+                ),
+                steps=[
+                    "Scanning reference genome"
+                ],
+                defaults={
+                    "min_homo_size": 5,
+                    "max_homo_size": 50,
+                    "context_len": 5,
+                    "max_microsat_len": 5,
+                    "min_microsat_rep": 3,
+                    "homopolymer_only": 0,
+                },
+                link_output_to_input_arg="reference_genome",
+            ),
+            "msi": Command(
+                key="msi",
+                name="msi",
+                description="msi scoring",
+                template=(
+                    "./msisensor msi "
+                    "-n {normal_bam} "
+                    "-t {tumor_bam} "
+                    "-o {output} "
+                    "-c {coverage} "
+                    "-b {threads} "
+                    "-x {homopolymer_only} "
+                    "-y {microsatellite_only} "
+                ),
+                steps=[
+                    "Loading BED regions",
+                    "Loading BAM files",
+                    "Loading homopolymer and microsatellite sites",
+                    "Preparing analysis windows",
+                    "Computing homopolymer and microsatellite distributions",
+                ]
+            ),
+        }
+    ),
     # "msisensor-pro": Tool(
     #     key="msisensor-pro",
     #     name="MSIsensor-pro",
@@ -220,6 +259,7 @@ class Job:
     tool: Tool
     command: Command
     cmd: str
+    args: Dict[str, object] = field(default_factory=dict)
     error_message: str = ""
     thread: Optional[threading.Thread] = None
 
@@ -235,6 +275,7 @@ class Job:
     steps: List[Step] = field(init=False)
     job_dir: str = field(init=False)
     log_file: str = field(init=False)
+    hard_links: List[str] = field(default_factory=list)
 
     def __post_init__(self):
         self.steps = [Step(step_name, Status.PENDING) for step_name in self.command.steps]
@@ -266,6 +307,7 @@ class Job:
             "tool_key": self.tool.key,
             "command_key": self.command.key,
             "cmd": self.cmd,
+            "args": self.args,
             "error_message": self.error_message,
             "started_at": datetime_to_str(self.started_at),
             "finished_at": datetime_to_str(self.finished_at),
@@ -282,6 +324,7 @@ class Job:
             id=data["id"],
             tool=tool,
             command=command,
+            args=data.get("args", {}),
             cmd=data["cmd"],
             error_message=data.get("error_message", ""),
             started_at=datetime_from_str(data.get("started_at")),
@@ -386,7 +429,26 @@ def parse_job_output(job: Job, line: str):
                 job.error_message += line
             else:
                 pass
-        elif job.command.key == "scan": #TODO
+        elif job.command.key == "scan":
+            if job.steps[0] == Status.PENDING and "scanning chomosome" in line:
+                _, step = job.get_current_step()            # Scanning reference genome
+                if step is not None:
+                    step.set_status(Status.RUNNING)
+            elif "Total time consumed:" in line:
+                _, step = job.get_current_step()            # Scanning reference genome
+                if step is not None:
+                    step.set_status(Status.SUCCESS)
+            elif "fatal error:" in line or "failed" in line:
+                _, step = job.get_current_step()
+                job.error_message += line
+                if step is not None:
+                    step.set_status(Status.FAILED)          # Scanning reference genome
+                job.set_status(Status.FAILED)
+            elif job.status == Status.FAILED:
+                job.error_message += line
+            else:
+                pass
+        else:
             pass
     elif job.tool.key == "msisensor2":
         if job.command.key == "msi":
@@ -475,6 +537,12 @@ def run_job(job: Job):
                     current_step.set_status(Status.FAILED)
                 job.set_status(Status.FAILED)
 
+        if job.status == Status.SUCCESS:
+            try:
+                create_output_hardlink(job)
+            except Exception as e:
+                job.error_message += f"Hardlink creation failed: {e}\n"
+
         job.serialize()
     except Exception as e:
         job.error_message += f"{e}\n"
@@ -493,6 +561,7 @@ def create_job(tool: Tool, command: Command, **kwargs):
         tool=tool,
         command=command,
         cmd="",
+        args=dict(args)
     )
 
     args["output"] = os.path.join(job.job_dir, args["output"])
@@ -551,3 +620,33 @@ def cleanup_corrupted_jobs():
 
         if not os.path.isfile(json_path) or not os.path.isfile(log_path):
             shutil.rmtree(job_dir_path)
+
+def create_output_hardlink(job: Job):
+    input_arg = job.command.link_output_to_input_arg
+    if not input_arg:
+        return
+
+    input_path = job.args.get(input_arg)
+    output_path = os.path.join(job.job_dir, job.args.get("output"))
+
+    if not input_path or not output_path:
+        return
+
+    if not os.path.isfile(input_path):
+        return
+
+    if not os.path.isfile(output_path):
+        return
+
+    input_dir = os.path.dirname(input_path)
+    output_name = os.path.basename(output_path)
+    link_path = os.path.join(input_dir, output_name)
+
+    if os.path.abspath(link_path) == os.path.abspath(output_path):
+        return
+
+    if os.path.exists(link_path):
+        return
+
+    os.link(output_path, link_path)
+    print(f"saved {link_path}")
