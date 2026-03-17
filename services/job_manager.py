@@ -590,6 +590,13 @@ def delete_job(job: Job):
         if os.path.abspath(job.job_dir).startswith(os.path.abspath(jobs_path)):
             shutil.rmtree(job.job_dir)
 
+    for hardlink in job.hard_links:
+        try:
+            if os.path.exists(hardlink):
+                os.remove(hardlink)
+        except Exception as e:
+            print(f"Failed to remove hardlink {hardlink}: {e}")
+
     bump_signal()
 
 def get_job_by_id(job_id: str) -> Job|None:
@@ -602,7 +609,6 @@ def get_job_by_id(job_id: str) -> Job|None:
             return job
 
     return None
-
 
 def cleanup_corrupted_jobs():
     if not os.path.isdir(jobs_path):
@@ -626,7 +632,7 @@ def create_output_hardlink(job: Job):
     if not input_arg:
         return
 
-    input_path = job.args.get(input_arg)
+    input_path = os.path.realpath(job.args.get(input_arg))
     output_path = os.path.join(job.job_dir, job.args.get("output"))
 
     if not input_path or not output_path:
@@ -649,4 +655,4 @@ def create_output_hardlink(job: Job):
         return
 
     os.link(output_path, link_path)
-    print(f"saved {link_path}")
+    job.hard_links.append(link_path)
