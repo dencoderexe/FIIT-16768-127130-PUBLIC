@@ -7,7 +7,7 @@ def is_within_root(path: str) -> bool:
     return os.path.commonpath([real_path, root_path]) == root_path
 
 def get_files(extensions):
-    files = []
+    files = set()
 
     for current_root, _, filenames in os.walk(root_path, followlinks=True):
         for filename in filenames:
@@ -16,9 +16,9 @@ def get_files(extensions):
             if extensions and not any(filename.endswith(extension) for extension in extensions):
                     continue
 
-            files.append(file_path)
+            files.add(os.path.realpath(file_path))
 
-    return sorted(files)
+    return sorted(list(files))
 
 def get_dirs() -> list[str]:
     dirs = []
