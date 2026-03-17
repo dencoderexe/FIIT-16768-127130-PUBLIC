@@ -82,6 +82,26 @@ def make_job_actions(job: Job):
                 fullWidth=True,
             )
         )
+    elif job.status == Status.FAILED or job.command.key != "msi":
+        actions.append(
+            dmc.Button(
+                "Log",
+                id={"type": "job-log-button", "job_id": job.id},
+                variant="light",
+                leftSection=DashIconify(icon="bi:file-earmark-text"),
+                fullWidth=True,
+            )
+        )
+        actions.append(
+            dmc.Button(
+                "Delete",
+                id={"type": "job-delete-button", "job_id": job.id},
+                variant="subtle",
+                color="red",
+                leftSection=DashIconify(icon="bi:trash"),
+                fullWidth=True,
+            ),
+        )
     elif job.status == Status.SUCCESS:
         actions.append(
             dmc.Button(
@@ -100,26 +120,6 @@ def make_job_actions(job: Job):
                 leftSection=DashIconify(icon="bi:download"),
                 fullWidth=True,
             ),
-        )
-        actions.append(
-            dmc.Button(
-                "Delete",
-                id={"type": "job-delete-button", "job_id": job.id},
-                variant="subtle",
-                color="red",
-                leftSection=DashIconify(icon="bi:trash"),
-                fullWidth=True,
-            ),
-        )
-    elif job.status == Status.FAILED:
-        actions.append(
-            dmc.Button(
-                "Log",
-                id={"type": "job-log-button", "job_id": job.id},
-                variant="light",
-                leftSection=DashIconify(icon="bi:file-earmark-text"),
-                fullWidth=True,
-            )
         )
         actions.append(
             dmc.Button(
@@ -380,8 +380,7 @@ def download_job_file(log_clicks, output_clicks):
     if button_type == "job-output-button":
         def write_zip(bytes_io):
             excluded_files = {}
-            excluded_extensions = {".log", ".json",
-            }
+            excluded_extensions = {".log", ".json",}
             
             with zipfile.ZipFile(bytes_io, "w", zipfile.ZIP_DEFLATED) as z:
                 for file in os.listdir(job.job_dir):
@@ -398,7 +397,7 @@ def download_job_file(log_clicks, output_clicks):
 
                     z.write(full_path, arcname=file)
 
-        return dcc.send_bytes(write_zip, f"{job.id}_output.zip")
+        return dcc.send_bytes(write_zip, f"{job.tool.name}_{job.command.name}_output.zip")
 
     return no_update
 

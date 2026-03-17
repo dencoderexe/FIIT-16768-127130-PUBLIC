@@ -31,7 +31,7 @@ def make_msi():
                         ],
                         gap=6,
                     ),
-                    id="model-select",
+                    id="msisensor2-model-select",
                     data=[
                         {"value": "models_b37_HumanG1Kv37", "label": "b37 (HumanG1Kv37)"},
                         {"value": "models_hg19_GRCh37", "label": "hg19 / GRCh37"},
@@ -50,21 +50,23 @@ def make_msi():
                         ],
                         gap=6,
                     ),
-                    id="bam-file-select",
+                    id="msisensor2-bam-file-select",
                     data=[
                         {"value": str(file), "label": str(file).replace(root_path, "")}
                         for file in get_files(extensions=[".bam"])
                     ],
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
-                    placeholder="Select .BAM file",
+                    placeholder="Select BAM file",
                     searchable=True,
                 ),
                 dmc.Space(h="xl"),
-                dmc.Button("Start", id="start-button", disabled=True),
+
+                dmc.Box(style={"flexGrow": 1}),
+
+                dmc.Button("Start", id="msisensor2-msi-start-button", disabled=True),
             ],
             gap="md",
-            justify="space-between",
             h="100%",
         ),
     )
@@ -85,7 +87,7 @@ def make_msi():
                         ],
                         gap=6,
                     ),
-                    id="coverage-select",
+                    id="msisensor2-coverage-select",
                     value="20",
                     data=[
                         {"value": "20", "label": "WXS: 20"},
@@ -102,7 +104,7 @@ def make_msi():
                         ],
                         gap=6,
                     ),
-                    id="threads",
+                    id="msisensor2-threads",
                     value=1,
                     min=1,
                     allowDecimal=False,
@@ -115,7 +117,7 @@ def make_msi():
                         ],
                         gap=6,
                     ),
-                    id="homopolymer-only",
+                    id="msisensor2-homopolymer-only",
                     checked=False,
                 ),
                 dmc.Switch(
@@ -126,7 +128,7 @@ def make_msi():
                         ],
                         gap=6,
                     ),
-                    id="microsatellite-only",
+                    id="msisensor2-microsatellite-only",
                     checked=False,
                 ),
             ],
@@ -155,7 +157,7 @@ command_select = dmc.Paper(
             dmc.Select(
                 label="Select command",
                 placeholder="Select one",
-                id="command-select",
+                id="msisensor2-command-select",
                 value="msi",
                 data=[
                     {"value": command.key, "label": command.name}
@@ -185,7 +187,7 @@ layout = dmc.Container(
                 gap="xs",
             ),
             command_select,
-            html.Div(id="command-container"),
+            html.Div(id="msisensor2-command-container"),
         ],
         gap="md",
     ),
@@ -194,8 +196,8 @@ layout = dmc.Container(
 )
 
 @callback(
-    Output("command-container", "children"), 
-    Input("command-select", "value"),
+    Output("msisensor2-command-container", "children"), 
+    Input("msisensor2-command-select", "value"),
 )
 def select_command(value):
     if value == "msi":
@@ -204,26 +206,26 @@ def select_command(value):
         return None
     
 @callback(
-    Output("start-button", "disabled"),
-    Input("model-select", "value"),
-    Input("bam-file-select", "value"),
+    Output("msisensor2-msi-start-button", "disabled"),
+    Input("msisensor2-model-select", "value"),
+    Input("msisensor2-bam-file-select", "value"),
 )
-def toggle_start_button(model, tumor_bam):
+def msisensor2_msi_start_button(model, tumor_bam):
     return not (model and tumor_bam)
 
 @callback(
     Output("notification-container", "sendNotifications", allow_duplicate=True),
-    Input("start-button", "n_clicks"),
-    State("command-select", "value"),
-    State("model-select", "value"),
-    State("bam-file-select", "value"),
-    State("coverage-select", "value"),
-    State("threads", "value"),
-    State("homopolymer-only", "checked"),
-    State("microsatellite-only", "checked"),
+    Input("msisensor2-msi-start-button", "n_clicks"),
+    State("msisensor2-command-select", "value"),
+    State("msisensor2-model-select", "value"),
+    State("msisensor2-bam-file-select", "value"),
+    State("msisensor2-coverage-select", "value"),
+    State("msisensor2-threads", "value"),
+    State("msisensor2-homopolymer-only", "checked"),
+    State("msisensor2-microsatellite-only", "checked"),
     prevent_initial_call=True,
 )
-def start_job(
+def msisensor2_msi_start_job(
     n_clicks,
     command_key,
     model,
@@ -269,19 +271,19 @@ def start_job(
         )]
     
 @callback(
-    Output("homopolymer-only", "checked"),
-    Output("microsatellite-only", "checked"),
-    Input("homopolymer-only", "checked"),
-    Input("microsatellite-only", "checked"),
+    Output("msisensor2-homopolymer-only", "checked"),
+    Output("msisensor2-microsatellite-only", "checked"),
+    Input("msisensor2-homopolymer-only", "checked"),
+    Input("msisensor2-microsatellite-only", "checked"),
     prevent_initial_call=True,
 )
 def homopolymer_microsatellite_only_switch(homopolymer_only, microsatellite_only):
     triggered = ctx.triggered_id
 
-    if triggered == "homopolymer-only" and homopolymer_only:
+    if triggered == "msisensor2-homopolymer-only" and homopolymer_only:
         return True, False
 
-    if triggered == "microsatellite-only" and microsatellite_only:
+    if triggered == "msisensor2-microsatellite-only" and microsatellite_only:
         return False, True
 
     return homopolymer_only, microsatellite_only
