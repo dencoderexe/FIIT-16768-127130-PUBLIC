@@ -533,3 +533,21 @@ def get_job_by_id(job_id: str) -> Job|None:
             return job
 
     return None
+
+
+def cleanup_corrupted_jobs():
+    if not os.path.isdir(jobs_path):
+        return
+    
+    job_dirs = [
+        dir for dir in os.listdir(jobs_path)
+        if os.path.isdir(os.path.join(jobs_path, dir))
+    ]
+
+    for job_dir in job_dirs:
+        job_dir_path = os.path.join(jobs_path, job_dir)
+        json_path = os.path.join(job_dir_path, f"{job_dir}.json")
+        log_path = os.path.join(job_dir_path, f"{job_dir}.log")
+
+        if not os.path.isfile(json_path) or not os.path.isfile(log_path):
+            shutil.rmtree(job_dir_path)
