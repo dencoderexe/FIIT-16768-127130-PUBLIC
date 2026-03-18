@@ -83,7 +83,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Coverage", size="sm", fw=500),
-                            helper(""),
+                            helper("Coverage threshold for MSI analysis"),
                         ],
                         gap=6,
                     ),
@@ -100,7 +100,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Threads", size="sm", fw=500),
-                            helper(""),
+                            helper("Threads number for parallel computing"),
                         ],
                         gap=6,
                     ),
@@ -113,7 +113,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Homopolymer only", size="sm", fw=500),
-                            helper(""),
+                            helper("Output homopolymer only"),
                         ],
                         gap=6,
                     ),
@@ -124,7 +124,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Microsatellite only", size="sm", fw=500),
-                            helper(""),
+                            helper("Output microsatellite only"),
                         ],
                         gap=6,
                     ),

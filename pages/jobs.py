@@ -7,7 +7,7 @@ from dash import Input, Output, State, callback, dcc, html, no_update, ALL, ctx
 from dash_iconify import DashIconify
 
 from services.job_signal import get_signal
-from services.job_manager import get_jobs, get_saved_jobs, get_job_by_id, delete_job, Status, Tool, Command, Job, Step
+from services.job_manager import get_jobs, get_saved_jobs, get_job_by_id, delete_job, terminate_job_process, Status, Tool, Command, Job, Step
 
 dash.register_page(__name__, path="/jobs")
 
@@ -508,6 +508,7 @@ def cancel_job(n_clicks, job_id):
         return False, None, no_update
 
     job.terminated = True
+    terminate_job_process(job)
 
     return (
         False,

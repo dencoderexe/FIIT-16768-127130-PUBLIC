@@ -7,7 +7,9 @@ import os
 import re
 import json
 import uuid
+import time
 import shutil
+import signal
 import threading
 import subprocess
 
@@ -45,8 +47,8 @@ class Command:
     description: str
     template: str
     steps: List[str] = field(default_factory=list)
-    # required: List[str] = field(default_factory=list)
     defaults: Dict[str, object] = field(default_factory=dict)
+    optionals: Dict[str, str] = field(default_factory=dict)
     link_output_to_input_arg: Optional[str] = None
 
 @dataclass(frozen=True)
@@ -90,11 +92,6 @@ TOOLS = {
                     "Preparing analysis windows",
                     "Computing homopolymer and microsatellite distributions",
                 ],
-                # required=[
-                #     "model",
-                #     "tumor_bam",
-                #     "output",
-                # ],
                 defaults={
                     "coverage": 20,
                     "threads": 1,
@@ -152,11 +149,22 @@ TOOLS = {
                 name="msi",
                 description="msi scoring",
                 template=(
-                    "./msisensor msi "
+                    "./msisensor.linux msi "
+                    "-d {microsatellite_list} "
                     "-n {normal_bam} "
                     "-t {tumor_bam} "
                     "-o {output} "
+
+                    "-f {fdr_threshold} "
                     "-c {coverage} "
+                    "-z {coverage_normalization} "
+                    "-l {min_homo_size} "
+                    "-p {min_homo_size_dist} "
+                    "-m {max_homo_size_dist} "
+                    "-q {min_microsat_size} "
+                    "-s {min_microsat_size_dist} "
+                    "-w {max_microsat_size_dist} "
+                    "-u {span_size_window} "
                     "-b {threads} "
                     "-x {homopolymer_only} "
                     "-y {microsatellite_only} "
@@ -167,7 +175,28 @@ TOOLS = {
                     "Loading homopolymer and microsatellite sites",
                     "Preparing analysis windows",
                     "Computing homopolymer and microsatellite distributions",
-                ]
+                ],
+                defaults={
+                    "bed_file": None,
+                    "fdr_threshold": 0.05,
+                    "coverage": 20,
+                    "coverage_normalization": 0,
+                    "region": None,
+                    "min_homo_size": 5,
+                    "min_homo_size_dist": 10,
+                    "max_homo_size_dist": 50,
+                    "min_microsat_size": 3,
+                    "min_microsat_size_dist": 5,
+                    "max_microsat_size_dist": 40,
+                    "span_size_window": 500,
+                    "threads": 1,
+                    "homopolymer_only": 0,
+                    "microsatellite_only": 0,
+                },
+                optionals={
+                    "bed_file": "-e",
+                    "region": "-r",
+                },
             ),
         }
     ),
@@ -262,6 +291,7 @@ class Job:
     args: Dict[str, object] = field(default_factory=dict)
     error_message: str = ""
     thread: Optional[threading.Thread] = None
+    process: Optional[subprocess.Popen] = None
 
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
     started_at: Optional[datetime] = None
@@ -308,6 +338,7 @@ class Job:
             "command_key": self.command.key,
             "cmd": self.cmd,
             "args": self.args,
+            "hard_links": self.hard_links,
             "error_message": self.error_message,
             "started_at": datetime_to_str(self.started_at),
             "finished_at": datetime_to_str(self.finished_at),
@@ -331,6 +362,7 @@ class Job:
             finished_at=datetime_from_str(data.get("finished_at")),
             status=Status[data.get("status")],
         )
+        job.hard_links = data.get("hard_links", [])
         job.steps = [Step.from_dict(item) for item in data.get("steps", [])]
 
         if not job.steps:
@@ -355,7 +387,7 @@ jobs_lock = threading.Lock()
 
 def get_jobs() -> List[Job]:
     with jobs_lock:
-        return list(jobs)
+        return list(jobs)[::-1]
     
 def get_saved_jobs():    
     if not os.path.isdir(jobs_path):
@@ -430,7 +462,7 @@ def parse_job_output(job: Job, line: str):
             else:
                 pass
         elif job.command.key == "scan":
-            if job.steps[0] == Status.PENDING and "scanning chomosome" in line:
+            if job.steps[0].status == Status.PENDING and "scanning chomosome" in line:
                 _, step = job.get_current_step()            # Scanning reference genome
                 if step is not None:
                     step.set_status(Status.RUNNING)
@@ -494,6 +526,27 @@ def parse_job_output(job: Job, line: str):
     else:
         pass
 
+def terminate_job_process(job: Job, timeout: float = 3.0):
+    proc = job.process
+    if proc is None:
+        return
+
+    try:
+        os.killpg(proc.pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        if proc.poll() is not None:
+            return
+        time.sleep(0.1)
+
+    try:
+        os.killpg(proc.pid, signal.SIGKILL)
+    except ProcessLookupError:
+        pass
+
 def run_job(job: Job):
     try:
         os.makedirs(job.job_dir, exist_ok=True)
@@ -507,24 +560,47 @@ def run_job(job: Job):
                 stderr=subprocess.STDOUT,
                 text=True,
                 bufsize=1,
+                start_new_session=True,
             )
+            job.process = proc
 
             job.started_at = datetime.now()
             job.set_status(Status.RUNNING)
 
-            for line in proc.stdout:
-                if job.terminated:
-                    proc.terminate()
-                    delete_job(job)
+            try:
+                for line in proc.stdout:
+                    if job.terminated:
+                        terminate_job_process(job)
+                        if "Job terminated by user.\n" not in job.error_message:
+                            job.error_message += "Job terminated by user.\n"
+                        break
 
-                log.write(line)
-                log.flush()
+                    log.write(line)
+                    log.flush()
 
-                parse_job_output(job, line)
+                    parse_job_output(job, line)
 
-            return_code = proc.wait()
+                if job.terminated and proc.poll() is None:
+                    terminate_job_process(job)
 
-        if job.status not in (Status.FAILED, Status.SUCCESS):
+                return_code = proc.wait()
+
+            finally:
+                if proc.stdout is not None:
+                    proc.stdout.close()
+
+        if job.terminated:
+            _, current_step = job.get_current_step()
+            if current_step is not None and current_step.status == Status.RUNNING:
+                current_step.set_status(Status.FAILED)
+
+            if job.status not in (Status.FAILED, Status.SUCCESS):
+                job.set_status(Status.FAILED)
+
+            if "Job terminated by user.\n" not in job.error_message:
+                job.error_message += "Job terminated by user.\n"
+
+        elif job.status not in (Status.FAILED, Status.SUCCESS):
             if return_code == 0:
                 _, current_step = job.get_current_step()
                 if current_step is not None:
@@ -537,20 +613,22 @@ def run_job(job: Job):
                     current_step.set_status(Status.FAILED)
                 job.set_status(Status.FAILED)
 
-        if job.status == Status.SUCCESS:
-            try:
-                create_output_hardlink(job)
-            except Exception as e:
-                job.error_message += f"Hardlink creation failed: {e}\n"
-
         job.serialize()
+
     except Exception as e:
         job.error_message += f"{e}\n"
         _, current_step = job.get_current_step()
         if current_step is not None:
             current_step.set_status(Status.FAILED)
         job.set_status(Status.FAILED)
+
+        try:
+            job.serialize()
+        except Exception:
+            pass
+
     finally:
+        job.process = None
         job.thread = None
         bump_signal()
 
@@ -566,7 +644,15 @@ def create_job(tool: Tool, command: Command, **kwargs):
 
     args["output"] = os.path.join(job.job_dir, args["output"])
 
-    job.cmd = command.template.format(**args)
+    cmd = command.template.format(**args)
+
+    for arg_name, flag in command.optionals.items():
+        value = args.get(arg_name)
+        if value is None or value == "":
+            continue
+        cmd += f"{flag} {value} "
+
+    job.cmd = cmd
 
     thread = threading.Thread(
         target=run_job, 
