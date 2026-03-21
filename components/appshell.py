@@ -1,5 +1,6 @@
-from dash import Dash, dcc, Input, Output, State, callback, no_update, clientside_callback
 import dash_mantine_components as dmc
+
+from dash import Input, Output, State, callback, clientside_callback
 from dash_iconify import DashIconify
 
 logo = "/assets/fiit/PNG/STU-FIIT-nvf.png"
@@ -55,9 +56,9 @@ def make_appshell(content):
                         leftSection=DashIconify(icon="bi:tools", height=16),
                         children=[
                             dmc.NavLink(label="Samtools", href="/samtools"),
-                            dmc.NavLink(label="MSISensor", href="/msisensor"),
-                            dmc.NavLink(label="MSISensor2", href="/msisensor2"),
-                            dmc.NavLink(label="MSISensor-Pro", href="/msisensor-pro"),
+                            dmc.NavLink(label="MSIsensor", href="/msisensor"),
+                            dmc.NavLink(label="MSIsensor2", href="/msisensor2"),
+                            dmc.NavLink(label="MSIsensor-Pro", href="/msisensor-pro"),
                             dmc.NavLink(label="MANTIS", href="/mantis"),
                         ],
                     ),
@@ -77,7 +78,7 @@ def make_appshell(content):
         id="appshell",
     )
 
-def make_appshell_callbacks(app):
+def make_appshell_callbacks():
     @callback(
         Output("appshell", "navbar"),
         Input("burger", "opened"),

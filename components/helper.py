@@ -1,4 +1,6 @@
 import dash_mantine_components as dmc
+
+from dash import html
 from dash_iconify import DashIconify
 
 def helper(help_message: str):
