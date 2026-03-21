@@ -1,13 +1,16 @@
+from dash import Input, Output, State, callback, html, no_update, ctx
+from dash_iconify import DashIconify
+
+from components.helper import helper
+from services.job_manager import create_job
+from services.file_manager import get_files
+
+from configs.tools import TOOLS
+from configs.paths import data_path
+
 import os
 import dash
 import dash_mantine_components as dmc
-
-from dash import Input, Output, State, callback, dcc, html, no_update, ALL, ctx
-from dash_iconify import DashIconify
-
-from services.job_manager import TOOLS, Job, create_job
-from services.file_manager import root_path, get_files, get_dirs
-from components.helper import helper
 
 dash.register_page(__name__, path="/msisensor2")
 
@@ -52,7 +55,7 @@ def make_msi():
                     ),
                     id="msisensor2-bam-file-select",
                     data=[
-                        {"value": str(file), "label": str(file).replace(root_path, "")}
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
                         for file in get_files(extensions=[".bam"])
                     ],
                     nothingFoundMessage="Nothing found",
@@ -245,6 +248,7 @@ def msisensor2_msi_start_job(
             model=model,
             tumor_bam=tumor_bam,
             output=os.path.splitext(os.path.basename(tumor_bam))[0],
+            
             coverage=coverage,
             threads=threads,
             homopolymer_only=int(bool(homopolymer_only)),

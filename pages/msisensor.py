@@ -1,14 +1,17 @@
+from dash import Input, Output, State, callback, dcc, html, no_update, ALL, ctx
+from dash_iconify import DashIconify
+
+from components.helper import helper
+from services.job_manager import create_job
+from services.file_manager import get_files
+
+from configs.tools import TOOLS
+from configs.paths import data_path
+
 import os
 import re
 import dash
 import dash_mantine_components as dmc
-
-from dash import Input, Output, State, callback, dcc, html, no_update, ALL, ctx
-from dash_iconify import DashIconify
-
-from services.job_manager import TOOLS, Job, create_job
-from services.file_manager import root_path, get_files, get_dirs
-from components.helper import helper
 
 dash.register_page(__name__, path="/msisensor")
 
@@ -34,7 +37,7 @@ def make_scan():
                     ),
                     id="msisensor-scan-refgenome-file-select",
                     data=[
-                        {"value": str(file), "label": str(file).replace(root_path, "")}
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
                         for file in get_files(extensions=[".fasta", ".fas", ".fa", ".fna", ".ffn", ".faa", ".mpfa", ".frn"])
                     ],
                     nothingFoundMessage="Nothing found",
@@ -189,7 +192,7 @@ def make_msi():
                     ),
                     id="msisensor-msi-microsat-list-file-select",
                     data=[
-                        {"value": str(file), "label": str(file).replace(root_path, "")}
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
                         for file in get_files(extensions=[".microsatellite.list"])
                     ],
                     nothingFoundMessage="Nothing found",
@@ -208,7 +211,7 @@ def make_msi():
                     ),
                     id="msisensor-msi-normal-bam-file-select",
                     data=[
-                        {"value": str(file), "label": str(file).replace(root_path, "")}
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
                         for file in get_files(extensions=[".bam"])
                     ],
                     nothingFoundMessage="Nothing found",
@@ -227,7 +230,7 @@ def make_msi():
                     ),
                     id="msisensor-msi-tumor-bam-file-select",
                     data=[
-                        {"value": str(file), "label": str(file).replace(root_path, "")}
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
                         for file in get_files(extensions=[".bam"])
                     ],
                     nothingFoundMessage="Nothing found",
@@ -264,7 +267,7 @@ def make_msi():
                     ),
                     id="msisensor-msi-bed-file-select",
                     data=[
-                        {"value": str(file), "label": str(file).replace(root_path, "")}
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
                         for file in get_files(extensions=[".bed"])
                     ],
                     nothingFoundMessage="Nothing found",
@@ -668,6 +671,7 @@ def msisensor_msi_start_job(
             normal_bam=normal_bam,
             tumor_bam=tumor_bam,
             output=os.path.splitext(os.path.basename(tumor_bam))[0],
+            
             bed_file=bed_file or None,
             region=region or None,
             fdr_threshold=fdr_threshold,

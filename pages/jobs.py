@@ -1,13 +1,14 @@
-import os
-import zipfile
-import dash
-import dash_mantine_components as dmc
-
 from dash import Input, Output, State, callback, dcc, html, no_update, ALL, ctx
 from dash_iconify import DashIconify
 
 from services.job_signal import get_signal
-from services.job_manager import get_jobs, get_saved_jobs, get_job_by_id, delete_job, terminate_job_process, Status, Tool, Command, Job, Step
+from services.job_manager import get_jobs, get_saved_jobs, get_job_by_id, delete_job, terminate_job_process
+from models.jobs import Status, Step, Job
+
+import os
+import zipfile
+import dash
+import dash_mantine_components as dmc
 
 dash.register_page(__name__, path="/jobs")
 
@@ -82,7 +83,7 @@ def make_job_actions(job: Job):
                 fullWidth=True,
             )
         )
-    elif job.status == Status.FAILED or job.command.key != "msi":
+    elif job.status == Status.FAILED:
         actions.append(
             dmc.Button(
                 "Log",
@@ -91,6 +92,35 @@ def make_job_actions(job: Job):
                 leftSection=DashIconify(icon="bi:file-earmark-text"),
                 fullWidth=True,
             )
+        )
+        actions.append(
+            dmc.Button(
+                "Delete",
+                id={"type": "job-delete-button", "job_id": job.id},
+                variant="subtle",
+                color="red",
+                leftSection=DashIconify(icon="bi:trash"),
+                fullWidth=True,
+            ),
+        )
+    elif job.command.key not in {"msi", "mantis"}:
+        actions.append(
+            dmc.Button(
+                "Log",
+                id={"type": "job-log-button", "job_id": job.id},
+                variant="light",
+                leftSection=DashIconify(icon="bi:file-earmark-text"),
+                fullWidth=True, 
+            )
+        )
+        actions.append(
+           dmc.Button(
+                "Output",
+                id={"type": "job-output-too-big-button", "job_id": job.id},
+                variant="light",
+                leftSection=DashIconify(icon="bi:download"),
+                fullWidth=True,
+            ),
         )
         actions.append(
             dmc.Button(
@@ -138,6 +168,7 @@ def make_job_actions(job: Job):
         gap="xs",
         children=actions,
         w=180,
+        align="stretch",
     )
 
 def make_job_item(job: Job):
@@ -275,10 +306,51 @@ layout = dmc.Container(
                 ),
             ],
         ),
+        dcc.Store(id="job-output-too-big-id"),
+        dmc.Modal(
+            id="job-output-too-big-modal",
+            title="Job output is too big",
+            centered=True,
+            children=[
+                dmc.Text("Job output is too big to be downloaded, please ask administrator if you really need those files."),
+                dmc.Space(h=15),
+                dmc.Group(
+                    [
+                        dmc.Button("Ok", id="job-output-too-big-ok", color="green"),
+                    ],
+                    justify="flex-end",
+                ),
+            ],
+        ),
     ],
     fluid=True,
     p="md",
 )
+
+@callback(
+    Output("job-output-too-big-modal", "opened", allow_duplicate=True),
+    Output("job-output-too-big-id", "data", allow_duplicate=True),
+    Input({"type": "job-output-too-big-button", "job_id": ALL}, "n_clicks"),
+    prevent_initial_call=True,
+)
+def open_job_output_too_big_modal(n_clicks):
+    if not n_clicks or not any(n_clicks):
+        return no_update, no_update
+
+    triggered = ctx.triggered_id
+    if not triggered:
+        return no_update, no_update
+
+    return True, triggered["job_id"]
+
+@callback(
+    Output("job-output-too-big-modal", "opened", allow_duplicate=True),
+    Output("job-output-too-big-id", "data", allow_duplicate=True),
+    Input("job-output-too-big-ok", "n_clicks"),
+    prevent_initial_call=True,
+)
+def close_job_output_too_big_modal(_):
+    return False, None
 
 @callback(
     Output("jobs-signal", "data"),
@@ -312,7 +384,6 @@ def update_jobs(_):
             "There are no jobs from previous sessions.",
         ),
     ]
-
 
 @callback(
         Output("notification-container", "sendNotifications", allow_duplicate=True),
@@ -523,3 +594,4 @@ def cancel_job(n_clicks, job_id):
             icon=DashIconify(icon="bi:x-octagon-fill"),
         )]
     )
+

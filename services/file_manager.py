@@ -1,15 +1,15 @@
-import os
+from configs.paths import data_path
 
-root_path: str = "/home/danilovd/data/"
+import os
 
 def is_within_root(path: str) -> bool:
     real_path = os.path.realpath(path)
-    return os.path.commonpath([real_path, root_path]) == root_path
+    return os.path.commonpath([real_path, data_path]) == data_path
 
 def get_files(extensions):
     files = set()
 
-    for current_root, _, filenames in os.walk(root_path, followlinks=True):
+    for current_root, _, filenames in os.walk(data_path, followlinks=True):
         for filename in filenames:
             file_path = os.path.join(current_root, filename)
 
@@ -23,7 +23,7 @@ def get_files(extensions):
 def get_dirs() -> list[str]:
     dirs = []
 
-    for current_root, dirnames, _ in os.walk(root_path, followlinks=True):
+    for current_root, dirnames, _ in os.walk(data_path, followlinks=True):
         for dirname in dirnames:
             dir_path = os.path.join(current_root, dirname)
 
