@@ -30,7 +30,7 @@ def make_msi():
                         [
                             dmc.Text("Model", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
-                            helper(""),
+                            helper("Select the reference model for the analysis."),
                         ],
                         gap=6,
                     ),
@@ -49,7 +49,7 @@ def make_msi():
                         [
                             dmc.Text("Tumor .BAM file", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
-                            helper(""),
+                            helper("Select the BAM file for the tumor sample."),
                         ],
                         gap=6,
                     ),
@@ -86,7 +86,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Coverage", size="sm", fw=500),
-                            helper("Coverage threshold for MSI analysis"),
+                            helper("Select the recommended coverage threshold for the input data type."),
                         ],
                         gap=6,
                     ),
@@ -103,7 +103,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Threads", size="sm", fw=500),
-                            helper("Threads number for parallel computing"),
+                            helper("Specify the number of threads to use for the analysis."),
                         ],
                         gap=6,
                     ),
@@ -116,7 +116,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Homopolymer only", size="sm", fw=500),
-                            helper("Output homopolymer only"),
+                            helper("Limit the output to homopolymer sites only."),
                         ],
                         gap=6,
                     ),
@@ -127,7 +127,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Microsatellite only", size="sm", fw=500),
-                            helper("Output microsatellite only"),
+                            helper("Limit the output to microsatellite sites only."),
                         ],
                         gap=6,
                     ),
@@ -182,7 +182,7 @@ layout = dmc.Container(
                 [
                     DashIconify(icon="bi:github", width=18),
                     dmc.Anchor(
-                        "View on GitHub",
+                        "View original tool on GitHub",
                         href="https://github.com/niu-lab/msisensor2",
                         target="_blank",
                     ),

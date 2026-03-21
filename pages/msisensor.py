@@ -31,7 +31,7 @@ def make_scan():
                         [
                             dmc.Text("Reference genome file", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Reference genome sequences file in .fasta format"),
+                            helper("Select the reference genome file in FASTA format."),
                         ],
                         gap=6,
                     ),
@@ -68,7 +68,7 @@ def make_scan():
                     label=dmc.Group(
                         [
                             dmc.Text("Coverage", size="sm", fw=500),
-                            helper(""),
+                            helper("Select the recommended coverage setting for the input data type."),
                         ],
                         gap=6,
                     ),
@@ -85,7 +85,7 @@ def make_scan():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimal homopolymer size", size="sm", fw=500),
-                            helper("Minimal homopolymer size"),
+                            helper("Set the minimum homopolymer length to include in the scan."),
                         ],
                         gap=6,
                     ),
@@ -98,7 +98,7 @@ def make_scan():
                     label=dmc.Group(
                         [
                             dmc.Text("Maximal homopolymer size", size="sm", fw=500),
-                            helper("Maximal homopolymer size"),
+                            helper("Set the maximum homopolymer length to include in the scan."),
                         ],
                         gap=6,
                     ),
@@ -111,7 +111,7 @@ def make_scan():
                     label=dmc.Group(
                         [
                             dmc.Text("Context length", size="sm", fw=500),
-                            helper("Context length"),
+                            helper("Set the number of flanking bases to include as sequence context."),
                         ],
                         gap=6,
                     ),
@@ -124,7 +124,7 @@ def make_scan():
                     label=dmc.Group(
                         [
                             dmc.Text("Maximum length of microsatellite", size="sm", fw=500),
-                            helper("Maximal length of microsatellite"),
+                            helper("Set the maximum microsatellite motif length to include in the scan."),
                         ],
                         gap=6,
                     ),
@@ -137,7 +137,7 @@ def make_scan():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimal microsatellite repeats", size="sm", fw=500),
-                            helper("Minimal repeat times of microsatellite"),
+                            helper("Set the minimum number of repeat units required for a microsatellite to be included."),
                         ],
                         gap=6,
                     ),
@@ -150,7 +150,7 @@ def make_scan():
                     label=dmc.Group(
                         [
                             dmc.Text("Homopolymer only", size="sm", fw=500),
-                            helper(""),
+                            helper("Limit the output to homopolymer sites only."),
                         ],
                         gap=6,
                     ),
@@ -186,7 +186,7 @@ def make_msi():
                         [
                             dmc.Text("Homopolymer and microsatellite list file", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Homopolymer and microsates file"),
+                            helper("Select the file containing homopolymer and microsatellite sites."),
                         ],
                         gap=6,
                     ),
@@ -205,7 +205,7 @@ def make_msi():
                         [
                             dmc.Text("Normal BAM file", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Normal BAM file"),
+                            helper("Select the BAM file for the matched normal sample."),
                         ],
                         gap=6,
                     ),
@@ -224,7 +224,7 @@ def make_msi():
                         [
                             dmc.Text("Tumor BAM file", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Tumor BAM file"),
+                            helper("Select the BAM file for the tumor sample."),
                         ],
                         gap=6,
                     ),
@@ -261,7 +261,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("BED file", size="sm", fw=500),
-                            helper("BED file, optional"),
+                            helper("Select an optional BED file defining genomic regions for analysis."),
                         ],
                         gap=6,
                     ),
@@ -279,7 +279,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Region", size="sm", fw=500),
-                            helper("Optional region in format 1:10000000-20000000"),
+                            helper("Specify an optional genomic region in the format chr:start-end."),
                         ],
                         gap=6,
                     ),
@@ -290,7 +290,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Coverage", size="sm", fw=500),
-                            helper("Coverage threshold for MSI analysis"),
+                            helper("Select the recommended coverage threshold for the input data type."),
                         ],
                         gap=6,
                     ),
@@ -307,7 +307,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Coverage normalization", size="sm", fw=500),
-                            helper("Coverage normalization for paired tumor and normal data"),
+                            helper("Enable coverage normalization for paired tumor-normal data."),
                         ],
                         gap=6,
                     ),
@@ -318,7 +318,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("FDR threshold", size="sm", fw=500),
-                            helper("FDR threshold for somatic sites detection"),
+                            helper("Set the false discovery rate threshold for calling somatic unstable sites."),
                         ],
                         gap=6,
                     ),
@@ -332,7 +332,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimal homopolymer size", size="sm", fw=500),
-                            helper("Minimal homopolymer size"),
+                            helper("Set the minimum homopolymer length to include in the analysis."),
                         ],
                         gap=6,
                     ),
@@ -345,7 +345,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimal homopolymer size for distribution analysis", size="sm", fw=500),
-                            helper("Minimal homopolymer size for distribution analysis"),
+                            helper("Set the minimum homopolymer length to use for distribution analysis."),
                         ],
                         gap=6,
                     ),
@@ -358,7 +358,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Maximal homopolymer size for distribution analysis", size="sm", fw=500),
-                            helper("Maximal homopolymer size for distribution analysis"),
+                            helper("Set the maximum homopolymer length to use for distribution analysis."),
                         ],
                         gap=6,
                     ),
@@ -371,7 +371,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimal microsatellite size", size="sm", fw=500),
-                            helper("Minimal microsatellite size"),
+                            helper("Set the minimum microsatellite length to include in the analysis."),
                         ],
                         gap=6,
                     ),
@@ -384,7 +384,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimal microsatellite size for distribution analysis", size="sm", fw=500),
-                            helper("Minimal microsatellite size for distribution analysis"),
+                            helper("Set the minimum microsatellite length to use for distribution analysis."),
                         ],
                         gap=6,
                     ),
@@ -397,7 +397,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Maximal microsatellite size for distribution analysis", size="sm", fw=500),
-                            helper("Maximal microsatellite size for distribution analysis"),
+                            helper("Set the maximum microsatellite length to use for distribution analysis."),
                         ],
                         gap=6,
                     ),
@@ -410,7 +410,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Span size around window", size="sm", fw=500),
-                            helper("Span size around window for extracting reads"),
+                            helper("Set the window size around each site for read extraction."),
                         ],
                         gap=6,
                     ),
@@ -423,7 +423,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Threads", size="sm", fw=500),
-                            helper("Threads number for parallel computing"),
+                            helper("Specify the number of threads to use for the analysis."),
                         ],
                         gap=6,
                     ),
@@ -436,7 +436,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Homopolymer only", size="sm", fw=500),
-                            helper("Output homopolymer only"),
+                            helper("Limit the output to homopolymer sites only."),
                         ],
                         gap=6,
                     ),
@@ -447,7 +447,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Microsatellite only", size="sm", fw=500),
-                            helper("Output microsatellite only"),
+                            helper("Limit the output to microsatellite sites only."),
                         ],
                         gap=6,
                     ),
@@ -502,7 +502,7 @@ layout = dmc.Container(
                 [
                     DashIconify(icon="bi:github", width=18),
                     dmc.Anchor(
-                        "View on GitHub",
+                        "View original tool on GitHub",
                         href="https://github.com/ding-lab/msisensor",
                         target="_blank",
                     ),

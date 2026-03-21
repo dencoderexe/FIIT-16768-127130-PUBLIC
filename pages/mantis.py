@@ -30,7 +30,7 @@ def make_mantis():
                         [
                             dmc.Text("Normal BAM file", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Normal BAM file"),
+                            helper("Select the BAM file for the matched normal sample."),
                         ],
                         gap=6,
                     ),
@@ -49,7 +49,7 @@ def make_mantis():
                         [
                             dmc.Text("Tumor BAM file", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Tumor BAM file"),
+                            helper("Select the BAM file for the tumor sample."),
                         ],
                         gap=6,
                     ),
@@ -68,7 +68,7 @@ def make_mantis():
                         [
                             dmc.Text("Reference genome file", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Reference genome sequences file in .fasta format"),
+                            helper("Select the reference genome file in FASTA format."),
                         ],
                         gap=6,
                     ),
@@ -87,7 +87,7 @@ def make_mantis():
                         [
                             dmc.Text("BED file", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("BED file"),
+                            helper("Select the BED file defining genomic regions for analysis."),
                         ],
                         gap=6,
                     ),
@@ -124,7 +124,7 @@ def make_mantis():
                     label=dmc.Group(
                         [
                             dmc.Text("Threads", size="sm", fw=500),
-                            helper("Threads number for parallel computing"),
+                            helper("Specify the number of threads to use for the analysis."),
                         ],
                         gap=6,
                     ),
@@ -137,8 +137,7 @@ def make_mantis():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimum read quality", size="sm", fw=500),
-                            helper(("Minimum average per-base read quality for a read to pass the quality control filters. "
-                                   "Default: 25.0")),
+                            helper(("Set the minimum average read quality required for a read to pass quality control.")),
                         ],
                         gap=6,
                     ),
@@ -152,9 +151,7 @@ def make_mantis():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimum locus quality", size="sm", fw=500),
-                            helper(("Minimum average per-base quality for the bases contained within the microsatellite locus. "
-                                    "Reads that pass the read quality filter (above) will still fail quality control if the locus "
-                                    "quality scores are too low. Default: 30.0")),
+                            helper(("Set the minimum average base quality within a microsatellite locus for a read to be included in the analysis.")),
                         ],
                         gap=6,
                     ),
@@ -168,9 +165,7 @@ def make_mantis():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimum read length", size="sm", fw=500),
-                            helper(("Minimum read length for a read to pass quality control. Only bases that are not clipped will "
-                                    "be considered; in other words, soft-clipped or hard-clipped parts of the read do not count "
-                                    "towards the length. Default: 35")),
+                            helper(("Set the minimum unclipped read length required for a read to pass quality control.")),
                         ],
                         gap=6,
                     ),
@@ -183,8 +178,7 @@ def make_mantis():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimum locus coverage", size="sm", fw=500),
-                            helper(("Minimum coverage (after QC filters) required for each of the normal and tumor samples for a "
-                                    "locus to be considered in the calculations. Default: 30")),
+                            helper(("Set the minimum post-filter coverage required in both normal and tumor samples for a locus to be analyzed.")),
                         ],
                         gap=6,
                     ),
@@ -197,8 +191,7 @@ def make_mantis():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimum repeat reads", size="sm", fw=500),
-                            helper(("Minimum reads supporting a specific repeat count. Repeat counts that have less than this value "
-                                    "will be discarded as part of outlier filtering. Default: 3")),
+                            helper(("Set the minimum number of reads supporting a repeat count for it to be included in the analysis.")),
                         ],
                         gap=6,
                     ),
@@ -211,8 +204,7 @@ def make_mantis():
                     label=dmc.Group(
                         [
                             dmc.Text("Standard deviations", size="sm", fw=500),
-                            helper(("Standard deviations from the mean before a repeat count is considered an outlier and discarded. "
-                                    "Default: 3.0")),
+                            helper(("Set how far a repeat count can deviate from the mean before it is treated as an outlier.")),
                         ],
                         gap=6,
                     ),
@@ -270,31 +262,20 @@ layout = dmc.Container(
                 [
                     DashIconify(icon="bi:github", width=18),
                     dmc.Anchor(
-                        "View on GitHub",
+                        "View original tool on GitHub",
                         href="https://github.com/OSU-SRLab/MANTIS",
                         target="_blank",
                     ),
                 ],
                 gap="xs",
             ),
-            command_select,
-            html.Div(id="mantis-command-container"),
+            make_mantis(),
         ],
         gap="md",
     ),
     fluid=True,
     p="md",
 )
-
-@callback(
-    Output("mantis-command-container", "children"), 
-    Input("mantis-command-select", "value"),
-)
-def select_command(value):
-    if value == "mantis":
-        return make_mantis()
-    else:
-        return None
     
 @callback(
     Output("mantis-start-button", "disabled"),
@@ -309,7 +290,6 @@ def mantis_start_button(normal_bam, tumor_bam, refgenome, bed_file):
 @callback(
     Output("notification-container", "sendNotifications", allow_duplicate=True),
     Input("mantis-start-button", "n_clicks"),
-    State("mantis-command-select", "value"),
     State("mantis-normal-bam-file-select", "value"),
     State("mantis-tumor-bam-file-select", "value"),
     State("mantis-refgenome-file-select", "value"),
@@ -325,7 +305,6 @@ def mantis_start_button(normal_bam, tumor_bam, refgenome, bed_file):
 )
 def mantis_start_job(
     n_clicks,
-    command_key,
     normal_bam,
     tumor_bam,
     reference_genome,
@@ -344,7 +323,7 @@ def mantis_start_job(
     try:
         create_job(
             tool=tool,
-            command=tool.commands.get(command_key),
+            command=tool.commands.get("mantis"),
             normal_bam=normal_bam,
             tumor_bam=tumor_bam,
             reference_genome=reference_genome,

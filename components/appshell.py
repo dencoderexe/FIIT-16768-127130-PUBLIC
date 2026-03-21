@@ -56,6 +56,7 @@ def make_appshell(content):
                         leftSection=DashIconify(icon="bi:tools", height=16),
                         children=[
                             dmc.NavLink(label="Samtools", href="/samtools"),
+                            dmc.NavLink(label="RepeatFinder", href="/repeatfinder"),
                             dmc.NavLink(label="MSIsensor", href="/msisensor"),
                             dmc.NavLink(label="MSIsensor2", href="/msisensor2"),
                             dmc.NavLink(label="MSIsensor-Pro", href="/msisensor-pro"),
