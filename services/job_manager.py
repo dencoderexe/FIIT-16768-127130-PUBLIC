@@ -17,6 +17,17 @@ import subprocess
 jobs = []
 jobs_lock = threading.Lock()
 
+def get_job_by_id(job_id: str) -> Job|None:
+    for job in jobs:
+        if job.id == job_id:
+            return job
+
+    for job in get_saved_jobs():
+        if job.id == job_id:
+            return job
+
+    return None
+
 def get_jobs() -> List[Job]:
     with jobs_lock:
         return list(jobs)[::-1]
@@ -245,9 +256,9 @@ def run_job(job: Job):
 
         if job.status == Status.SUCCESS:
             try:
-                create_output_hardlink(job)
+                create_output_link(job)
             except Exception as e:
-                job.error_message += f"Hardlink creation failed: {e}\n"
+                job.error_message += f"Link creation failed: {e}\n"
         
         job.serialize()
     except Exception as e:
@@ -311,25 +322,14 @@ def delete_job(job: Job):
         if os.path.abspath(job.job_dir).startswith(os.path.abspath(jobs_path)):
             shutil.rmtree(job.job_dir)
 
-    for hardlink in job.hard_links:
+    for link in job.links:
         try:
-            if os.path.exists(hardlink):
-                os.remove(hardlink)
+            if os.path.lexists(link):
+                os.remove(link)
         except Exception as e:
-            print(f"Failed to remove hardlink {hardlink}: {e}")
+            print(f"Failed to remove link {link}: {e}")
 
     bump_signal()
-
-def get_job_by_id(job_id: str) -> Job|None:
-    for job in jobs:
-        if job.id == job_id:
-            return job
-
-    for job in get_saved_jobs():
-        if job.id == job_id:
-            return job
-
-    return None
 
 def cleanup_corrupted_jobs():
     if not os.path.isdir(jobs_path):
@@ -348,7 +348,7 @@ def cleanup_corrupted_jobs():
         if not os.path.isfile(json_path) or not os.path.isfile(log_path):
             shutil.rmtree(job_dir_path)
 
-def create_output_hardlink(job: Job):
+def create_output_link(job: Job):
     input_arg = job.command.link_output_to_input_arg
     if not input_arg:
         return
@@ -375,5 +375,18 @@ def create_output_hardlink(job: Job):
     if os.path.exists(link_path):
         return
 
-    os.link(output_path, link_path)
-    job.hard_links.append(link_path)
+    try:
+        os.link(output_path, link_path)
+        job.links.append(link_path)
+        print(f"[hardlink] {link_path}")
+        return
+    except OSError as e:
+        print(f"Hardlink failed: {e}")
+
+    try:
+        os.symlink(output_path, link_path)
+        job.links.append(link_path)
+        print(f"[symlink] {link_path}")
+        return
+    except OSError as e:
+        print(f"Symlink failed: {e}")
