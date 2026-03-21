@@ -113,7 +113,7 @@ class Job:
 
     job_dir: str = field(init=False)
     log_file: str = field(init=False)
-    hard_links: List[str] = field(default_factory=list)
+    links: List[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.steps = [Step(step_name, Status.PENDING) for step_name in self.command.steps]
@@ -157,7 +157,7 @@ class Job:
             "status": self.status.name,
             "steps": [step.to_dict() for step in self.steps],
 
-            "hard_links": self.hard_links,
+            "links": self.links,
         }
     
     @classmethod
@@ -179,7 +179,7 @@ class Job:
 
             status=Status[data.get("status")],
         )
-        job.hard_links = data.get("hard_links", [])
+        job.links = data.get("links", [])
         job.steps = [Step.from_dict(item) for item in data.get("steps", [])]
 
         if not job.steps:

@@ -478,8 +478,7 @@ command_select = dmc.Paper(
         [
             dmc.Title("Command", order=4),
             dmc.Select(
-                label="Select command",
-                placeholder="Select one",
+                label="Choose a command",
                 id="msisensor-command-select",
                 value="scan",
                 data=[
@@ -522,7 +521,7 @@ layout = dmc.Container(
     Output("msisensor-command-container", "children"), 
     Input("msisensor-command-select", "value"),
 )
-def select_command(value):
+def samtools_select_command(value):
     if value == "scan":
         return make_scan()
     elif value == "msi":

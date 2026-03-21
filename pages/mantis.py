@@ -1,4 +1,4 @@
-from dash import Input, Output, State, callback, html, no_update
+from dash import Input, Output, State, callback, no_update
 from dash_iconify import DashIconify
 
 from components.helper import helper
@@ -228,30 +228,6 @@ def make_mantis():
         gutter="md",
         align="stretch",
     )
-
-command_select = dmc.Paper(
-    withBorder=True,
-    radius="md",
-    p="md",
-    w="100%",
-    children=dmc.Stack(
-        [
-            dmc.Title("Command", order=4),
-            dmc.Select(
-                label="Select command",
-                placeholder="Select one",
-                id="mantis-command-select",
-                value="mantis",
-                data=[
-                    {"value": command.key, "label": command.name}
-                    for command in tool.commands.values()
-                ],
-                allowDeselect=False,
-            ),
-        ],
-        gap="xs",
-    ),
-)
 
 layout = dmc.Container(
     dmc.Stack(

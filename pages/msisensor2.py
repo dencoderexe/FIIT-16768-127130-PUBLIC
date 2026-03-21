@@ -149,30 +149,6 @@ def make_msi():
         align="stretch",
     )
 
-command_select = dmc.Paper(
-    withBorder=True,
-    radius="md",
-    p="md",
-    w="100%",
-    children=dmc.Stack(
-        [
-            dmc.Title("Command", order=4),
-            dmc.Select(
-                label="Select command",
-                placeholder="Select one",
-                id="msisensor2-command-select",
-                value="msi",
-                data=[
-                    {"value": command.key, "label": command.name}
-                    for command in tool.commands.values()
-                ],
-                allowDeselect=False,
-            ),
-        ],
-        gap="xs",
-    ),
-)
-
 layout = dmc.Container(
     dmc.Stack(
         [
@@ -189,24 +165,13 @@ layout = dmc.Container(
                 ],
                 gap="xs",
             ),
-            command_select,
-            html.Div(id="msisensor2-command-container"),
+            make_msi(),
         ],
         gap="md",
     ),
     fluid=True,
     p="md",
 )
-
-@callback(
-    Output("msisensor2-command-container", "children"), 
-    Input("msisensor2-command-select", "value"),
-)
-def select_command(value):
-    if value == "msi":
-        return make_msi()
-    else:
-        return None
     
 @callback(
     Output("msisensor2-msi-start-button", "disabled"),
@@ -219,7 +184,6 @@ def msisensor2_msi_start_button(model, tumor_bam):
 @callback(
     Output("notification-container", "sendNotifications", allow_duplicate=True),
     Input("msisensor2-msi-start-button", "n_clicks"),
-    State("msisensor2-command-select", "value"),
     State("msisensor2-model-select", "value"),
     State("msisensor2-bam-file-select", "value"),
     State("msisensor2-coverage-select", "value"),
@@ -230,7 +194,6 @@ def msisensor2_msi_start_button(model, tumor_bam):
 )
 def msisensor2_msi_start_job(
     n_clicks,
-    command_key,
     model,
     tumor_bam,
     coverage,
@@ -244,7 +207,7 @@ def msisensor2_msi_start_job(
     try:
         create_job(
             tool=tool,
-            command=tool.commands.get(command_key),
+            command=tool.commands.get("msi"),
             model=model,
             tumor_bam=tumor_bam,
             output=os.path.splitext(os.path.basename(tumor_bam))[0],

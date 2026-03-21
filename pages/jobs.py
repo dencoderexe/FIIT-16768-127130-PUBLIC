@@ -180,7 +180,15 @@ def make_job_item(job: Job):
             dmc.Stack(
                 [
                     dmc.Text(job.started_at.strftime("%d.%m.%Y %H:%M:%S"), size="xs", c="dimmed"),
-                    dmc.Text(f"{job.tool.name} ({job.command.name})", size="sm", fw=600),
+                    *(
+                        [
+                            dmc.Text(f"{job.tool.name} ({job.command.name})", size="sm", fw=600),
+                        ]
+                        if job.command.key in ("msi", "scan", "pro", "index", "merge") 
+                        else [
+                            dmc.Text(f"{job.tool.name}", size="sm", fw=600),
+                        ]
+                    )
                 ],
                 gap=2,
             ),
