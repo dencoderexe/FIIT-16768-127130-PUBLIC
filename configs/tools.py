@@ -287,13 +287,105 @@ TOOLS = {
             )
         }
     ),
-    # "samtools": Tool(
-    #     key="samtools",
-    #     name="Samtools",
-    #     description=(
-    #         "Samtools is a set of utilities that manipulate alignments in the SAM (Sequence Alignment/Map)"
-    #         ", BAM, and CRAM formats. It converts between the formats, does sorting, merging and indexing, "
-    #         "and can retrieve reads in any regions swiftly."
-    #     )
-    # ),
+    "repeatfinder": Tool(
+        key="repeatfinder",
+        name="RepeatFinder",
+        description=(
+            "RepeatFinder is a tool included with MANTIS for detecting microsatellite "
+            "regions in a reference genome and generating a BED file for MSI analysis."
+        ),
+        dir="/home/danilovd/tools/MANTIS-1.0.5/tools/",
+        commands={
+            "repeatfinder": Command(
+                key="repeatfinder",
+                name="repeatfinder",
+                description="Detect microsatellite regions and generate a BED file",
+                template=(
+                    "./RepeatFinder "
+                    "-i {reference_genome} "
+                    "-o {output} "
+
+                    "-m {min_length} "
+                    "-M {max_length} "
+                    "-r {min_repeats} "
+                    "-l {min_kmer} "
+                    "-L {max_kmer} "
+                ),
+                steps=[
+                    "RepeatFinder",
+                ],
+                defaults={
+                    "min_length": 10,
+                    "max_length": 100,
+                    "min_repeats": 3,
+                    "min_kmer": 1,
+                    "max_kmer": 5,
+                },
+                link_output_to_input_arg="reference_genome",
+            )
+        }
+    ),
+    "samtools": Tool(
+        key="samtools",
+        name="Samtools",
+        description=(
+            "SAMtools is a set of utilities for interacting with and post-processing "
+            "short DNA sequence read alignments in the SAM, BAM and CRAM formats, written by Heng Li."
+        ),
+        dir="/home/danilovd/tools/",
+        commands={
+            "index": Command(
+                key="index",
+                name="index",
+                description="Index alignment",
+                template=(
+                    "samtools index --bai "
+                    "{bam_file} "
+                    "-o {output} "
+                ),
+                steps=[
+                    "Indexing BAM file",
+                ],
+                optionals={
+                    "threads": "--threads"
+                },
+                link_output_to_input_arg="bam_file",
+            ),
+            "sort": Command(
+                key="sort",
+                name="sort",
+                description="Sort alignment file",
+                template=(
+                    "samtools sort "
+                    "{bam_file} "
+                    "-o {output} "
+                ),
+                steps=[
+                    "Sorting BAM file",
+                ],
+                optionals={
+                    "threads": "--threads"
+                },
+                link_output_to_input_arg="bam_file",
+            ),
+            "merge": Command(
+                key="merge",
+                name="merge",
+                description="Merge sorted alignment files",
+                template=(
+                    "samtools merge "
+                    "-o {output} "
+                    "{bam_files} "
+                ),
+                steps=[
+                    "Merging BAM files",
+                ],
+                optionals={
+                    "threads": "--threads",
+                    "write_index": "--write-index"
+                },
+                link_output_to_input_arg="save_next_to",
+            )
+        }
+    ),
 }
