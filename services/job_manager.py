@@ -54,7 +54,8 @@ def get_saved_jobs():
         except Exception as e:
             print(f"Failed to load job from {file}: {e}")
 
-    job_ids = {job.id for job in jobs}
+    with jobs_lock:
+        job_ids = {job.id for job in jobs}
     saved_jobs = [job for job in saved_jobs if job.id not in job_ids]
 
     saved_jobs.sort(
@@ -390,3 +391,30 @@ def create_output_link(job: Job):
         return
     except OSError as e:
         print(f"Symlink failed: {e}")
+
+def start_job_memory_monitor() -> None:
+    def job_memory_monitor() -> None:
+        while True:
+            with jobs_lock:
+                current_jobs = list(jobs)
+
+            changed = False
+
+            for job in current_jobs:
+                if job.status != Status.RUNNING:
+                    continue
+                    
+                job.get_memory_usage()
+                changed = True
+
+            if changed:
+                bump_signal()
+            time.sleep(1 if current_jobs else 2)
+    
+    thread = threading.Thread(
+        target=job_memory_monitor,
+        daemon=True,
+        name="job-memory-monitor"
+    )
+
+    thread.start()

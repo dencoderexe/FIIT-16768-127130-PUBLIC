@@ -1,8 +1,8 @@
 import dash
-from dash import Dash, html, dcc, Input, Output, State, callback, no_update, clientside_callback
+from dash import Dash
 import dash_mantine_components as dmc
 from components.appshell import make_appshell, make_appshell_callbacks
-from services.job_manager import cleanup_corrupted_jobs
+from services.job_manager import cleanup_corrupted_jobs, start_job_memory_monitor
 
 app = Dash(use_pages=True, suppress_callback_exceptions=True)
 
@@ -17,6 +17,7 @@ app.layout = dmc.MantineProvider(
 
 def main():
     cleanup_corrupted_jobs()
+    start_job_memory_monitor()
     app.run(debug=True)
 
 if __name__ == "__main__":

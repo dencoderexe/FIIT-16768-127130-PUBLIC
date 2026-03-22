@@ -118,7 +118,8 @@ class Job:
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
 
-    max_memory_usage: int = 0
+    max_memory_usage: int = None
+    current_memory_usage: int = None
     # memory_usage_history: List[tuple[str, int]] = field(default_factory=list)
 
     notified: bool = False
@@ -248,24 +249,26 @@ class Job:
         except psutil.NoSuchProcess:
             return None
 
-        total = 0
+        memory = 0
 
         # main process is a shell process
         # # main process
         # try:
-        #     total += proc.memory_info().rss
+        #     memory += proc.memory_info().rss
         # except psutil.NoSuchProcess:
         #     return None
 
         # child processes
         for child in proc.children(recursive=True):
             try:
-                total += child.memory_info().rss
+                memory += child.memory_info().rss
             except psutil.NoSuchProcess:
                 pass
 
-        if total > self.max_memory_usage:
-            self.max_memory_usage = total
+        if not self.max_memory_usage or memory > self.max_memory_usage:
+            self.max_memory_usage = memory
 
-        return total
+        self.current_memory_usage = memory
+
+        return memory
     

@@ -255,7 +255,7 @@ def make_job_item(job: Job):
                     dmc.GridCol(
                         dmc.Center(
                             dmc.Text(
-                                memory_to_str(job.get_memory_usage() or job.max_memory_usage) or "—",
+                                memory_to_str(job.current_memory_usage or job.max_memory_usage) or "—",
                                 size="xs",
                                 c="dimmed",
                             )
