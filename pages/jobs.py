@@ -3,7 +3,7 @@ from dash_iconify import DashIconify
 
 from services.job_signal import get_signal
 from services.job_manager import get_jobs, get_saved_jobs, get_job_by_id, delete_job, terminate_job_process
-from models.jobs import Status, Step, Job
+from models.jobs import Status, Step, Job, memory_to_str
 
 import os
 import zipfile
@@ -22,49 +22,65 @@ def make_status_icon(status: Status):
     )
 
 def make_step_row(step: Step):
-    return dmc.Group(
-        justify="space-between",
+    return dmc.Grid(
         align="center",
-        w="100%",
         children=[
-            dmc.Group(
-                gap="sm",
-                children=[
-                    dmc.ThemeIcon(
-                        DashIconify(icon=step.status.icon, height=14),
-                        color=step.status.color,
-                        variant="light",
-                        radius="xl",
-                        size="sm",
-                    ),
-                    dmc.Text(step.name, size="sm"),
-                ],
+            dmc.GridCol(
+                dmc.Group(
+                    gap="sm",
+                    wrap="nowrap",
+                    children=[
+                        dmc.ThemeIcon(
+                            DashIconify(icon=step.status.icon, height=14),
+                            color=step.status.color,
+                            variant="light",
+                            radius="xl",
+                            size="sm",
+                        ),
+                        dmc.Text(step.name, size="sm"),
+                    ],
+                ),
+                span=6,
             ),
-            *(
-                [
-                    dmc.Text(
-                        step.finished_at.strftime("%d.%m.%Y %H:%M:%S"),
-                        size="xs",
-                        c="dimmed",
-                    )
-                ]
-                if step.finished_at
-                else []
+            dmc.GridCol(
+                dmc.Text(
+                    step.started_at.strftime("%d.%m.%Y %H:%M:%S") if step.started_at else "-",
+                    size="xs",
+                    c="dimmed",
+                ),
+                span=3,
+                style={"textAlign": "center"},
             ),
-            *(
-                [
-                    dmc.Progress(
-                        color="yellow",
-                        size="md",
-                        value=int((step.progress_current / step.progress_total) * 100) if step.progress_total else 0,
-                        w=110,
-                        animated=True
-                    )
-                ]
-                if not step.finished_at 
-                and step.progress_current is not None 
-                and step.progress_total is not None
-                else []
+            dmc.GridCol(
+                dmc.Group(
+                    gap="xs",
+                    justify="center",
+                    wrap="nowrap",
+                    children=[
+                        *(
+                            [
+                                dmc.Progress(
+                                    color="yellow",
+                                    size="md",
+                                    value=int((step.progress_current / step.progress_total) * 100) if step.progress_total else 0,
+                                    w=110,
+                                    animated=True,
+                                )
+                            ]
+                            if not step.finished_at
+                            and step.progress_current is not None
+                            and step.progress_total is not None
+                            else [
+                                dmc.Text(
+                                    step.finished_at.strftime("%d.%m.%Y %H:%M:%S") if step.finished_at else "-",
+                                    size="xs",
+                                    c="dimmed",
+                                ),
+                            ]
+                        ),
+                    ],
+                ),
+                span=3,
             ),
         ],
     )
@@ -175,28 +191,84 @@ def make_job_item(job: Job):
     """
 
     """
-    header = dmc.Group(
+    header = dmc.Stack(
+        gap=4,
         children=[
-            dmc.Stack(
-                [
-                    dmc.Text(job.started_at.strftime("%d.%m.%Y %H:%M:%S"), size="xs", c="dimmed"),
-                    *(
-                        [
-                            dmc.Text(f"{job.tool.name} ({job.command.name})", size="sm", fw=600),
-                        ]
-                        if job.command.key in ("msi", "scan", "pro", "index", "merge") 
-                        else [
-                            dmc.Text(f"{job.tool.name}", size="sm", fw=600),
-                        ]
-                    )
+            dmc.Grid(
+                children=[
+                    dmc.GridCol(
+                        dmc.Text(
+                            job.started_at.strftime("%d.%m.%Y %H:%M:%S") if job.started_at else "—",
+                            size="xs",
+                            c="dimmed",
+                        ), 
+                        span=5,
+                    ),
+                    dmc.GridCol(
+                        dmc.Center(dmc.Text("Output", size="xs", c="dimmed")), 
+                        span=2,
+                    ),
+                    dmc.GridCol(
+                        dmc.Center(dmc.Text("Duration", size="xs", c="dimmed")), 
+                        span=2,
+                    ),
+                    dmc.GridCol(
+                        dmc.Center(dmc.Text("Memory usage", size="xs", c="dimmed")), 
+                        span=2,
+                    ),
+                    dmc.GridCol(
+                        dmc.Center(dmc.Text("Status", size="xs", c="dimmed")), 
+                        span=1,
+                    ),
                 ],
-                gap=2,
             ),
-            make_status_icon(job.status),
+
+            dmc.Grid(
+                align="center",
+                children=[
+                    dmc.GridCol(
+                        dmc.Stack(
+                            [
+                                
+                                *(
+                                    [dmc.Text(f"{job.tool.name} [{job.command.name}]", size="sm", fw=600)]
+                                    if job.command.key in ("msi", "scan", "pro", "index", "merge")
+                                    else [dmc.Text(f"{job.tool.name}", size="sm", fw=600)]
+                                ),
+                            ],
+                            gap=2,
+                        ),
+                        span=5,
+                    ),
+                     dmc.GridCol(
+                        dmc.Center(
+                            dmc.Text(f"{job.args["output"]}", size="xs", c="dimmed")
+                        ),
+                        span=2,
+                    ),
+                    dmc.GridCol(
+                        dmc.Center(
+                            dmc.Text(job.get_duration() or "—", size="xs", c="dimmed")
+                        ),
+                        span=2,
+                    ),
+                    dmc.GridCol(
+                        dmc.Center(
+                            dmc.Text(
+                                memory_to_str(job.get_memory_usage() or job.max_memory_usage) or "—",
+                                size="xs",
+                                c="dimmed",
+                            )
+                        ),
+                        span=2,
+                    ),
+                    dmc.GridCol(
+                        dmc.Center(make_status_icon(job.status)),
+                        span=1,
+                    ),
+                ],
+            ),
         ],
-        justify="space-between",
-        align="center",
-        w="100%",
     )
 
     steps_and_actions = dmc.Group(
@@ -206,9 +278,31 @@ def make_job_item(job: Job):
         wrap="nowrap",
         children=[
             dmc.Stack(
-                [make_step_row(step) for step in job.steps],
-                gap="xs",
-                style={"flex": 1},
+                w="100%",
+                children=[
+                    dmc.Grid(
+                        children=[
+                            dmc.GridCol(
+                                dmc.Text("Step:", size="sm", c="dimmed"), 
+                                span=6,
+                            ),
+                            dmc.GridCol(
+                                dmc.Text("Started at:", size="sm", c="dimmed"), 
+                                span=3, 
+                                style={"textAlign": "center"},
+                            ),
+                            dmc.GridCol(
+                                dmc.Text("Finished at:", size="sm", c="dimmed"), 
+                                span=3, 
+                                style={"textAlign": "center"},
+                            ),
+                        ],
+                    ),
+                    dmc.Stack(
+                        [make_step_row(step) for step in job.steps],
+                        gap="xs",
+                    ),
+                ],
             ),
             make_job_actions(job),
         ],
