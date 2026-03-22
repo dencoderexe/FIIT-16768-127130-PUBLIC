@@ -73,7 +73,7 @@ TOOLS = {
                     "-p {homopolymer_only} "
                 ),
                 steps=[
-                    "Scanning reference genome"
+                    "Scanning reference genome for homopolymers and microsatellites"
                 ],
                 defaults={
                     "min_homo_size": 5,
@@ -163,9 +163,10 @@ TOOLS = {
                 name="scan",
                 description="scan homopolymers and miscrosatelites",
                 template=(
-                    "./msisensor.linux scan "
+                    "./msisensor-pro-v1.3.0 scan "
                     "-d {reference_genome} "
                     "-o {output} "
+
                     "-l {min_homo_size} "
                     "-m {max_homo_size} "
                     "-c {context_len} "
@@ -174,7 +175,7 @@ TOOLS = {
                     "-p {homopolymer_only} "
                 ),
                 steps=[
-                    "Scanning reference genome"
+                    "Scanning reference genome for homopolymers and microsatellites"
                 ],
                 defaults={
                     "min_homo_size": 8,
@@ -191,7 +192,7 @@ TOOLS = {
                 name="msi",
                 description="msi scoring",
                 template=(
-                    "./msisensor.linux msi "
+                    "./msisensor-pro-v1.3.0 msi "
                     "-d {microsatellite_list} "
                     "-n {normal_bam} "
                     "-t {tumor_bam} "
@@ -208,10 +209,9 @@ TOOLS = {
                     "-b {threads} "
                     "-x {homopolymer_only} "
                     "-y {microsatellite_only} "
-                    "-0 {out_site_no_read_coverage} "
+                    "-0 {include_zero_coverage_sites} "
                 ),
                 steps=[
-                    "Loading BED regions",
                     "Loading BAM files",
                     "Loading homopolymer and microsatellite sites",
                     "Preparing analysis windows",
@@ -230,12 +230,58 @@ TOOLS = {
                     "threads": 1,
                     "homopolymer_only": 0,
                     "microsatellite_only": 0,
+                    "include-zero-coverage-sites": 1,
+                },
+                # optionals={
+                #     "reference_genome": "-g"
+                # },
+            ),
+            "pro": Command(
+                key="pro",
+                name="pro",
+                description="",
+                template=(
+                    "./msisensor-pro-v1.3.0 pro "
+                    "-d {microsatellite_list} "
+                    "-t {tumor_bam} "
+                    "-o {output} "
+
+                    "-i {instable_sites_threshold} "
+                    "-c {coverage} "
+                    "-p {min_homo_size_dist} "
+                    "-m {max_homo_size_dist} "
+                    "-s {min_microsat_size_dist} "
+                    "-w {max_microsat_size_dist} "
+                    "-u {span_size_window} "
+                    "-b {threads} "
+                    "-x {homopolymer_only} "
+                    "-y {microsatellite_only} "
+                    "-0 {out_site_no_read_coverage} "
+                ),
+                steps=[
+                    "Loading BAM file",
+                    "Loading homopolymer and microsatellite sites",
+                    "Preparing analysis windows",
+                    "Computing homopolymer and microsatellite distributions",
+                ],
+                defaults={
+                    "reference_genome": None,
+                    "instable_sites_threshold": 0.1,
+                    "coverage": 15,
+                    "min_homo_size_dist": 8,
+                    "max_homo_size_dist": 50,
+                    "min_microsat_size_dist": 5,
+                    "max_microsat_size_dist": 40,
+                    "span_size_window": 500,
+                    "threads": 1,
+                    "homopolymer_only": 0,
+                    "microsatellite_only": 0,
                     "out_site_no_read_coverage": 1,
                 },
-                optionals={
-                    "reference_genome": "-g"
-                },
-            ),
+                # optionals={
+                #     "reference_genome": "-g"
+                # },
+            )
         }
     ),
     "mantis": Tool(
@@ -312,7 +358,7 @@ TOOLS = {
                     "-L {max_kmer} "
                 ),
                 steps=[
-                    "RepeatFinder",
+                    "Scanning reference genome for microsatellite regions",
                 ],
                 defaults={
                     "min_length": 10,
