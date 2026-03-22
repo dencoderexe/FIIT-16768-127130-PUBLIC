@@ -59,7 +59,7 @@ def make_appshell(content):
                             dmc.NavLink(label="RepeatFinder", href="/repeatfinder"),
                             dmc.NavLink(label="MSIsensor", href="/msisensor"),
                             dmc.NavLink(label="MSIsensor2", href="/msisensor2"),
-                            dmc.NavLink(label="MSIsensor-Pro", href="/msisensor-pro"),
+                            dmc.NavLink(label="MSIsensor-pro", href="/msisensor-pro"),
                             dmc.NavLink(label="MANTIS", href="/mantis"),
                         ],
                     ),
