@@ -1,4 +1,4 @@
-from dash import Input, Output, State, callback, dcc, html, no_update, ALL, ctx
+from dash import Input, Output, State, callback, html, no_update
 from dash_iconify import DashIconify
 
 from components.helper import helper
@@ -64,23 +64,6 @@ def make_scan():
         children=dmc.Stack(
             [
                 dmc.Title("Additional options", order=4),
-                dmc.Select(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Coverage", size="sm", fw=500),
-                            helper("Select the recommended coverage setting for the input data type."),
-                        ],
-                        gap=6,
-                    ),
-                    id="coverage-select",
-                    value="20",
-                    data=[
-                        {"value": "20", "label": "WXS: 20"},
-                        {"value": "15", "label": "WGS: 15"},
-                    ],
-                    allowDeselect=False,
-                    checkIconPosition="right",
-                ),
                 dmc.NumberInput(
                     label=dmc.Group(
                         [
@@ -136,7 +119,7 @@ def make_scan():
                 dmc.NumberInput(
                     label=dmc.Group(
                         [
-                            dmc.Text("Minimal microsatellite repeats", size="sm", fw=500),
+                            dmc.Text("Minimal repeat times of microsatellite", size="sm", fw=500),
                             helper("Set the minimum number of repeat units required for a microsatellite to be included."),
                         ],
                         gap=6,
