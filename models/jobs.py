@@ -12,6 +12,7 @@ from configs.tools import TOOLS
 import os
 import json
 import uuid
+import psutil
 import threading
 import subprocess
 
@@ -43,6 +44,15 @@ def datetime_to_str(dt) -> str|None:
 def datetime_from_str(dt_str) -> datetime|None:
     return datetime.fromisoformat(dt_str) if dt_str else None
 
+def memory_to_str(memory) -> str | None:
+    if not memory:
+        return None
+
+    for unit in ["B", "KiB", "MiB", "GiB"]:
+        if memory < 1024:
+            return f"{memory:.1f} {unit}"
+        memory /= 1024
+
 @dataclass
 class Step:
     name: str
@@ -58,6 +68,9 @@ class Step:
         self.status = status
         if status in (Status.SUCCESS, Status.FAILED):
             self.finished_at = datetime.now()
+        elif status == Status.RUNNING:
+            self.started_at = datetime.now()
+
         bump_signal()
     
     def set_progress(self, progress: int) -> None:
@@ -104,6 +117,9 @@ class Job:
 
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
+
+    max_memory_usage: int = 0
+    # memory_usage_history: List[tuple[str, int]] = field(default_factory=list)
 
     notified: bool = False
     terminated: bool = False
@@ -154,6 +170,8 @@ class Job:
             "started_at": datetime_to_str(self.started_at),
             "finished_at": datetime_to_str(self.finished_at),
 
+            "max_memory_usage": self.max_memory_usage,
+
             "status": self.status.name,
             "steps": [step.to_dict() for step in self.steps],
 
@@ -177,6 +195,8 @@ class Job:
             started_at=datetime_from_str(data.get("started_at")),
             finished_at=datetime_from_str(data.get("finished_at")),
 
+            max_memory_usage=data.get("max_memory_usage", 0),
+
             status=Status[data.get("status")],
         )
         job.links = data.get("links", [])
@@ -198,3 +218,54 @@ class Job:
         with open(path, "r", encoding="utf-8") as file:
             data = json.load(file)
         return cls.from_dict(data)
+    
+    def get_duration(self) -> str|None:
+        if not self.started_at:
+            return None
+        
+        end = self.finished_at or datetime.now()
+        delta_seconds = int((end - self.started_at).total_seconds())
+
+        if delta_seconds < 0:
+            return None
+        
+        hours, remainder = divmod(delta_seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+
+        if hours > 0:
+            return f"{hours}h {minutes}m {seconds}s"
+        elif minutes > 0:
+            return f"{minutes}m {seconds}s"
+        else:
+            return f"{seconds}s"
+
+    def get_memory_usage(self) -> int | None:
+        if not self.process:
+            return None
+
+        try:
+            proc = psutil.Process(self.process.pid)
+        except psutil.NoSuchProcess:
+            return None
+
+        total = 0
+
+        # main process is a shell process
+        # # main process
+        # try:
+        #     total += proc.memory_info().rss
+        # except psutil.NoSuchProcess:
+        #     return None
+
+        # child processes
+        for child in proc.children(recursive=True):
+            try:
+                total += child.memory_info().rss
+            except psutil.NoSuchProcess:
+                pass
+
+        if total > self.max_memory_usage:
+            self.max_memory_usage = total
+
+        return total
+    
