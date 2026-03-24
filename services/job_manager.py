@@ -170,7 +170,7 @@ def parse_job_output(job: Job, line: str):
     else:
         pass
 
-def terminate_job_process(job: Job, timeout: float = 3.0):
+def terminate_job_process(job: Job, timeout: float = 5.0):
     proc = job.process
     if proc is None:
         return
@@ -305,6 +305,7 @@ def create_job(tool: Tool, command: Command, **kwargs):
         target=run_job, 
         args=(job,),
         daemon=False,
+        name=f"job-{job.id}",
     )
     job.thread = thread
 

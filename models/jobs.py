@@ -13,7 +13,6 @@ import os
 import json
 import uuid
 import psutil
-import pandas as pd
 import threading
 import subprocess
 
@@ -121,9 +120,7 @@ class Job:
 
     max_memory_usage: int = None
     current_memory_usage: int = None
-    memory_usage_history: pd.DataFrame = field(
-        default_factory=lambda: pd.DataFrame(columns=["Memory", "Timestamp"])
-    )
+    memory_usage_history: List[Dict[str, Any]] = field(default_factory=list)
 
     notified: bool = False
     terminated: bool = False
@@ -141,14 +138,15 @@ class Job:
         self.log_file = os.path.join(self.job_dir, f"{self.id}.log")
 
         try:
-            df = pd.read_csv(
-                os.path.join(self.job_dir, f"{self.id}.mem.hist"), 
-                sep=",",
-                names=["Memory", "Timestamp"],
-                parse_dates=["Timestamp"],
-            )
-
-            self.memory_usage_history = df
+            path = os.path.join(self.job_dir, f"{self.id}.mem.hist")
+            if os.path.isfile(path):
+                with open(path, "r") as file:
+                    for line in file:
+                        memory, timestamp = line.strip().split(",")
+                        self.memory_usage_history.append({
+                            "Memory": int(memory),
+                            "Timestamp": datetime.fromisoformat(timestamp),
+                        })
         except Exception:
             pass
 
@@ -231,12 +229,9 @@ class Job:
 
         memory_usage_history_file = os.path.join(self.job_dir, f"{self.id}.mem.hist")
         try:
-            self.memory_usage_history.to_csv(
-                memory_usage_history_file, 
-                sep=",",
-                index=False,
-                header=False,
-            )
+            with open(memory_usage_history_file, "w") as file:
+                for entry in self.memory_usage_history:
+                    file.write(f"{entry['Memory']},{entry['Timestamp'].isoformat()}\n")
         except Exception:
             pass
 
@@ -287,34 +282,39 @@ class Job:
         if not self.max_memory_usage or memory > self.max_memory_usage:
             self.max_memory_usage = memory
 
-        if self.memory_usage_history.empty:
+        now = datetime.now()
+
+        if not self.memory_usage_history:
             last_recorded_memory = None
         else:
-            last_recorded_memory = self.memory_usage_history.iloc[-1]["Memory"]
-            
+            last_recorded_memory = self.memory_usage_history[-1]["Memory"]
+
         self.current_memory_usage = memory
 
-        if self.memory_usage_history.empty or last_recorded_memory is None:
-            self.memory_usage_history.loc[len(self.memory_usage_history)] = {
+        if not self.memory_usage_history or last_recorded_memory is None:
+            self.memory_usage_history.append({
                 "Memory": memory,
-                "Timestamp": datetime.now(),
-            }
+                "Timestamp": now,
+            })
             return memory
-        
-        abs_threshold = 10 * 1024 * 1024    # 10 MiB
+
+        abs_threshold = 10 * 1024 * 1024    # 10MiB
         rel_threshold = 0.05                # 5%
 
         abs_changed = abs(memory - last_recorded_memory) >= abs_threshold
-        rel_changed = last_recorded_memory > 0 and abs(memory - last_recorded_memory) / last_recorded_memory >= rel_threshold
+        rel_changed = (
+            last_recorded_memory > 0 and
+            abs(memory - last_recorded_memory) / last_recorded_memory >= rel_threshold
+        )
 
         if abs_changed or rel_changed:
-            self.memory_usage_history.loc[len(self.memory_usage_history)] = {
+            self.memory_usage_history.append({
                 "Memory": last_recorded_memory,
-                "Timestamp": datetime.now(),
-            }
-            self.memory_usage_history.loc[len(self.memory_usage_history)] = {
+                "Timestamp": now,
+            })
+            self.memory_usage_history.append({
                 "Memory": memory,
-                "Timestamp": datetime.now(),
-            }
+                "Timestamp": now,
+            })
 
         return memory

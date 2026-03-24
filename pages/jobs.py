@@ -310,26 +310,25 @@ def make_job_item(job: Job, dark_theme: bool):
     )
 
     def make_memory_graph(job, dark_theme: bool):
-        df = job.memory_usage_history
+        history = job.memory_usage_history
 
-        if df is None or df.empty:
+        if not history:
             return []
 
-        df = df.copy()
-        df["MemoryMiB"] = df["Memory"] / (1024 ** 2)
-        df["MemoryStr"] = df["Memory"].apply(memory_to_str)
+        x = [entry["Timestamp"] for entry in history]
+        y = [entry["Memory"] / (1024 ** 2) for entry in history]
+        memory_str = [memory_to_str(entry["Memory"]) for entry in history]
 
-        max_idx = df["Memory"].idxmax()
-        max_row = df.loc[max_idx]
+        max_row = max(history, key=lambda entry: entry["Memory"])
 
         fig = go.Figure()
 
         fig.add_scatter(
-            x=df["Timestamp"],
-            y=df["MemoryMiB"],
+            x=x,
+            y=y,
             mode="lines",
             name="Memory",
-            customdata=df["MemoryStr"],
+            customdata=memory_str,
             hovertemplate=(
                 "Time: %{x}<br>"
                 "Memory: %{customdata}<extra></extra>"
@@ -338,10 +337,10 @@ def make_job_item(job: Job, dark_theme: bool):
 
         fig.add_scatter(
             x=[max_row["Timestamp"]],
-            y=[max_row["MemoryMiB"]],
+            y=[max_row["Memory"] / (1024 ** 2)],
             mode="markers",
             name="Max",
-            customdata=[max_row["MemoryStr"]],
+            customdata=[memory_to_str(max_row["Memory"])],
             hovertemplate=(
                 "MAX<br>"
                 "Time: %{x}<br>"
@@ -364,13 +363,18 @@ def make_job_item(job: Job, dark_theme: bool):
             template="plotly_dark" if dark_theme else "plotly_white",
             paper_bgcolor="rgba(0,0,0,0)",
             plot_bgcolor="rgba(0,0,0,0)",
+            uirevision=f"memory-graph-{job.id}",
         )
 
         return [
             dmc.Divider(),
             dcc.Graph(
                 figure=fig,
-                config={"displayModeBar": "hover"},
+                config={"displayModeBar": "hover",
+                        "toImageButtonOptions": {
+                            "filename": f"memory_usage_{job.id}",
+                        },
+                },
             ),
         ]
     
