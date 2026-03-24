@@ -171,6 +171,12 @@ class Job:
                 return i, step
         return None, None
     
+    def get_step_by_name(self, step_name) -> "Step"|None:
+        for step in self.steps:
+            if step.name == step_name:
+                return step
+        return None
+    
     def to_dict(self) -> Dict[str, Any]:
         return {
             "id": self.id,
