@@ -241,6 +241,81 @@ def make_sort():
         align="stretch",
     )
 
+def make_faidx():
+    required_options = dmc.Paper(
+        withBorder=True,
+        radius="md",
+        p="md",
+        h="100%",
+        children=dmc.Stack(
+            [
+                dmc.Title("Required options", order=4),
+                dmc.Select(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Reference genome file", size="sm", fw=500),
+                            dmc.Text("*", c="red", size="sm", fw=700),
+                            helper("Select the reference genome file in FASTA format."),
+                        ],
+                        gap=6,
+                    ),
+                    id="samtools-faidx-refgenome-file-select",
+                    data=[
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
+                        for file in get_files(extensions=[".fasta", ".fas", ".fa", ".fna", ".ffn", ".faa", ".mpfa", ".frn"])
+                    ],
+                    nothingFoundMessage="Nothing found",
+                    checkIconPosition="right",
+                    placeholder="Select reference genome FASTA file",
+                    searchable=True,
+                ),
+                dmc.Space(h="xl"),
+                
+                dmc.Box(style={"flexGrow": 1}),
+
+                dmc.Button("Start", id="samtools-faidx-start-button", disabled=True),
+            ],
+            gap="md",
+            h="100%",
+        ),
+    )
+
+    # additional_options = dmc.Paper(
+    #     withBorder=True,
+    #     radius="md",
+    #     p="md",
+    #     h="100%",
+    #     children=dmc.Stack(
+    #         [
+    #             dmc.Title("Additional options", order=4),
+    #             dmc.NumberInput(
+    #                 label=dmc.Group(
+    #                     [
+    #                         dmc.Text("Threads", size="sm", fw=500),
+    #                         helper("Specify the number of threads to use for indexing."),
+    #                     ],
+    #                     gap=6,
+    #                 ),
+    #                 id="samtools-faidx-threads",
+    #                 value=1,
+    #                 min=1,
+    #                 allowDecimal=False,
+    #             ),
+    #         ],
+    #         gap="md",
+    #         h="100%",
+    #     ),
+    # )
+
+    return dmc.Grid(
+        [
+            dmc.GridCol(required_options, span=12),
+            # dmc.GridCol(additional_options, span=6),
+        ],
+        gutter="md",
+        align="stretch",
+    )
+
 command_select = dmc.Paper(
     withBorder=True,
     radius="md",
@@ -307,6 +382,8 @@ def samtools_select_command(value):
         return make_merge()
     elif value == "sort":
         return make_sort()
+    elif value == "faidx":
+        return make_faidx()
     else:
         return None
     
@@ -452,6 +529,59 @@ def samtools_merge_start_job(
             threads=(threads-1) if threads > 1 else None,
 
             save_next_to=bam_files[0],
+        )
+
+        return [dict(
+            title="Job started",
+            action="show",
+            color="yellow",
+            message=f"{tool.name} started",
+            autoClose=3000,
+            icon=DashIconify(icon="bi:arrow-repeat"),
+        )]
+
+    except Exception as e:
+        return [dict(
+            title="Failed to start job",
+            action="show",
+            color="red",
+            message=str(e),
+            autoClose=3000,
+            icon=DashIconify(icon="bi:x-circle-fill"),
+        )]
+    
+@callback(
+    Output("samtools-faidx-start-button", "disabled"),
+    Input("samtools-faidx-refgenome-file-select", "value"),
+)
+def samtools_faidx_start_button(reference_genome):
+    return not bool(reference_genome)
+
+@callback(
+    Output("notification-container", "sendNotifications", allow_duplicate=True),
+    Input("samtools-faidx-start-button", "n_clicks"),
+    State("samtools-command-select", "value"),
+    State("samtools-faidx-refgenome-file-select", "value"),
+    # State("samtools-faidx-threads", "value"),
+    prevent_initial_call=True,
+)
+def samtools_faidx_start_job(
+    n_clicks,
+    command_key,
+    reference_genome,
+    # threads,
+):
+    if not n_clicks:
+        return no_update
+
+    try:
+        create_job(
+            tool=tool,
+            command=tool.commands.get(command_key),
+            reference_genome=reference_genome,
+            output=f"{os.path.basename(reference_genome)}.fai",
+
+            # threads=(threads-1) if threads > 1 else None,
         )
 
         return [dict(

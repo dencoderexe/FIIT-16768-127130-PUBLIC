@@ -383,7 +383,7 @@ TOOLS = {
             "index": Command(
                 key="index",
                 name="index",
-                description="Index alignment",
+                description="Index BAM file",
                 template=(
                     "samtools index --bai "
                     "{bam_file} "
@@ -400,7 +400,7 @@ TOOLS = {
             "sort": Command(
                 key="sort",
                 name="sort",
-                description="Sort alignment file",
+                description="Sort BAM file",
                 template=(
                     "samtools sort "
                     "{bam_file} "
@@ -417,7 +417,7 @@ TOOLS = {
             "merge": Command(
                 key="merge",
                 name="merge",
-                description="Merge sorted alignment files",
+                description="Merge BAM files",
                 template=(
                     "samtools merge "
                     "-o {output} "
@@ -431,7 +431,24 @@ TOOLS = {
                     "write_index": "--write-index"
                 },
                 link_output_to_input_arg="save_next_to",
-            )
+            ),
+            "faidx": Command(
+                key="faidx",
+                name="faidx",
+                description="Index FASTA file",
+                template=(
+                    "samtools faidx "
+                    "{reference_genome} "
+                    "-o {output} "
+                ),
+                steps=[
+                    "Indexing FASTA file",
+                ],
+                # optionals={
+                #     "threads": "--threads"
+                # },
+                link_output_to_input_arg="reference_genome",
+            ),
         }
     ),
 }
