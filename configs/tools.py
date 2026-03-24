@@ -28,8 +28,9 @@ TOOLS = {
                     "-y {microsatellite_only} "
                 ),
                 steps=[
-                    "Load .BAM files",
-                    "Load homopolymer and microsatellite sites",
+                    "Loading .BAM files",
+                    "Checking homopolymer and microsatellite file",
+                    "Loading homopolymer and microsatellite sites",
                     "Preparing analysis windows",
                     "Computing homopolymer and microsatellite distributions",
                 ],
@@ -92,7 +93,7 @@ TOOLS = {
                 template=(
                     "./msisensor.linux msi "
                     "-d {microsatellite_list} "
-                    "-n {normal_bam} "
+                    # "-n {normal_bam} "
                     "-t {tumor_bam} "
                     "-o {output} "
 
@@ -111,8 +112,10 @@ TOOLS = {
                     "-y {microsatellite_only} "
                 ),
                 steps=[
-                    "Loading BED regions",
+                    "Processing user defined region",
+                    "Loading BED file",
                     "Loading BAM files",
+                    "Checking homopolymer and microsatellite file",
                     "Loading homopolymer and microsatellite sites",
                     "Preparing analysis windows",
                     "Computing homopolymer and microsatellite distributions",
@@ -135,6 +138,7 @@ TOOLS = {
                     "microsatellite_only": 0,
                 },
                 optionals={
+                    "normal_bam": "-n",
                     "bed_file": "-e",
                     "region": "-r",
                 },
@@ -213,6 +217,7 @@ TOOLS = {
                 ),
                 steps=[
                     "Loading BAM files",
+                    "Checking homopolymer and microsatellite file",
                     "Loading homopolymer and microsatellite sites",
                     "Preparing analysis windows",
                     "Computing homopolymer and microsatellite distributions",
@@ -319,7 +324,9 @@ TOOLS = {
                     "--standard-deviations {standard_deviations}"
                 ),
                 steps=[
-                    "Running MANTIS analysis",
+                    "Computing k-mer repeat counts",
+                    "Filtering outlier k-mer counts",
+                    "Calculating instability scores",
                 ],
                 defaults={
                     "threads": 1,
