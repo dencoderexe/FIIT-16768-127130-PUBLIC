@@ -214,7 +214,7 @@ def make_job_item(job: Job, dark_theme: bool):
                         span=2,
                     ),
                     dmc.GridCol(
-                        dmc.Center(dmc.Text("Memory usage" if job.current_memory_usage else "Max. memory usage", size="xs", c="dimmed")), 
+                        dmc.Center(dmc.Text("Memory usage" if job.status not in (Status.SUCCESS, Status.FAILED) else "Max. memory usage", size="xs", c="dimmed")), 
                         span=2,
                     ),
                     dmc.GridCol(
@@ -256,7 +256,9 @@ def make_job_item(job: Job, dark_theme: bool):
                     dmc.GridCol(
                         dmc.Center(
                             dmc.Text(
-                                memory_to_str(job.current_memory_usage or job.max_memory_usage) or "—",
+                                memory_to_str((job.current_memory_usage 
+                                               if job.status not in (Status.SUCCESS, Status.FAILED) 
+                                               else job.max_memory_usage)) or "—",
                                 size="xs",
                                 c="dimmed",
                             )
