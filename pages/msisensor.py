@@ -187,7 +187,7 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Normal BAM file", size="sm", fw=500),
-                            dmc.Text("*", c="red", size="sm", fw=700),
+                            # dmc.Text("*", c="red", size="sm", fw=700),
                             helper("Select the BAM file for the matched normal sample."),
                         ],
                         gap=6,
@@ -582,12 +582,11 @@ def msisensor_scan_start_job(
 @callback(
     Output("msisensor-msi-start-button", "disabled"),
     Input("msisensor-msi-microsat-list-file-select", "value"),
-    Input("msisensor-msi-normal-bam-file-select", "value"),
     Input("msisensor-msi-tumor-bam-file-select", "value"),
     Input("msisensor-msi-region", "value"),
 )
-def msisensor_msi_start_button(microsatellite_list, normal_bam, tumor_bam, region):
-    if not all([microsatellite_list, normal_bam, tumor_bam]):
+def msisensor_msi_start_button(microsatellite_list, tumor_bam, region):
+    if not all([microsatellite_list, tumor_bam]):
         return True
 
     if region:
@@ -650,7 +649,7 @@ def msisensor_msi_start_job(
             tool=tool,
             command=tool.commands.get(command_key),
             microsatellite_list=microsatellite_list,
-            normal_bam=normal_bam,
+            normal_bam=normal_bam or None,
             tumor_bam=tumor_bam,
             output=os.path.splitext(os.path.basename(tumor_bam))[0],
             
