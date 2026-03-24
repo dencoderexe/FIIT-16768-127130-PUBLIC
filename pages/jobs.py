@@ -9,6 +9,7 @@ import os
 import zipfile
 import dash
 import dash_mantine_components as dmc
+import plotly.graph_objects as go
 
 dash.register_page(__name__, path="/jobs")
 
@@ -187,7 +188,7 @@ def make_job_actions(job: Job):
         align="stretch",
     )
 
-def make_job_item(job: Job):
+def make_job_item(job: Job, dark_theme: bool):
     """
 
     """
@@ -213,7 +214,7 @@ def make_job_item(job: Job):
                         span=2,
                     ),
                     dmc.GridCol(
-                        dmc.Center(dmc.Text("Memory usage", size="xs", c="dimmed")), 
+                        dmc.Center(dmc.Text("Memory usage" if job.current_memory_usage else "Max. memory usage", size="xs", c="dimmed")), 
                         span=2,
                     ),
                     dmc.GridCol(
@@ -308,30 +309,100 @@ def make_job_item(job: Job):
         ],
     )
 
+    def make_memory_graph(job, dark_theme: bool):
+        df = job.memory_usage_history
+
+        if df is None or df.empty:
+            return []
+
+        df = df.copy()
+        df["MemoryMiB"] = df["Memory"] / (1024 ** 2)
+        df["MemoryStr"] = df["Memory"].apply(memory_to_str)
+
+        max_idx = df["Memory"].idxmax()
+        max_row = df.loc[max_idx]
+
+        fig = go.Figure()
+
+        fig.add_scatter(
+            x=df["Timestamp"],
+            y=df["MemoryMiB"],
+            mode="lines",
+            name="Memory",
+            customdata=df["MemoryStr"],
+            hovertemplate=(
+                "Time: %{x}<br>"
+                "Memory: %{customdata}<extra></extra>"
+            ),
+        )
+
+        fig.add_scatter(
+            x=[max_row["Timestamp"]],
+            y=[max_row["MemoryMiB"]],
+            mode="markers",
+            name="Max",
+            customdata=[max_row["MemoryStr"]],
+            hovertemplate=(
+                "MAX<br>"
+                "Time: %{x}<br>"
+                "Memory: %{customdata}<extra></extra>"
+            ),
+            marker=dict(
+                size=10,
+                symbol="circle",
+                line=dict(width=2),
+            ),
+        )
+
+        fig.update_layout(
+            title="Memory Usage Over Time",
+            height=260,
+            margin=dict(l=20, r=20, t=40, b=20),
+            xaxis_title="Time",
+            yaxis_title="MiB",
+            hovermode="closest",
+            template="plotly_dark" if dark_theme else "plotly_white",
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+        )
+
+        return [
+            dmc.Divider(),
+            dcc.Graph(
+                figure=fig,
+                config={"displayModeBar": "hover"},
+            ),
+        ]
+    
+    memory_graph = make_memory_graph(job, dark_theme)
+
+    error_message = (
+        [
+            dmc.Divider(),
+            dmc.Textarea(
+                value=job.error_message,
+                readOnly=True,
+                maxRows=4,
+                autosize=True,
+                styles={
+                    "input": {
+                        "borderColor": "red",
+                        "color": "#ff6b6b",
+                    }
+                }
+            ),
+        ]
+        if job.error_message != ""
+        else []
+    )
+
     body = dmc.Stack(
         children=[
-            dmc.Text(job.tool.description, size="sm", c="dimmed"),
+            # dmc.Text(job.tool.description, size="sm", c="dimmed"),
             dmc.Divider(),
             steps_and_actions,
-            *(
-                [
-                    dmc.Divider(),
-                    dmc.Textarea(
-                        value=job.error_message,
-                        readOnly=True,
-                        maxRows=4,
-                        autosize=True,
-                        styles={
-                            "input": {
-                                "borderColor": "red",
-                                "color": "#ff6b6b",
-                            }
-                        }
-                    ),
-                ]
-                if job.error_message != ""
-                else []
-            ),
+            *memory_graph,
+            *error_message,
         ],
         gap="sm",
     )
@@ -344,7 +415,7 @@ def make_job_item(job: Job):
         value=job.id,
     )
 
-def make_jobs_list(jobs: list[Job], no_jobs_text: str):
+def make_jobs_list(jobs: list[Job], no_jobs_text: str, dark_theme: bool):
     if not jobs:
         return dmc.Alert(
             no_jobs_text,
@@ -353,7 +424,7 @@ def make_jobs_list(jobs: list[Job], no_jobs_text: str):
         )
 
     return dmc.Accordion(
-        children=[make_job_item(job) for job in jobs],
+        children=[make_job_item(job, dark_theme) for job in jobs],
         multiple=True,
         variant="separated",
         radius="md",
@@ -471,8 +542,9 @@ def poll_signal(_, current):
     Output("current-jobs-list", "children"),
     Output("saved-jobs-list", "children"),
     Input("jobs-signal", "data"),
+    Input("color-scheme-toggle", "checked"),
 )
-def update_jobs(_):
+def update_jobs(_, dark_theme):
     jobs = get_jobs()
     saved_jobs = get_saved_jobs()
 
@@ -480,10 +552,12 @@ def update_jobs(_):
         make_jobs_list(
             jobs,
             "There are no running or finished jobs.",
+            dark_theme,
         ),
         make_jobs_list(
             saved_jobs,
             "There are no jobs from previous sessions.",
+            dark_theme,
         ),
     ]
 
@@ -696,4 +770,3 @@ def cancel_job(n_clicks, job_id):
             icon=DashIconify(icon="bi:x-octagon-fill"),
         )]
     )
-

@@ -409,7 +409,7 @@ def start_job_memory_monitor() -> None:
 
             if changed:
                 bump_signal()
-            time.sleep(1 if current_jobs else 2)
+            time.sleep(1 if current_jobs else 3)
     
     thread = threading.Thread(
         target=job_memory_monitor,

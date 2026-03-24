@@ -13,6 +13,7 @@ import os
 import json
 import uuid
 import psutil
+import pandas as pd
 import threading
 import subprocess
 
@@ -45,7 +46,7 @@ def datetime_from_str(dt_str) -> datetime|None:
     return datetime.fromisoformat(dt_str) if dt_str else None
 
 def memory_to_str(memory) -> str | None:
-    if not memory:
+    if memory is None:
         return None
 
     for unit in ["B", "KiB", "MiB", "GiB"]:
@@ -120,7 +121,9 @@ class Job:
 
     max_memory_usage: int = None
     current_memory_usage: int = None
-    # memory_usage_history: List[tuple[str, int]] = field(default_factory=list)
+    memory_usage_history: pd.DataFrame = field(
+        default_factory=lambda: pd.DataFrame(columns=["Memory", "Timestamp"])
+    )
 
     notified: bool = False
     terminated: bool = False
@@ -136,6 +139,18 @@ class Job:
         self.steps = [Step(step_name, Status.PENDING) for step_name in self.command.steps]
         self.job_dir = os.path.join(jobs_path, self.id)
         self.log_file = os.path.join(self.job_dir, f"{self.id}.log")
+
+        try:
+            df = pd.read_csv(
+                os.path.join(self.job_dir, f"{self.id}.mem.hist"), 
+                sep=",",
+                names=["Memory", "Timestamp"],
+                parse_dates=["Timestamp"],
+            )
+
+            self.memory_usage_history = df
+        except Exception:
+            pass
 
     def set_status(self, status: Status) -> None:
         self.status = status
@@ -210,14 +225,26 @@ class Job:
     
     def serialize(self) -> None:
         os.makedirs(self.job_dir, exist_ok=True)
-        file = os.path.join(self.job_dir, f"{self.id}.json")
-        with open(file, "w", encoding="utf-8") as f:
+        serialization_file = os.path.join(self.job_dir, f"{self.id}.json")
+        with open(serialization_file, "w", encoding="utf-8") as f:
             json.dump(self.to_dict(), f, ensure_ascii=False, indent=2)
+
+        memory_usage_history_file = os.path.join(self.job_dir, f"{self.id}.mem.hist")
+        try:
+            self.memory_usage_history.to_csv(
+                memory_usage_history_file, 
+                sep=",",
+                index=False,
+                header=False,
+            )
+        except Exception:
+            pass
 
     @classmethod
     def deserialize(cls, path: str) -> "Job":
         with open(path, "r", encoding="utf-8") as file:
             data = json.load(file)
+
         return cls.from_dict(data)
     
     def get_duration(self) -> str|None:
@@ -251,14 +278,6 @@ class Job:
 
         memory = 0
 
-        # main process is a shell process
-        # # main process
-        # try:
-        #     memory += proc.memory_info().rss
-        # except psutil.NoSuchProcess:
-        #     return None
-
-        # child processes
         for child in proc.children(recursive=True):
             try:
                 memory += child.memory_info().rss
@@ -268,7 +287,34 @@ class Job:
         if not self.max_memory_usage or memory > self.max_memory_usage:
             self.max_memory_usage = memory
 
+        if self.memory_usage_history.empty:
+            last_recorded_memory = None
+        else:
+            last_recorded_memory = self.memory_usage_history.iloc[-1]["Memory"]
+            
         self.current_memory_usage = memory
 
+        if self.memory_usage_history.empty or last_recorded_memory is None:
+            self.memory_usage_history.loc[len(self.memory_usage_history)] = {
+                "Memory": memory,
+                "Timestamp": datetime.now(),
+            }
+            return memory
+        
+        abs_threshold = 10 * 1024 * 1024    # 10 MiB
+        rel_threshold = 0.05                # 5%
+
+        abs_changed = abs(memory - last_recorded_memory) >= abs_threshold
+        rel_changed = last_recorded_memory > 0 and abs(memory - last_recorded_memory) / last_recorded_memory >= rel_threshold
+
+        if abs_changed or rel_changed:
+            self.memory_usage_history.loc[len(self.memory_usage_history)] = {
+                "Memory": last_recorded_memory,
+                "Timestamp": datetime.now(),
+            }
+            self.memory_usage_history.loc[len(self.memory_usage_history)] = {
+                "Memory": memory,
+                "Timestamp": datetime.now(),
+            }
+
         return memory
-    
