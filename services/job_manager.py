@@ -175,7 +175,9 @@ def parse_job_output(job: Job, line: str):
         elif "MANTIS complete." in line:
             job.get_step_by_name("Calculating instability scores").set_status(Status.SUCCESS)
             job.set_status(Status.SUCCESS)
-        elif "Error" in line:
+        elif "Error" in line or "Fatal error" in line:
+            if "starting point for kmer" in line:
+                return # ignore not fatal error
             job.error_message += line
             job.set_status(Status.FAILED)
         elif job.status == Status.FAILED:
@@ -219,6 +221,9 @@ def run_job(job: Job):
         os.makedirs(job.job_dir, exist_ok=True)
 
         with open(job.log_file, "w", encoding="utf-8") as log:
+            env = os.environ.copy()
+            env["PYTHONUNBUFFERED"] = "1"
+
             proc = subprocess.Popen(
                 job.cmd,
                 cwd=job.tool.dir,
@@ -228,10 +233,12 @@ def run_job(job: Job):
                 text=True,
                 bufsize=1,
                 start_new_session=True,
+                env=env,
             )
             job.process = proc
             job.set_status(Status.RUNNING)
             job.steps[0].set_status(Status.RUNNING)
+            job.get_memory_usage()
 
             try:
                 for line in proc.stdout:
@@ -265,7 +272,6 @@ def run_job(job: Job):
 
             if "Job terminated by user.\n" not in job.error_message:
                 job.error_message += "Job terminated by user.\n"
-
         elif job.status not in (Status.FAILED, Status.SUCCESS):
             if return_code == 0:
                 _, current_step = job.get_current_step()
@@ -285,6 +291,7 @@ def run_job(job: Job):
             except Exception as e:
                 job.error_message += f"Link creation failed: {e}\n"
         
+        job.get_memory_usage(append_last_recorded_memory=True)
         job.serialize()
     except Exception as e:
         job.error_message += f"{e}\n"
@@ -428,9 +435,12 @@ def start_job_memory_monitor() -> None:
             for job in current_jobs:
                 if job.status != Status.RUNNING:
                     continue
-                    
-                job.get_memory_usage()
-                changed = True
+                
+                try:
+                    job.get_memory_usage()
+                    changed = True
+                except Exception as e:
+                    print(e)
 
             if changed:
                 bump_signal()
