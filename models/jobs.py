@@ -295,7 +295,14 @@ class Job:
 
         for child in children:
             try:
-                memory += child.memory_info().rss
+                memory_info = child.memory_full_info()
+
+                if hasattr(memory_info, "pss"):
+                    memory += memory_info.pss
+                elif hasattr(memory_info, "uss"):
+                    memory += memory_info.uss
+                else:
+                    memory += memory_info.rss
             except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
                 pass
 
