@@ -268,59 +268,45 @@ class Job:
         else:
             return f"{seconds}s"
 
-    def get_memory_usage(self) -> int | None:
+    def get_memory_usage(self, append_last_recorded_memory: bool = False) -> int | None:
+        now = datetime.now()
+
+        if append_last_recorded_memory and self.memory_usage_history:
+            self.memory_usage_history.append({
+                "Memory": self.memory_usage_history[-1]["Memory"],
+                "Timestamp": now,
+            })
+            return None
+
         if not self.process:
             return None
 
         try:
             proc = psutil.Process(self.process.pid)
-        except psutil.NoSuchProcess:
+        except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
             return None
 
         memory = 0
 
-        for child in proc.children(recursive=True):
+        try:
+            children = proc.children(recursive=True)
+        except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
+            return None
+
+        for child in children:
             try:
                 memory += child.memory_info().rss
-            except psutil.NoSuchProcess:
+            except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
                 pass
-
-        if not self.max_memory_usage or memory > self.max_memory_usage:
-            self.max_memory_usage = memory
-
-        now = datetime.now()
-
-        if not self.memory_usage_history:
-            last_recorded_memory = None
-        else:
-            last_recorded_memory = self.memory_usage_history[-1]["Memory"]
 
         self.current_memory_usage = memory
 
-        if not self.memory_usage_history or last_recorded_memory is None:
-            self.memory_usage_history.append({
-                "Memory": memory,
-                "Timestamp": now,
-            })
-            return memory
+        if self.max_memory_usage is None or self.current_memory_usage > self.max_memory_usage:
+            self.max_memory_usage = memory
 
-        abs_threshold = 10 * 1024 * 1024    # 10MiB
-        rel_threshold = 0.05                # 5%
-
-        abs_changed = abs(memory - last_recorded_memory) >= abs_threshold
-        rel_changed = (
-            last_recorded_memory > 0 and
-            abs(memory - last_recorded_memory) / last_recorded_memory >= rel_threshold
-        )
-
-        if abs_changed or rel_changed:
-            self.memory_usage_history.append({
-                "Memory": last_recorded_memory,
-                "Timestamp": now,
-            })
-            self.memory_usage_history.append({
-                "Memory": memory,
-                "Timestamp": now,
-            })
+        self.memory_usage_history.append({
+            "Memory": memory,
+            "Timestamp": now,
+        })
 
         return memory
