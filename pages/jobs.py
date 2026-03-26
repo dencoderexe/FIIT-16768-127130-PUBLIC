@@ -1,13 +1,14 @@
 from dash import Input, Output, State, callback, dcc, html, no_update, ALL, ctx
 from dash_iconify import DashIconify
+from datetime import datetime
 
 from services.job_signal import get_signal
 from services.job_manager import get_jobs, get_saved_jobs, get_job_by_id, delete_job, terminate_job_process
 from models.jobs import Status, Step, Job, memory_to_str
 
 import os
-import zipfile
 import dash
+import zipfile
 import dash_mantine_components as dmc
 import plotly.graph_objects as go
 
@@ -321,10 +322,11 @@ def make_job_item(job: Job, dark_theme: bool):
         y = [entry["Memory"] / (1024 ** 2) for entry in history]
         memory_str = [memory_to_str(entry["Memory"]) for entry in history]
 
-        max_row = max(history, key=lambda entry: entry["Memory"])
+        max_entry = max(history, key=lambda entry: entry["Memory"])
 
         fig = go.Figure()
 
+        # memory usage line
         fig.add_scatter(
             x=x,
             y=y,
@@ -337,12 +339,13 @@ def make_job_item(job: Job, dark_theme: bool):
             ),
         )
 
+        # max memory usage point
         fig.add_scatter(
-            x=[max_row["Timestamp"]],
-            y=[max_row["Memory"] / (1024 ** 2)],
+            x=[max_entry["Timestamp"]],
+            y=[max_entry["Memory"] / (1024 ** 2)],
             mode="markers",
             name="Max",
-            customdata=[memory_to_str(max_row["Memory"])],
+            customdata=[memory_to_str(max_entry["Memory"])],
             hovertemplate=(
                 "MAX<br>"
                 "Time: %{x}<br>"
