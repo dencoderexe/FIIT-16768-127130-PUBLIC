@@ -32,3 +32,7 @@ def setup_logging():
         ],
         force=True,
     )
+
+    logging.getLogger("werkzeug").setLevel(logging.WARNING)
+    logging.getLogger("dash").setLevel(logging.WARNING)
+    logging.getLogger("dash.dash").setLevel(logging.WARNING)

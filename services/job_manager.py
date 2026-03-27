@@ -97,7 +97,7 @@ def parse_job_output(job: Job, line: str):
             job.get_step_by_name("Loading .BAM files").set_status(Status.RUNNING)
             job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.RUNNING)
         elif "loading homopolymer and microsatellite sites ..." in line:
-            job.get_step_by_name("Checking .BAM files").set_status(Status.SUCCESS)
+            job.get_step_by_name("Loading .BAM files").set_status(Status.SUCCESS)
             job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.SUCCESS)
 
             job.get_step_by_name("Loading homopolymer and microsatellite sites").set_status(Status.RUNNING)
