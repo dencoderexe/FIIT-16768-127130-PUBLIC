@@ -50,6 +50,7 @@ def make_appshell(content):
                 id="navbar",
                 children=[
                     "Navbar",
+                    dmc.NavLink(label="Home", href="/", leftSection=DashIconify(icon="bi:house-door-fill", height=16)),
                     dmc.NavLink(
                         label="Tools",
                         childrenOffset=12,
