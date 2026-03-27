@@ -18,7 +18,7 @@ app.layout = dmc.MantineProvider(
 def main():
     cleanup_corrupted_jobs()
     start_job_memory_monitor()
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=8050, debug=True)
 
 if __name__ == "__main__":
     main()
