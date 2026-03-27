@@ -11,8 +11,11 @@ import re
 import time
 import shutil
 import signal
+import logging
 import threading
 import subprocess
+
+logger = logging.getLogger(__name__)
 
 jobs = []
 jobs_lock = threading.Lock()
@@ -52,7 +55,7 @@ def get_saved_jobs():
             job = Job.deserialize(file)
             saved_jobs.append(job)
         except Exception as e:
-            print(f"Failed to load job from {file}: {e}")
+            logger.exception("Failed to load job from %s", file)
 
     with jobs_lock:
         job_ids = {job.id for job in jobs}
@@ -192,8 +195,6 @@ def parse_job_output(job: Job, line: str):
         elif job.status == Status.FAILED:
             job.error_message += line
         return
-    # else:
-    #     pass
 
 def terminate_job_process(job: Job, timeout: float = 5.0):
     proc = job.process
@@ -201,6 +202,7 @@ def terminate_job_process(job: Job, timeout: float = 5.0):
         return
 
     try:
+        logger.warning("[job:%s] Sending SIGTERM to process group %s", job.id, proc.pid)
         os.killpg(proc.pid, signal.SIGTERM)
     except ProcessLookupError:
         return
@@ -212,11 +214,15 @@ def terminate_job_process(job: Job, timeout: float = 5.0):
         time.sleep(0.1)
 
     try:
+        logger.warning("[job:%s] Sending SIGKILL to process group %s", job.id, proc.pid)
         os.killpg(proc.pid, signal.SIGKILL)
     except ProcessLookupError:
         pass
 
 def run_job(job: Job):
+    logger.info("[job:%s] Starting job | tool=%s | command=%s", job.id, job.tool.key, job.command.key)
+    logger.debug("[job:%s] cmd: %s", job.id, job.cmd)
+
     try:
         os.makedirs(job.job_dir, exist_ok=True)
 
@@ -236,6 +242,9 @@ def run_job(job: Job):
                 env=env,
             )
             job.process = proc
+
+            logger.info("[job:%s] Process started with pid=%s", job.id, proc.pid)
+
             job.set_status(Status.RUNNING)
             job.steps[0].set_status(Status.RUNNING)
             job.get_memory_usage()
@@ -258,6 +267,7 @@ def run_job(job: Job):
 
                 return_code = proc.wait()
 
+                logger.info("[job:%s] Process finished with return code %s", job.id, return_code)
             finally:
                 if proc.stdout is not None:
                     proc.stdout.close()
@@ -272,24 +282,29 @@ def run_job(job: Job):
 
             if "Job terminated by user.\n" not in job.error_message:
                 job.error_message += "Job terminated by user.\n"
+
+            logger.warning("[job:%s] Job terminated by user", job.id)
         elif job.status not in (Status.FAILED, Status.SUCCESS):
             if return_code == 0:
                 _, current_step = job.get_current_step()
                 if current_step is not None:
                     current_step.set_status(Status.SUCCESS)
                 job.set_status(Status.SUCCESS)
+                logger.info("[job:%s] Job finished successfully", job.id)
             else:
                 job.error_message += f"\nExit code: {return_code}\n"
                 _, current_step = job.get_current_step()
                 if current_step is not None:
                     current_step.set_status(Status.FAILED)
                 job.set_status(Status.FAILED)
+                logger.error("[job:%s] Job failed with exit code %s", job.id, return_code)
 
         if job.status == Status.SUCCESS:
             try:
                 create_output_link(job)
             except Exception as e:
-                job.error_message += f"Link creation failed: {e}\n"
+                job.error_message += f"Failed to create output link: {e}\n"
+                logger.exception("[job:%s] Failed to create output link", job.id)
         
         job.get_memory_usage(append_last_recorded_memory=True)
         job.serialize()
@@ -300,10 +315,9 @@ def run_job(job: Job):
             current_step.set_status(Status.FAILED)
         job.set_status(Status.FAILED)
 
-        try:
-            job.serialize()
-        except Exception:
-            pass
+        logger.exception("[job:%s] Unhandled exception while running job", job.id)
+
+        job.serialize()
 
     finally:
         job.process = None
@@ -344,9 +358,14 @@ def create_job(tool: Tool, command: Command, **kwargs):
         jobs.append(job)
 
     thread.start()
+
+    logger.info("[job:%s] Thread started: %s", job.id, thread.name)
+
     bump_signal()
 
 def delete_job(job: Job):
+    logger.info("[job:%s] Deleting job", job.id)
+
     with jobs_lock:
         if job in jobs:
             jobs.remove(job)
@@ -354,13 +373,14 @@ def delete_job(job: Job):
     if job.job_dir and os.path.isdir(job.job_dir):
         if os.path.abspath(job.job_dir).startswith(os.path.abspath(jobs_path)):
             shutil.rmtree(job.job_dir)
+            logger.info("[job:%s] Removed job directory: %s", job.id, job.job_dir)
 
     for link in job.links:
         try:
             if os.path.lexists(link):
                 os.remove(link)
-        except Exception as e:
-            print(f"Failed to remove link {link}: {e}")
+        except Exception:
+            logger.exception("[job:%s] Failed to remove link %s", job.id, link)
 
     bump_signal()
 
@@ -379,6 +399,7 @@ def cleanup_corrupted_jobs():
         log_path = os.path.join(job_dir_path, f"{job_dir}.log")
 
         if not os.path.isfile(json_path) or not os.path.isfile(log_path):
+            logger.warning("Removing corrupted job directory: %s", job_dir_path)
             shutil.rmtree(job_dir_path)
 
 def create_output_link(job: Job):
@@ -411,18 +432,20 @@ def create_output_link(job: Job):
     try:
         os.link(output_path, link_path)
         job.links.append(link_path)
-        print(f"[hardlink] {link_path}")
+
+        logger.info("[job:%s] Created hardlink: %s", job.id, link_path)
+
         return
-    except OSError as e:
-        print(f"Hardlink failed: {e}")
+    except OSError:
+        logger.warning("[job:%s] Failed to create hardlink %s", job.id, link_path)
 
     try:
         os.symlink(output_path, link_path)
         job.links.append(link_path)
-        print(f"[symlink] {link_path}")
+        logger.info("[job:%s] Created symlink: %s", job.id, link_path)
         return
-    except OSError as e:
-        print(f"Symlink failed: {e}")
+    except OSError:
+        logger.warning("[job:%s] Failed to create symlink %s: %s", job.id, link_path)
 
 def start_job_memory_monitor() -> None:
     def job_memory_monitor() -> None:
@@ -439,8 +462,8 @@ def start_job_memory_monitor() -> None:
                 try:
                     job.get_memory_usage()
                     changed = True
-                except Exception as e:
-                    print(e)
+                except Exception:
+                    logger.exception("[job:%s] Failed to get memory usage", job.id)
 
             if changed:
                 bump_signal()
@@ -453,3 +476,4 @@ def start_job_memory_monitor() -> None:
     )
 
     thread.start()
+    logger.info("Job memory monitor thread started")

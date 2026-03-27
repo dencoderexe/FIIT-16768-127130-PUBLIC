@@ -13,8 +13,11 @@ import os
 import json
 import uuid
 import psutil
+import logging
 import threading
 import subprocess
+
+logger = logging.getLogger(__name__)
 
 class Status(Enum):
     RUNNING = (
@@ -148,7 +151,7 @@ class Job:
                             "Timestamp": datetime.fromisoformat(timestamp),
                         })
         except Exception:
-            pass
+            logger.exception("[job:%s] Failed to load memory usage history", self.id)
 
     def set_status(self, status: Status) -> None:
         self.status = status
@@ -230,23 +233,28 @@ class Job:
     def serialize(self) -> None:
         os.makedirs(self.job_dir, exist_ok=True)
         serialization_file = os.path.join(self.job_dir, f"{self.id}.json")
-        with open(serialization_file, "w", encoding="utf-8") as f:
-            json.dump(self.to_dict(), f, ensure_ascii=False, indent=2)
+        try:
+            with open(serialization_file, "w", encoding="utf-8") as f:
+                json.dump(self.to_dict(), f, ensure_ascii=False, indent=2)
+        except Exception:
+            logger.exception("[job:%s] Failed to serialize job json", self.id)
 
         memory_usage_history_file = os.path.join(self.job_dir, f"{self.id}.mem.hist")
         try:
             with open(memory_usage_history_file, "w") as file:
                 for entry in self.memory_usage_history:
                     file.write(f"{entry['Memory']},{entry['Timestamp'].isoformat()}\n")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.exception("[job:%s] Failed to serialize memory usage history", self.id)
 
     @classmethod
     def deserialize(cls, path: str) -> "Job":
-        with open(path, "r", encoding="utf-8") as file:
-            data = json.load(file)
-
-        return cls.from_dict(data)
+        try:
+            with open(path, "r", encoding="utf-8") as file:
+                data = json.load(file)
+            return cls.from_dict(data)
+        except Exception:
+            logger.exception("Failed to deserialize job from %s", path)
     
     def get_duration(self) -> str|None:
         if not self.started_at:

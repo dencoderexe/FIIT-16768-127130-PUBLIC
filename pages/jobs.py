@@ -8,9 +8,12 @@ from models.jobs import Status, Step, Job, memory_to_str
 
 import os
 import dash
+import logging
 import zipfile
 import dash_mantine_components as dmc
 import plotly.graph_objects as go
+
+logger = logging.getLogger(__name__)
 
 dash.register_page(__name__, path="/jobs")
 
@@ -407,7 +410,6 @@ def make_job_item(job: Job, dark_theme: bool):
 
     body = dmc.Stack(
         children=[
-            # dmc.Text(job.tool.description, size="sm", c="dimmed"),
             dmc.Divider(),
             steps_and_actions,
             *memory_graph,
@@ -628,9 +630,11 @@ def download_job_file(log_clicks, output_clicks):
     job = get_job_by_id(job_id)
 
     if not job:
+        logger.warning("[job:%s] Download requested, but job was not found", job_id)
         return no_update
 
     if button_type == "job-log-button":
+        logger.info("[job:%s] Downloading job log", job.id)
         return dcc.send_file(job.log_file)
 
     if button_type == "job-output-button":
@@ -653,6 +657,7 @@ def download_job_file(log_clicks, output_clicks):
 
                     z.write(full_path, arcname=file)
 
+        logger.info("[job:%s] Downloading job output archive", job.id)
         return dcc.send_bytes(write_zip, f"{job.tool.name}_{job.command.name}_output.zip")
 
     return no_update
@@ -700,8 +705,10 @@ def delete_job_and_files(n_clicks, job_id):
     job = get_job_by_id(job_id)
 
     if not job:
+        logger.warning("[job:%s] Delete requested from UI, but job was not found", job_id)
         return False, None, no_update
 
+    logger.info("[job:%s] Delete requested from UI", job.id)
     delete_job(job)
 
     return (
@@ -761,8 +768,10 @@ def cancel_job(n_clicks, job_id):
     job = get_job_by_id(job_id)
 
     if not job:
+        logger.warning("[job:%s] Cancel requested from UI, but job was not found", job_id)
         return False, None, no_update
 
+    logger.warning("[job:%s] Cancel requested from UI", job.id)
     job.terminated = True
     terminate_job_process(job)
 
