@@ -1,6 +1,5 @@
 from dash import Input, Output, State, callback, dcc, html, no_update, ALL, ctx
 from dash_iconify import DashIconify
-from datetime import datetime
 
 from services.job_signal import get_signal
 from services.job_manager import get_jobs, get_saved_jobs, get_job_by_id, delete_job, terminate_job_process
@@ -640,7 +639,7 @@ def download_job_file(log_clicks, output_clicks):
     if button_type == "job-output-button":
         def write_zip(bytes_io):
             excluded_files = {}
-            excluded_extensions = {".log", ".json", ".mem.hist",}
+            excluded_extensions = {".log", ".json", ".hist",}
             
             with zipfile.ZipFile(bytes_io, "w", zipfile.ZIP_DEFLATED) as z:
                 for file in os.listdir(job.job_dir):

@@ -267,7 +267,7 @@ def run_job(job: Job):
 
                 return_code = proc.wait()
 
-                logger.info("[job:%s] Process finished with return code %s", job.id, return_code)
+                logger.info("[job:%s] Process %s finished with return code %s", job.id, proc.pid, return_code)
             finally:
                 if proc.stdout is not None:
                     proc.stdout.close()
