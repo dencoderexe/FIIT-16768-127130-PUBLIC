@@ -11,7 +11,7 @@ TOOLS = {
             "Paraffin-Embedded(FFPE) and other sample types. The original MSIsensor is "
             "specially designed for tumor/normal paired sequencing data."
         ),
-        dir="/home/danilovd/tools/msisensor2/", #TODO
+        dir="/home/danilovd/tools/msisensor2/",
         commands={
             "msi": Command(
                 key="msi",
@@ -52,11 +52,8 @@ TOOLS = {
             "Given paired tumor and normal sequence data, it builds a distribution "
             "for expected (normal) and observed (tumor) lengths of repeated sequence "
             "per microsatellite, and compares them using Pearson's Chi-Squared Test. "
-            "Comprehensive testing indicates MSIsensor is an efficient and effective "
-            "tool for deriving microsatellite instability (MSI) status from standard "
-            "tumor-normal paired sequence data."
         ),
-        dir="/home/danilovd/tools/msisensor/", #TODO
+        dir="/home/danilovd/tools/msisensor/",
         commands={
             "scan": Command(
                 key="scan",
@@ -93,7 +90,6 @@ TOOLS = {
                 template=(
                     "./msisensor.linux msi "
                     "-d {microsatellite_list} "
-                    # "-n {normal_bam} "
                     "-t {tumor_bam} "
                     "-o {output} "
 
@@ -237,9 +233,6 @@ TOOLS = {
                     "microsatellite_only": 0,
                     "include-zero-coverage-sites": 1,
                 },
-                # optionals={
-                #     "reference_genome": "-g"
-                # },
             ),
             "pro": Command(
                 key="pro",
@@ -283,9 +276,6 @@ TOOLS = {
                     "microsatellite_only": 0,
                     "out_site_no_read_coverage": 1,
                 },
-                # optionals={
-                #     "reference_genome": "-g"
-                # },
             )
         }
     ),
@@ -311,8 +301,6 @@ TOOLS = {
                     "/home/danilovd/.conda/envs/mantis/bin/python ./mantis.py "
                     "-n {normal_bam} "
                     "-t {tumor_bam} "
-                    "--genome {reference_genome} "
-                    "-b {bed_file} "
                     "-o {output} "
 
                     "--threads {threads} "
@@ -321,7 +309,7 @@ TOOLS = {
                     "--min-read-length {min_read_length} "
                     "--min-locus-coverage {min_locus_coverage} "
                     "--min-repeat-reads {min_repeat_reads} "
-                    "--standard-deviations {standard_deviations}"
+                    "--standard-deviations {standard_deviations} "
                 ),
                 steps=[
                     "Computing k-mer repeat counts",
@@ -336,6 +324,10 @@ TOOLS = {
                     "min_locus_coverage": 30,
                     "min_repeat_reads": 3,
                     "standard_deviations": 3.0,
+                },
+                optionals={
+                    "reference_genome": "--genome",
+                    "bed_file": "-b",
                 },
             )
         }
@@ -451,9 +443,9 @@ TOOLS = {
                 steps=[
                     "Indexing FASTA file",
                 ],
-                # optionals={
-                #     "threads": "--threads"
-                # },
+                optionals={
+                    "threads": "--threads"
+                },
                 link_output_to_input_arg="reference_genome",
             ),
         }

@@ -636,7 +636,7 @@ def download_job_file(log_clicks, output_clicks):
     if button_type == "job-output-button":
         def write_zip(bytes_io):
             excluded_files = {}
-            excluded_extensions = {".log", ".json",}
+            excluded_extensions = {".log", ".json", ".mem.hist",}
             
             with zipfile.ZipFile(bytes_io, "w", zipfile.ZIP_DEFLATED) as z:
                 for file in os.listdir(job.job_dir):
