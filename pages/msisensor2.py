@@ -149,6 +149,19 @@ def make_msi():
         align="stretch",
     )
 
+command_description = dmc.Paper(
+    withBorder=True,
+    radius="md",
+    p="md",
+    w="100%",
+    children=dmc.Stack(
+        [
+            dmc.Text(tool.commands["msi"].description),
+        ],
+        gap="xs",
+    ),
+)
+
 layout = dmc.Container(
     dmc.Stack(
         [
@@ -165,6 +178,7 @@ layout = dmc.Container(
                 ],
                 gap="xs",
             ),
+            command_description,
             make_msi(),
         ],
         gap="md",

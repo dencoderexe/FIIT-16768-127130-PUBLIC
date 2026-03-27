@@ -186,25 +186,6 @@ def make_msi():
                 dmc.Select(
                     label=dmc.Group(
                         [
-                            dmc.Text("Normal BAM file", size="sm", fw=500),
-                            # dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Select the BAM file for the matched normal sample."),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor-msi-normal-bam-file-select",
-                    data=[
-                        {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".bam"])
-                    ],
-                    nothingFoundMessage="Nothing found",
-                    checkIconPosition="right",
-                    placeholder="Select normal BAM file",
-                    searchable=True,
-                ),
-                dmc.Select(
-                    label=dmc.Group(
-                        [
                             dmc.Text("Tumor BAM file", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
                             helper("Select the BAM file for the tumor sample."),
@@ -240,6 +221,25 @@ def make_msi():
         children=dmc.Stack(
             [
                 dmc.Title("Additional options", order=4),
+                dmc.Select(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Normal BAM file", size="sm", fw=500),
+                            # dmc.Text("*", c="red", size="sm", fw=700),
+                            helper("Select the BAM file for the matched normal sample."),
+                        ],
+                        gap=6,
+                    ),
+                    id="msisensor-msi-normal-bam-file-select",
+                    data=[
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
+                        for file in get_files(extensions=[".bam"])
+                    ],
+                    nothingFoundMessage="Nothing found",
+                    checkIconPosition="right",
+                    placeholder="Select normal BAM file",
+                    searchable=True,
+                ),
                 dmc.Select(
                     label=dmc.Group(
                         [
@@ -470,6 +470,7 @@ command_select = dmc.Paper(
                 ],
                 allowDeselect=False,
             ),
+            dmc.Text(id="msisensor-command-description"),
         ],
         gap="xs",
     ),
@@ -713,3 +714,11 @@ def validate_region(region: str):
         return False, "Start must be < End"
 
     return True, None
+
+@callback(
+    Output("msisensor-command-description", "children"),
+    Input("msisensor-command-select", "value"),
+)
+def msisensor_command_description(command_key):
+    command = tool.commands.get(command_key)
+    return command.description if command else "No description available."

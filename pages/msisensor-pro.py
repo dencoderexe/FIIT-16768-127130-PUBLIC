@@ -671,6 +671,7 @@ command_select = dmc.Paper(
                 ],
                 allowDeselect=False,
             ),
+            dmc.Text(id="msisensor-pro-command-description"),
         ],
         gap="xs",
     ),
@@ -972,3 +973,11 @@ def msisensor_pro_pro_start_job(
             autoClose=3000,
             icon=DashIconify(icon="bi:x-circle-fill"),
         )]
+
+@callback(
+    Output("msisensor-pro-command-description", "children"),
+    Input("msisensor-pro-command-select", "value"),
+)
+def msisensor_command_description(command_key):
+    command = tool.commands.get(command_key)
+    return command.description if command else "No description available."

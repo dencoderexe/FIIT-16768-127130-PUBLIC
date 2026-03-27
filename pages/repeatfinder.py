@@ -143,6 +143,19 @@ def make_repeatfinder():
         align="stretch",
     )
 
+command_description = dmc.Paper(
+    withBorder=True,
+    radius="md",
+    p="md",
+    w="100%",
+    children=dmc.Stack(
+        [
+            dmc.Text(tool.commands["repeatfinder"].description),
+        ],
+        gap="xs",
+    ),
+)
+
 layout = dmc.Container(
     dmc.Stack(
         [
@@ -159,6 +172,7 @@ layout = dmc.Container(
                 ],
                 gap="xs",
             ),
+            command_description,
             make_repeatfinder(),
         ],
         gap="md",
@@ -229,3 +243,11 @@ def repeatfinder_start_job(
             autoClose=3000,
             icon=DashIconify(icon="bi:x-circle-fill"),
         )]
+    
+@callback(
+    Output("repeatfinder-command-description", "children"),
+    Input("repeatfinder-command-select", "value"),
+)
+def msisensor_command_description(command_key):
+    command = tool.commands.get(command_key)
+    return command.description if command else "No description available."

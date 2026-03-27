@@ -280,37 +280,37 @@ def make_faidx():
         ),
     )
 
-    # additional_options = dmc.Paper(
-    #     withBorder=True,
-    #     radius="md",
-    #     p="md",
-    #     h="100%",
-    #     children=dmc.Stack(
-    #         [
-    #             dmc.Title("Additional options", order=4),
-    #             dmc.NumberInput(
-    #                 label=dmc.Group(
-    #                     [
-    #                         dmc.Text("Threads", size="sm", fw=500),
-    #                         helper("Specify the number of threads to use for indexing."),
-    #                     ],
-    #                     gap=6,
-    #                 ),
-    #                 id="samtools-faidx-threads",
-    #                 value=1,
-    #                 min=1,
-    #                 allowDecimal=False,
-    #             ),
-    #         ],
-    #         gap="md",
-    #         h="100%",
-    #     ),
-    # )
+    additional_options = dmc.Paper(
+        withBorder=True,
+        radius="md",
+        p="md",
+        h="100%",
+        children=dmc.Stack(
+            [
+                dmc.Title("Additional options", order=4),
+                dmc.NumberInput(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Threads", size="sm", fw=500),
+                            helper("Specify the number of threads to use for indexing."),
+                        ],
+                        gap=6,
+                    ),
+                    id="samtools-faidx-threads",
+                    value=1,
+                    min=1,
+                    allowDecimal=False,
+                ),
+            ],
+            gap="md",
+            h="100%",
+        ),
+    )
 
     return dmc.Grid(
         [
-            dmc.GridCol(required_options, span=12),
-            # dmc.GridCol(additional_options, span=6),
+            dmc.GridCol(required_options, span=6),
+            dmc.GridCol(additional_options, span=6),
         ],
         gutter="md",
         align="stretch",
@@ -334,6 +334,7 @@ command_select = dmc.Paper(
                 ],
                 allowDeselect=False,
             ),
+            dmc.Text(id="samtools-command-description"),
         ],
         gap="xs",
     ),
@@ -562,14 +563,14 @@ def samtools_faidx_start_button(reference_genome):
     Input("samtools-faidx-start-button", "n_clicks"),
     State("samtools-command-select", "value"),
     State("samtools-faidx-refgenome-file-select", "value"),
-    # State("samtools-faidx-threads", "value"),
+    State("samtools-faidx-threads", "value"),
     prevent_initial_call=True,
 )
 def samtools_faidx_start_job(
     n_clicks,
     command_key,
     reference_genome,
-    # threads,
+    threads,
 ):
     if not n_clicks:
         return no_update
@@ -581,7 +582,7 @@ def samtools_faidx_start_job(
             reference_genome=reference_genome,
             output=f"{os.path.basename(reference_genome)}.fai",
 
-            # threads=(threads-1) if threads > 1 else None,
+            threads=(threads-1) if threads > 1 else None,
         )
 
         return [dict(
@@ -602,3 +603,11 @@ def samtools_faidx_start_job(
             autoClose=3000,
             icon=DashIconify(icon="bi:x-circle-fill"),
         )]
+    
+@callback(
+    Output("samtools-command-description", "children"),
+    Input("samtools-command-select", "value"),
+)
+def msisensor_command_description(command_key):
+    command = tool.commands.get(command_key)
+    return command.description if command else "No description available."

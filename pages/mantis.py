@@ -63,44 +63,6 @@ def make_mantis():
                     placeholder="Select tumor BAM file",
                     searchable=True,
                 ),
-                dmc.Select(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Reference genome file", size="sm", fw=500),
-                            dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Select the reference genome file in FASTA format."),
-                        ],
-                        gap=6,
-                    ),
-                    id="mantis-refgenome-file-select",
-                    data=[
-                        {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".fasta", ".fas", ".fa", ".fna", ".ffn", ".faa", ".mpfa", ".frn"])
-                    ],
-                    nothingFoundMessage="Nothing found",
-                    checkIconPosition="right",
-                    placeholder="Select reference genome FASTA file",
-                    searchable=True,
-                ),
-                dmc.Select(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("BED file", size="sm", fw=500),
-                            dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Select the BED file defining genomic regions for analysis."),
-                        ],
-                        gap=6,
-                    ),
-                    id="mantis-bed-file-select",
-                    data=[
-                        {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".bed"])
-                    ],
-                    nothingFoundMessage="Nothing found",
-                    checkIconPosition="right",
-                    placeholder="Select BED file",
-                    searchable=True,
-                ),
                 dmc.Space(h="xl"),
                 
                 dmc.Box(style={"flexGrow": 1}),
@@ -120,6 +82,44 @@ def make_mantis():
         children=dmc.Stack(
             [
                 dmc.Title("Additional options", order=4),
+                dmc.Select(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Reference genome file", size="sm", fw=500),
+                            # dmc.Text("*", c="red", size="sm", fw=700),
+                            helper("Select the reference genome file in FASTA format."),
+                        ],
+                        gap=6,
+                    ),
+                    id="mantis-refgenome-file-select",
+                    data=[
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
+                        for file in get_files(extensions=[".fasta", ".fas", ".fa", ".fna", ".ffn", ".faa", ".mpfa", ".frn"])
+                    ],
+                    nothingFoundMessage="Nothing found",
+                    checkIconPosition="right",
+                    placeholder="Select reference genome FASTA file",
+                    searchable=True,
+                ),
+                dmc.Select(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("BED file", size="sm", fw=500),
+                            # dmc.Text("*", c="red", size="sm", fw=700),
+                            helper("Select the BED file defining genomic regions for analysis."),
+                        ],
+                        gap=6,
+                    ),
+                    id="mantis-bed-file-select",
+                    data=[
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
+                        for file in get_files(extensions=[".bed"])
+                    ],
+                    nothingFoundMessage="Nothing found",
+                    checkIconPosition="right",
+                    placeholder="Select BED file",
+                    searchable=True,
+                ),
                 dmc.NumberInput(
                     label=dmc.Group(
                         [
@@ -229,6 +229,19 @@ def make_mantis():
         align="stretch",
     )
 
+command_description = dmc.Paper(
+    withBorder=True,
+    radius="md",
+    p="md",
+    w="100%",
+    children=dmc.Stack(
+        [
+            dmc.Text(tool.commands["mantis"].description),
+        ],
+        gap="xs",
+    ),
+)
+
 layout = dmc.Container(
     dmc.Stack(
         [
@@ -245,6 +258,7 @@ layout = dmc.Container(
                 ],
                 gap="xs",
             ),
+            command_description,
             make_mantis(),
         ],
         gap="md",
@@ -257,11 +271,11 @@ layout = dmc.Container(
     Output("mantis-start-button", "disabled"),
     Input("mantis-normal-bam-file-select", "value"),
     Input("mantis-tumor-bam-file-select", "value"),
-    Input("mantis-refgenome-file-select", "value"),
-    Input("mantis-bed-file-select", "value"),
+    # Input("mantis-refgenome-file-select", "value"),
+    # Input("mantis-bed-file-select", "value"),
 )
-def mantis_start_button(normal_bam, tumor_bam, refgenome, bed_file):
-    return not all([normal_bam, tumor_bam, refgenome, bed_file])
+def mantis_start_button(normal_bam, tumor_bam):
+    return not all([normal_bam, tumor_bam])
 
 @callback(
     Output("notification-container", "sendNotifications", allow_duplicate=True),
@@ -302,8 +316,8 @@ def mantis_start_job(
             command=tool.commands.get("mantis"),
             normal_bam=normal_bam,
             tumor_bam=tumor_bam,
-            reference_genome=reference_genome,
-            bed_file=bed_file,
+            reference_genome=reference_genome or None,
+            bed_file=bed_file or None,
             output=os.path.splitext(os.path.basename(tumor_bam))[0],
 
             threads=threads,
