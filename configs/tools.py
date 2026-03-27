@@ -13,6 +13,34 @@ TOOLS = {
         ),
         dir="/home/danilovd/tools/msisensor2/",
         commands={
+            "scan": Command(
+                key="scan",
+                name="scan",
+                description="scan homopolymers and miscrosatelites",
+                template=(
+                    "./msisensor2 scan "
+                    "-d {reference_genome} "
+                    "-o {output} "
+                    "-l {min_homo_size} "
+                    "-m {max_homo_size} "
+                    "-c {context_len} "
+                    "-s {max_microsat_len} "
+                    "-r {min_microsat_rep} "
+                    "-p {homopolymer_only} "
+                ),
+                steps=[
+                    "Scanning reference genome for homopolymers and microsatellites"
+                ],
+                defaults={
+                    "min_homo_size": 5,
+                    "max_homo_size": 50,
+                    "context_len": 5,
+                    "max_microsat_len": 5,
+                    "min_microsat_rep": 3,
+                    "homopolymer_only": 0,
+                },
+                link_output_to_input_arg="reference_genome",
+            ),
             "msi": Command(
                 key="msi",
                 name="msi",
@@ -22,24 +50,53 @@ TOOLS = {
                     "-M {model} "
                     "-t {tumor_bam} "
                     "-o {output} "
+                    
+                    "-f {fdr_threshold} "
                     "-c {coverage} "
+                    "-z {coverage_normalization} "
+                    "-l {min_homo_size} "
+                    "-p {min_homo_size_dist} "
+                    "-m {max_homo_size_dist} "
+                    "-q {min_microsat_size} "
+                    "-s {min_microsat_size_dist} "
+                    "-w {max_microsat_size_dist} "
+                    "-u {span_size_window} "
                     "-b {threads} "
                     "-x {homopolymer_only} "
                     "-y {microsatellite_only} "
                 ),
                 steps=[
-                    "Loading .BAM files",
+                    "Processing user defined region",
+                    "Loading BED file",
+                    "Loading BAM files",
                     "Checking homopolymer and microsatellite file",
                     "Loading homopolymer and microsatellite sites",
                     "Preparing analysis windows",
                     "Computing homopolymer and microsatellite distributions",
                 ],
                 defaults={
+                    "bed_file": None,
+                    "fdr_threshold": 0.05,
                     "coverage": 20,
+                    "coverage_normalization": 0,
+                    "region": None,
+                    "min_homo_size": 5,
+                    "min_homo_size_dist": 10,
+                    "max_homo_size_dist": 50,
+                    "min_microsat_size": 3,
+                    "min_microsat_size_dist": 5,
+                    "max_microsat_size_dist": 40,
+                    "span_size_window": 500,
                     "threads": 1,
                     "homopolymer_only": 0,
                     "microsatellite_only": 0,
-                }
+                },
+                optionals={
+                    "normal_bam": "-n",
+                    "bed_file": "-e",
+                    "region": "-r",
+                    "reference_genome": "-d",
+                },
             )
         }
     ),

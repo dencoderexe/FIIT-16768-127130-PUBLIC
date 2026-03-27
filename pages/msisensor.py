@@ -1,4 +1,4 @@
-from dash import Input, Output, State, callback, html, no_update
+from dash import Input, Output, State, callback, html, no_update, ctx
 from dash_iconify import DashIconify
 
 from components.helper import helper
@@ -225,7 +225,6 @@ def make_msi():
                     label=dmc.Group(
                         [
                             dmc.Text("Normal BAM file", size="sm", fw=500),
-                            # dmc.Text("*", c="red", size="sm", fw=700),
                             helper("Select the BAM file for the matched normal sample."),
                         ],
                         gap=6,
@@ -505,7 +504,7 @@ layout = dmc.Container(
     Output("msisensor-command-container", "children"), 
     Input("msisensor-command-select", "value"),
 )
-def samtools_select_command(value):
+def msisensor_select_command(value):
     if value == "scan":
         return make_scan()
     elif value == "msi":
@@ -591,7 +590,7 @@ def msisensor_msi_start_button(microsatellite_list, tumor_bam, region):
         return True
 
     if region:
-        valid, error = validate_region(region)
+        valid, _ = validate_region(region)
         return not valid
 
     return False
@@ -691,14 +690,32 @@ def msisensor_msi_start_job(
         )]
     
 @callback(
+    Output("msisensor-msi-homopolymer-only", "checked"),
+    Output("msisensor-msi-microsatellite-only", "checked"),
+    Input("msisensor-msi-homopolymer-only", "checked"),
+    Input("msisensor-msi-microsatellite-only", "checked"),
+    prevent_initial_call=True,
+)
+def msisensor_msi_homopolymer_microsatellite_only_switch(homopolymer_only, microsatellite_only):
+    triggered = ctx.triggered_id
+
+    if triggered == "msisensor-msi-homopolymer-only" and homopolymer_only:
+        return True, False
+
+    if triggered == "msisensor-msi-microsatellite-only" and microsatellite_only:
+        return False, True
+
+    return homopolymer_only, microsatellite_only
+    
+@callback(
     Output("msisensor-msi-region", "error"),
     Input("msisensor-msi-region", "value"),
 )
-def validate_region_input(region):
+def msisensor_validate_region_input(region):
     if not region:
         return None
 
-    valid, error = validate_region(region)
+    _, error = validate_region(region)
 
     return error
 

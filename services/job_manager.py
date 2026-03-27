@@ -92,7 +92,7 @@ def parse_job_output(job: Job, line: str):
             step.set_status(Status.RUNNING)
         return
     
-    if job.tool.key == "msisensor2" or job.tool.key == "msisensor-pro":
+    if job.tool.key == "msisensor-pro":
         if "Start at:" in line:
             job.get_step_by_name("Loading .BAM files").set_status(Status.RUNNING)
             job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.RUNNING)
@@ -125,9 +125,13 @@ def parse_job_output(job: Job, line: str):
             job.error_message += line
         return
     
-    if job.tool.key == "msisensor":
+    if job.tool.key in ("msisensor", "msisensor2"):
         if "Start at:" in line:
             job.get_step_by_name("Processing user defined region").set_status(Status.RUNNING)
+            if job.args.get("bed_file") is None:
+                job.get_step_by_name("Loading BED file").set_status(Status.RUNNING)
+                job.get_step_by_name("Loading BAM files").set_status(Status.RUNNING)
+                job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.RUNNING)
         elif "loading bed regions ..." in line:
             job.get_step_by_name("Processing user defined region").set_status(Status.SUCCESS)
 
@@ -135,6 +139,8 @@ def parse_job_output(job: Job, line: str):
             job.get_step_by_name("Loading BAM files").set_status(Status.RUNNING)
             job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.RUNNING)
         elif "loading homopolymer and microsatellite sites ..." in line:
+            if job.args.get("bed_file") is None:
+                job.get_step_by_name("Processing user defined region").set_status(Status.SUCCESS)
             job.get_step_by_name("Loading BED file").set_status(Status.SUCCESS)
             job.get_step_by_name("Loading BAM files").set_status(Status.SUCCESS)
             job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.SUCCESS)
