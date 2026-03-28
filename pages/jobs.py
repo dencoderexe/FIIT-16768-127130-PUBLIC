@@ -1,4 +1,4 @@
-from dash import Input, Output, State, callback, dcc, html, no_update, ALL, ctx
+from dash import Input, Output, State, callback, dcc, html, no_update, ALL, ctx, clientside_callback
 from dash_iconify import DashIconify
 
 from services.job_signal import get_active_jobs_signal, get_finished_jobs_signal
@@ -236,7 +236,7 @@ def make_job_item(job: Job, dark_theme: bool):
                                 
                                 *(
                                     [dmc.Text(f"{job.tool.name} [{job.command.name}]", size="sm", fw=600)]
-                                    if job.command.key in ("msi", "scan", "pro", "index", "merge")
+                                    if job.command.key in ("msi", "scan", "pro", "index", "merge", "faidx")
                                     else [dmc.Text(f"{job.tool.name}", size="sm", fw=600)]
                                 ),
                             ],
@@ -314,78 +314,78 @@ def make_job_item(job: Job, dark_theme: bool):
         ],
     )
 
-    # def make_memory_graph(job, dark_theme: bool):
-    #     history = job.memory_usage_history
+    def make_memory_graph(job, dark_theme: bool):
+        history = job.memory_usage_history
 
-    #     if not history:
-    #         return []
+        if not history:
+            return []
 
-    #     x = [entry["Timestamp"] for entry in history]
-    #     y = [entry["Memory"] / (1024 ** 2) for entry in history]
-    #     memory_str = [memory_to_str(entry["Memory"]) for entry in history]
+        x = [entry["Timestamp"] for entry in history]
+        y = [entry["Memory"] / (1024 ** 2) for entry in history]
+        memory_str = [memory_to_str(entry["Memory"]) for entry in history]
 
-    #     max_entry = max(history, key=lambda entry: entry["Memory"])
+        max_entry = max(history, key=lambda entry: entry["Memory"])
 
-    #     fig = go.Figure()
+        fig = go.Figure()
 
-    #     # memory usage line
-    #     fig.add_scatter(
-    #         x=x,
-    #         y=y,
-    #         mode="lines",
-    #         name="Memory",
-    #         customdata=memory_str,
-    #         hovertemplate=(
-    #             "Time: %{x}<br>"
-    #             "Memory: %{customdata}<extra></extra>"
-    #         ),
-    #     )
+        # memory usage line
+        fig.add_scatter(
+            x=x,
+            y=y,
+            mode="lines",
+            name="Memory",
+            customdata=memory_str,
+            hovertemplate=(
+                "Time: %{x}<br>"
+                "Memory: %{customdata}<extra></extra>"
+            ),
+        )
 
-    #     # max memory usage point
-    #     fig.add_scatter(
-    #         x=[max_entry["Timestamp"]],
-    #         y=[max_entry["Memory"] / (1024 ** 2)],
-    #         mode="markers",
-    #         name="Max",
-    #         customdata=[memory_to_str(max_entry["Memory"])],
-    #         hovertemplate=(
-    #             "MAX<br>"
-    #             "Time: %{x}<br>"
-    #             "Memory: %{customdata}<extra></extra>"
-    #         ),
-    #         marker=dict(
-    #             size=10,
-    #             symbol="circle",
-    #             line=dict(width=2),
-    #         ),
-    #     )
+        # max memory usage point
+        fig.add_scatter(
+            x=[max_entry["Timestamp"]],
+            y=[max_entry["Memory"] / (1024 ** 2)],
+            mode="markers",
+            name="Max",
+            customdata=[memory_to_str(max_entry["Memory"])],
+            hovertemplate=(
+                "MAX<br>"
+                "Time: %{x}<br>"
+                "Memory: %{customdata}<extra></extra>"
+            ),
+            marker=dict(
+                size=10,
+                symbol="circle",
+                line=dict(width=2),
+            ),
+        )
 
-    #     fig.update_layout(
-    #         title="Memory Usage Over Time",
-    #         height=260,
-    #         margin=dict(l=20, r=20, t=40, b=20),
-    #         xaxis_title="Time",
-    #         yaxis_title="MiB",
-    #         hovermode="closest",
-    #         template="plotly_dark" if dark_theme else "plotly_white",
-    #         paper_bgcolor="rgba(0,0,0,0)",
-    #         plot_bgcolor="rgba(0,0,0,0)",
-    #         uirevision=f"memory-graph-{job.id}",
-    #     )
+        fig.update_layout(
+            title="Memory Usage Over Time",
+            height=260,
+            margin=dict(l=20, r=20, t=40, b=20),
+            xaxis_title="Time",
+            yaxis_title="MiB",
+            hovermode="closest",
+            template="plotly_dark" if dark_theme else "plotly_white",
+            paper_bgcolor="rgba(0,0,0,0)",
+            plot_bgcolor="rgba(0,0,0,0)",
+            uirevision=f"memory-graph-{job.id}",
+        )
 
-    #     return [
-    #         dmc.Divider(),
-    #         dcc.Graph(
-    #             figure=fig,
-    #             config={"displayModeBar": "hover",
-    #                     "toImageButtonOptions": {
-    #                         "filename": f"memory_usage_{job.id}",
-    #                     },
-    #             },
-    #         ),
-    #     ]
+        return [
+            dmc.Divider(),
+            dcc.Graph(
+                figure=fig,
+                config={"displayModeBar": "hover",
+                        "toImageButtonOptions": {
+                            "filename": f"memory_usage_{job.id}",
+                        },
+                },
+            ),
+        ]
     
-    # memory_graph = make_memory_graph(job, dark_theme)
+    memory_graph = make_memory_graph(job, dark_theme)
 
     error_message = (
         [
@@ -411,7 +411,7 @@ def make_job_item(job: Job, dark_theme: bool):
         children=[
             dmc.Divider(),
             steps_and_actions,
-            #*memory_graph,
+            *memory_graph,
             *error_message,
         ],
         gap="sm",
@@ -442,7 +442,7 @@ def make_jobs_list(jobs: list[Job], no_jobs_text: str, dark_theme: bool):
 
 layout = dmc.Container(
     children=[
-        dcc.Interval(id="jobs-poll-interval", interval=1000, n_intervals=0, max_intervals=-1),
+        dcc.Interval(id="jobs-poll-interval", interval=2500, n_intervals=0, max_intervals=-1),
         dcc.Store(id="active-jobs-signal"),
         dcc.Store(id="finished-jobs-signal"),
 
@@ -459,6 +459,7 @@ layout = dmc.Container(
         ),
         
         dcc.Download(id="job-download"),
+
         dcc.Store(id="delete-job-id"),
         dmc.Modal(
             id="delete-job-modal",
@@ -513,31 +514,6 @@ layout = dmc.Container(
     fluid=True,
     p="md",
 )
-
-@callback(
-    Output("job-output-too-big-modal", "opened", allow_duplicate=True),
-    Output("job-output-too-big-id", "data", allow_duplicate=True),
-    Input({"type": "job-output-too-big-button", "job_id": ALL}, "n_clicks"),
-    prevent_initial_call=True,
-)
-def open_job_output_too_big_modal(n_clicks):
-    if not n_clicks or not any(n_clicks):
-        return no_update, no_update
-
-    triggered = ctx.triggered_id
-    if not triggered:
-        return no_update, no_update
-
-    return True, triggered["job_id"]
-
-@callback(
-    Output("job-output-too-big-modal", "opened", allow_duplicate=True),
-    Output("job-output-too-big-id", "data", allow_duplicate=True),
-    Input("job-output-too-big-ok", "n_clicks"),
-    prevent_initial_call=True,
-)
-def close_job_output_too_big_modal(_):
-    return False, None
 
 @callback(
     Output("active-jobs-signal", "data"),
@@ -626,6 +602,224 @@ def notify_jobs(_):
             )]
     return no_update
 
+clientside_callback(
+    """
+    function(n_clicks_list) {
+        const no_update = window.dash_clientside.no_update;
+
+        if (!n_clicks_list || !Array.isArray(n_clicks_list)) {
+            return [no_update, no_update];
+        }
+
+        const hasClick = n_clicks_list.some(v => (v || 0) > 0);
+        if (!hasClick) {
+            return [no_update, no_update];
+        }
+
+        const ctx = window.dash_clientside.callback_context;
+        const triggered = ctx.triggered_id;
+
+        if (!triggered || !triggered.job_id) {
+            return [no_update, no_update];
+        }
+
+        return [true, triggered.job_id];
+    }
+    """,
+    Output("delete-job-modal", "opened"),
+    Output("delete-job-id", "data"),
+    Input({"type": "job-delete-button", "job_id": ALL}, "n_clicks"),
+    prevent_initial_call=True,
+)
+
+clientside_callback(
+    """
+    function(n_clicks) {
+        if (!n_clicks) {
+            return [window.dash_clientside.no_update, window.dash_clientside.no_update];
+        }
+        return [false, null];
+    }
+    """,
+    Output("delete-job-modal", "opened", allow_duplicate=True),
+    Output("delete-job-id", "data", allow_duplicate=True),
+    Input("delete-job-cancel", "n_clicks"),
+    prevent_initial_call=True,
+)
+
+@callback(
+    Output("delete-job-modal", "opened", allow_duplicate=True),
+    Output("delete-job-id", "data", allow_duplicate=True),
+    Output("notification-container", "sendNotifications", allow_duplicate=True),
+    Input("delete-job-confirm", "n_clicks"),
+    State("delete-job-id", "data"),
+    prevent_initial_call=True,
+)
+def delete_job_and_files(n_clicks, job_id):
+    if not n_clicks:
+        return no_update, no_update, no_update
+
+    if not job_id:
+        return False, None, no_update
+
+    job = get_job_by_id(job_id)
+
+    if not job:
+        logger.warning("[job:%s] Delete requested from UI, but job was not found", job_id)
+        return False, None, no_update
+
+    logger.info("[job:%s] Delete requested from UI", job.id)
+    delete_job(job)
+
+    return (
+        False,
+        None,
+        [dict(
+            title="Job deleted",
+            id=f"job-{job.id}",
+            action="show",
+            color="grey",
+            message=f"{job.tool.name} deleted",
+            autoClose=3000,
+            icon=DashIconify(icon="bi:trash"),
+        )]
+    )
+
+clientside_callback(
+    """
+    function(n_clicks_list) {
+        const no_update = window.dash_clientside.no_update;
+
+        if (!n_clicks_list || !Array.isArray(n_clicks_list)) {
+            return [no_update, no_update];
+        }
+
+        const hasClick = n_clicks_list.some(v => (v || 0) > 0);
+        if (!hasClick) {
+            return [no_update, no_update];
+        }
+
+        const ctx = window.dash_clientside.callback_context;
+        const triggered = ctx.triggered_id;
+
+        if (!triggered || !triggered.job_id) {
+            return [no_update, no_update];
+        }
+
+        return [true, triggered.job_id];
+    }
+    """,
+    Output("cancel-job-modal", "opened"),
+    Output("cancel-job-id", "data"),
+    Input({"type": "job-cancel-button", "job_id": ALL}, "n_clicks"),
+    prevent_initial_call=True,
+)
+
+clientside_callback(
+    """
+    function(n_clicks) {
+        const no_update = window.dash_clientside.no_update;
+
+        if (!n_clicks) {
+            return [no_update, no_update];
+        }
+
+        return [false, null];
+    }
+    """,
+    Output("cancel-job-modal", "opened", allow_duplicate=True),
+    Output("cancel-job-id", "data", allow_duplicate=True),
+    Input("cancel-job-no", "n_clicks"),
+    prevent_initial_call=True,
+)
+
+@callback(
+    Output("cancel-job-modal", "opened", allow_duplicate=True),
+    Output("cancel-job-id", "data", allow_duplicate=True),
+    Output("notification-container", "sendNotifications", allow_duplicate=True),
+    Input("cancel-job-yes", "n_clicks"),
+    State("cancel-job-id", "data"),
+    prevent_initial_call=True,
+)
+def cancel_job(n_clicks, job_id):
+    if not n_clicks:
+        return no_update, no_update, no_update
+
+    if not job_id:
+        return False, None, no_update
+
+    job = get_job_by_id(job_id)
+
+    if not job:
+        logger.warning("[job:%s] Cancel requested from UI, but job was not found", job_id)
+        return False, None, no_update
+
+    logger.warning("[job:%s] Cancel requested from UI", job.id)
+    job.terminated = True
+    terminate_job_process(job)
+
+    return (
+        False,
+        None,
+        [dict(
+            title="Job canceled",
+            id=f"job-{job.id}",
+            action="show",
+            color="grey",
+            message=f"{job.tool.name} canceled",
+            autoClose=3000,
+            icon=DashIconify(icon="bi:x-octagon-fill"),
+        )]
+    )
+
+clientside_callback(
+    """
+    function(n_clicks_list) {
+        const no_update = window.dash_clientside.no_update;
+
+        if (!n_clicks_list || !Array.isArray(n_clicks_list)) {
+            return [no_update, no_update];
+        }
+
+        const hasClick = n_clicks_list.some(v => (v || 0) > 0);
+        if (!hasClick) {
+            return [no_update, no_update];
+        }
+
+        const ctx = window.dash_clientside.callback_context;
+        const triggered = ctx.triggered_id;
+
+        if (!triggered || !triggered.job_id) {
+            return [no_update, no_update];
+        }
+
+        return [true, triggered.job_id];
+    }
+    """,
+    Output("job-output-too-big-modal", "opened", allow_duplicate=True),
+    Output("job-output-too-big-id", "data", allow_duplicate=True),
+    Input({"type": "job-output-too-big-button", "job_id": ALL}, "n_clicks"),
+    prevent_initial_call=True,
+)
+
+clientside_callback(
+    """
+    function(n_clicks) {
+        const no_update = window.dash_clientside.no_update;
+
+        if (!n_clicks) {
+            return [no_update, no_update];
+        }
+
+        return [false, null];
+    }
+    """,
+    Output("job-output-too-big-modal", "opened", allow_duplicate=True),
+    Output("job-output-too-big-id", "data", allow_duplicate=True),
+    Input("job-output-too-big-ok", "n_clicks"),
+    prevent_initial_call=True,
+)
+
 @callback(
     Output("job-download", "data"),
     Input({"type": "job-log-button", "job_id": ALL}, "n_clicks"),
@@ -676,130 +870,3 @@ def download_job_file(log_clicks, output_clicks):
         return dcc.send_bytes(write_zip, f"{job.tool.name}_{job.command.name}_output.zip")
 
     return no_update
-
-@callback(
-    Output("delete-job-modal", "opened"),
-    Output("delete-job-id", "data"),
-    Input({"type": "job-delete-button", "job_id": ALL}, "n_clicks"),
-    prevent_initial_call=True,
-)
-def open_delete_modal(n_clicks):
-    if not n_clicks or not any(n_clicks):
-        return no_update, no_update
-
-    triggered = ctx.triggered_id
-    if not triggered:
-        return no_update, no_update
-
-    return True, triggered["job_id"]
-
-@callback(
-    Output("delete-job-modal", "opened", allow_duplicate=True),
-    Output("delete-job-id", "data", allow_duplicate=True),
-    Input("delete-job-cancel", "n_clicks"),
-    prevent_initial_call=True,
-)
-def close_delete_modal(_):
-    return False, None
-
-@callback(
-    Output("delete-job-modal", "opened", allow_duplicate=True),
-    Output("delete-job-id", "data", allow_duplicate=True),
-    Output("notification-container", "sendNotifications", allow_duplicate=True),
-    Input("delete-job-confirm", "n_clicks"),
-    State("delete-job-id", "data"),
-    prevent_initial_call=True,
-)
-def delete_job_and_files(n_clicks, job_id):
-    if not n_clicks:
-        return no_update, no_update, no_update
-
-    if not job_id:
-        return False, None, no_update
-
-    job = get_job_by_id(job_id)
-
-    if not job:
-        logger.warning("[job:%s] Delete requested from UI, but job was not found", job_id)
-        return False, None, no_update
-
-    logger.info("[job:%s] Delete requested from UI", job.id)
-    delete_job(job)
-
-    return (
-        False,
-        None,
-        [dict(
-            title="Job deleted",
-            id=f"job-{job.id}",
-            action="show",
-            color="grey",
-            message=f"{job.tool.name} deleted",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:trash"),
-        )]
-    )
-
-@callback(
-    Output("cancel-job-modal", "opened"),
-    Output("cancel-job-id", "data"),
-    Input({"type": "job-cancel-button", "job_id": ALL}, "n_clicks"),
-    prevent_initial_call=True,
-)
-def open_cancel_modal(n_clicks):
-    if not n_clicks or not any(n_clicks):
-        return no_update, no_update
-
-    triggered = ctx.triggered_id
-    if not triggered:
-        return no_update, no_update
-
-    return True, triggered["job_id"]
-
-@callback(
-    Output("cancel-job-modal", "opened", allow_duplicate=True),
-    Output("cancel-job-id", "data", allow_duplicate=True),
-    Input("cancel-job-no", "n_clicks"),
-    prevent_initial_call=True,
-)
-def close_cacncel_modal(_):
-    return False, None
-
-@callback(
-    Output("cancel-job-modal", "opened", allow_duplicate=True),
-    Output("cancel-job-id", "data", allow_duplicate=True),
-    Output("notification-container", "sendNotifications", allow_duplicate=True),
-    Input("cancel-job-yes", "n_clicks"),
-    State("cancel-job-id", "data"),
-    prevent_initial_call=True,
-)
-def cancel_job(n_clicks, job_id):
-    if not n_clicks:
-        return no_update, no_update, no_update
-
-    if not job_id:
-        return False, None, no_update
-
-    job = get_job_by_id(job_id)
-
-    if not job:
-        logger.warning("[job:%s] Cancel requested from UI, but job was not found", job_id)
-        return False, None, no_update
-
-    logger.warning("[job:%s] Cancel requested from UI", job.id)
-    job.terminated = True
-    terminate_job_process(job)
-
-    return (
-        False,
-        None,
-        [dict(
-            title="Job canceled",
-            id=f"job-{job.id}",
-            action="show",
-            color="grey",
-            message=f"{job.tool.name} canceled",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:x-octagon-fill"),
-        )]
-    )
