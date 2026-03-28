@@ -3,7 +3,7 @@ from datetime import datetime
 from dataclasses import dataclass, field
 from typing import Any, Optional, List, Dict
 
-from services.job_signal import bump_signal
+from services.job_signal import bump_active_jobs_signal
 from models.tools import Tool, Command
 
 from configs.paths import jobs_path
@@ -74,11 +74,11 @@ class Step:
         elif status == Status.RUNNING:
             self.started_at = datetime.now()
 
-        bump_signal()
+        bump_active_jobs_signal()
     
     def set_progress(self, progress: int) -> None:
         self.progress_current = progress
-        bump_signal()
+        bump_active_jobs_signal()
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -163,7 +163,7 @@ class Job:
                         step.set_status(Status.FAILED)
         elif status == Status.RUNNING:
             self.started_at = datetime.now()
-        bump_signal()
+        bump_active_jobs_signal()
 
     def get_current_step(self) -> tuple[int, "Step"]|tuple[None, None]:
         for i, step in enumerate(self.steps):
@@ -219,6 +219,8 @@ class Job:
             finished_at=datetime_from_str(data.get("finished_at")),
 
             max_memory_usage=data.get("max_memory_usage", 0),
+
+            notified=True,
 
             status=Status[data.get("status")],
         )

@@ -1,6 +1,6 @@
 from typing import List
 
-from services.job_signal import bump_signal
+from services.job_signal import bump_active_jobs_signal, bump_finished_jobs_signal
 from models.jobs import Status, Job
 from models.tools import Tool, Command
 
@@ -17,29 +17,37 @@ import subprocess
 
 logger = logging.getLogger(__name__)
 
-jobs = []
+active_jobs = []
+finished_jobs = []
 jobs_lock = threading.Lock()
 
 def get_job_by_id(job_id: str) -> Job|None:
-    for job in jobs:
-        if job.id == job_id:
-            return job
-
-    for job in get_saved_jobs():
-        if job.id == job_id:
-            return job
-
-    return None
-
-def get_jobs() -> List[Job]:
     with jobs_lock:
-        return list(jobs)[::-1]
+        for job in active_jobs:
+            if job.id == job_id:
+                return job
+
+        for job in finished_jobs:
+            if job.id == job_id:
+                return job
+
+        return None
+
+def get_active_jobs() -> List[Job]:
+    with jobs_lock:
+        return list(active_jobs)[::-1]
     
-def get_saved_jobs():    
+def get_finished_jobs():  
+    global finished_jobs
+
+    with jobs_lock:
+        if finished_jobs:
+            return list(finished_jobs)
+        
     if not os.path.isdir(jobs_path):
         return []
     
-    saved_jobs = []
+    loaded_jobs = []
 
     for item in os.listdir(jobs_path):
         job_dir = os.path.join(jobs_path, item)
@@ -53,20 +61,20 @@ def get_saved_jobs():
 
         try:
             job = Job.deserialize(file)
-            saved_jobs.append(job)
+            loaded_jobs.append(job)
         except Exception as e:
             logger.exception("Failed to load job from %s", file)
 
     with jobs_lock:
-        job_ids = {job.id for job in jobs}
-    saved_jobs = [job for job in saved_jobs if job.id not in job_ids]
+        active_job_ids = {job.id for job in active_jobs}
 
-    saved_jobs.sort(
-        key=lambda job: job.started_at,
-        reverse=True
-    )
+        finished_jobs = [job for job in loaded_jobs if job.id not in active_job_ids]
+        finished_jobs.sort(
+            key=lambda job: job.started_at,
+            reverse=True
+        )
 
-    return saved_jobs
+        return list(finished_jobs)
     
 def parse_job_output(job: Job, line: str):
     if job.command.key == "scan":
@@ -328,7 +336,13 @@ def run_job(job: Job):
     finally:
         job.process = None
         job.thread = None
-        bump_signal()
+
+        with jobs_lock:
+            active_jobs[:] = [j for j in active_jobs if j.id != job.id]
+            finished_jobs.insert(0, job)
+            
+        bump_active_jobs_signal()
+        bump_finished_jobs_signal()
 
 def create_job(tool: Tool, command: Command, **kwargs):
     args = {**command.defaults, **kwargs}
@@ -361,20 +375,20 @@ def create_job(tool: Tool, command: Command, **kwargs):
     job.thread = thread
 
     with jobs_lock:
-        jobs.append(job)
+        active_jobs.append(job)
 
     thread.start()
 
     logger.info("[job:%s] Thread started: %s", job.id, thread.name)
 
-    bump_signal()
+    bump_active_jobs_signal()
 
 def delete_job(job: Job):
     logger.info("[job:%s] Deleting job", job.id)
 
     with jobs_lock:
-        if job in jobs:
-            jobs.remove(job)
+        if job in finished_jobs:
+            finished_jobs.remove(job)
 
     if job.job_dir and os.path.isdir(job.job_dir):
         if os.path.abspath(job.job_dir).startswith(os.path.abspath(jobs_path)):
@@ -388,7 +402,7 @@ def delete_job(job: Job):
         except Exception:
             logger.exception("[job:%s] Failed to remove link %s", job.id, link)
 
-    bump_signal()
+    bump_finished_jobs_signal()
 
 def cleanup_corrupted_jobs():
     if not os.path.isdir(jobs_path):
@@ -457,7 +471,7 @@ def start_job_memory_monitor() -> None:
     def job_memory_monitor() -> None:
         while True:
             with jobs_lock:
-                current_jobs = list(jobs)
+                current_jobs = list(active_jobs)
 
             changed = False
 
@@ -472,7 +486,7 @@ def start_job_memory_monitor() -> None:
                     logger.exception("[job:%s] Failed to get memory usage", job.id)
 
             if changed:
-                bump_signal()
+                bump_active_jobs_signal()
             time.sleep(1 if current_jobs else 3)
     
     thread = threading.Thread(

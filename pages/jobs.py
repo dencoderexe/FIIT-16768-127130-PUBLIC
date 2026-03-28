@@ -1,8 +1,8 @@
 from dash import Input, Output, State, callback, dcc, html, no_update, ALL, ctx
 from dash_iconify import DashIconify
 
-from services.job_signal import get_signal
-from services.job_manager import get_jobs, get_saved_jobs, get_job_by_id, delete_job, terminate_job_process
+from services.job_signal import get_active_jobs_signal, get_finished_jobs_signal
+from services.job_manager import get_active_jobs, get_finished_jobs, get_job_by_id, delete_job, terminate_job_process
 from models.jobs import Status, Step, Job, memory_to_str
 
 import os
@@ -314,78 +314,78 @@ def make_job_item(job: Job, dark_theme: bool):
         ],
     )
 
-    def make_memory_graph(job, dark_theme: bool):
-        history = job.memory_usage_history
+    # def make_memory_graph(job, dark_theme: bool):
+    #     history = job.memory_usage_history
 
-        if not history:
-            return []
+    #     if not history:
+    #         return []
 
-        x = [entry["Timestamp"] for entry in history]
-        y = [entry["Memory"] / (1024 ** 2) for entry in history]
-        memory_str = [memory_to_str(entry["Memory"]) for entry in history]
+    #     x = [entry["Timestamp"] for entry in history]
+    #     y = [entry["Memory"] / (1024 ** 2) for entry in history]
+    #     memory_str = [memory_to_str(entry["Memory"]) for entry in history]
 
-        max_entry = max(history, key=lambda entry: entry["Memory"])
+    #     max_entry = max(history, key=lambda entry: entry["Memory"])
 
-        fig = go.Figure()
+    #     fig = go.Figure()
 
-        # memory usage line
-        fig.add_scatter(
-            x=x,
-            y=y,
-            mode="lines",
-            name="Memory",
-            customdata=memory_str,
-            hovertemplate=(
-                "Time: %{x}<br>"
-                "Memory: %{customdata}<extra></extra>"
-            ),
-        )
+    #     # memory usage line
+    #     fig.add_scatter(
+    #         x=x,
+    #         y=y,
+    #         mode="lines",
+    #         name="Memory",
+    #         customdata=memory_str,
+    #         hovertemplate=(
+    #             "Time: %{x}<br>"
+    #             "Memory: %{customdata}<extra></extra>"
+    #         ),
+    #     )
 
-        # max memory usage point
-        fig.add_scatter(
-            x=[max_entry["Timestamp"]],
-            y=[max_entry["Memory"] / (1024 ** 2)],
-            mode="markers",
-            name="Max",
-            customdata=[memory_to_str(max_entry["Memory"])],
-            hovertemplate=(
-                "MAX<br>"
-                "Time: %{x}<br>"
-                "Memory: %{customdata}<extra></extra>"
-            ),
-            marker=dict(
-                size=10,
-                symbol="circle",
-                line=dict(width=2),
-            ),
-        )
+    #     # max memory usage point
+    #     fig.add_scatter(
+    #         x=[max_entry["Timestamp"]],
+    #         y=[max_entry["Memory"] / (1024 ** 2)],
+    #         mode="markers",
+    #         name="Max",
+    #         customdata=[memory_to_str(max_entry["Memory"])],
+    #         hovertemplate=(
+    #             "MAX<br>"
+    #             "Time: %{x}<br>"
+    #             "Memory: %{customdata}<extra></extra>"
+    #         ),
+    #         marker=dict(
+    #             size=10,
+    #             symbol="circle",
+    #             line=dict(width=2),
+    #         ),
+    #     )
 
-        fig.update_layout(
-            title="Memory Usage Over Time",
-            height=260,
-            margin=dict(l=20, r=20, t=40, b=20),
-            xaxis_title="Time",
-            yaxis_title="MiB",
-            hovermode="closest",
-            template="plotly_dark" if dark_theme else "plotly_white",
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            uirevision=f"memory-graph-{job.id}",
-        )
+    #     fig.update_layout(
+    #         title="Memory Usage Over Time",
+    #         height=260,
+    #         margin=dict(l=20, r=20, t=40, b=20),
+    #         xaxis_title="Time",
+    #         yaxis_title="MiB",
+    #         hovermode="closest",
+    #         template="plotly_dark" if dark_theme else "plotly_white",
+    #         paper_bgcolor="rgba(0,0,0,0)",
+    #         plot_bgcolor="rgba(0,0,0,0)",
+    #         uirevision=f"memory-graph-{job.id}",
+    #     )
 
-        return [
-            dmc.Divider(),
-            dcc.Graph(
-                figure=fig,
-                config={"displayModeBar": "hover",
-                        "toImageButtonOptions": {
-                            "filename": f"memory_usage_{job.id}",
-                        },
-                },
-            ),
-        ]
+    #     return [
+    #         dmc.Divider(),
+    #         dcc.Graph(
+    #             figure=fig,
+    #             config={"displayModeBar": "hover",
+    #                     "toImageButtonOptions": {
+    #                         "filename": f"memory_usage_{job.id}",
+    #                     },
+    #             },
+    #         ),
+    #     ]
     
-    memory_graph = make_memory_graph(job, dark_theme)
+    # memory_graph = make_memory_graph(job, dark_theme)
 
     error_message = (
         [
@@ -411,7 +411,7 @@ def make_job_item(job: Job, dark_theme: bool):
         children=[
             dmc.Divider(),
             steps_and_actions,
-            *memory_graph,
+            #*memory_graph,
             *error_message,
         ],
         gap="sm",
@@ -443,18 +443,22 @@ def make_jobs_list(jobs: list[Job], no_jobs_text: str, dark_theme: bool):
 layout = dmc.Container(
     children=[
         dcc.Interval(id="jobs-poll-interval", interval=1000, n_intervals=0, max_intervals=-1),
-        dcc.Store(id="jobs-signal"),
-        dcc.Download(id="job-download"),
-        dmc.Title("Running jobs", order=2, mb="md"),
+        dcc.Store(id="active-jobs-signal"),
+        dcc.Store(id="finished-jobs-signal"),
+
+        dmc.Title("Jobs", order=2, mb="md"),
         dmc.ScrollArea(
             children=[
-                html.Div(id="current-jobs-list"),
-                dmc.Divider(label="Previous sessions", labelPosition="center"),
-                html.Div(id="saved-jobs-list"),
+                dmc.Divider(label="Active jobs", labelPosition="center"),
+                html.Div(id="active-jobs-list"),
+                dmc.Divider(label="Finished jobs", labelPosition="center"),
+                html.Div(id="finished-jobs-list"),
             ],
             offsetScrollbars=True,
             type="scroll",
         ),
+        
+        dcc.Download(id="job-download"),
         dcc.Store(id="delete-job-id"),
         dmc.Modal(
             id="delete-job-modal",
@@ -536,48 +540,60 @@ def close_job_output_too_big_modal(_):
     return False, None
 
 @callback(
-    Output("jobs-signal", "data"),
+    Output("active-jobs-signal", "data"),
     Input("jobs-poll-interval", "n_intervals"),
-    State("jobs-signal", "data"),
+    State("active-jobs-signal", "data"),
 )
-def poll_signal(_, current):
-    signal = get_signal()
-
+def poll_active_jobs_signal(_, current):
+    signal = get_active_jobs_signal()
     if signal == current:
         return no_update
-
     return signal
 
 @callback(
-    Output("current-jobs-list", "children"),
-    Output("saved-jobs-list", "children"),
-    Input("jobs-signal", "data"),
+    Output("finished-jobs-signal", "data"),
+    Input("jobs-poll-interval", "n_intervals"),
+    State("finished-jobs-signal", "data"),
+)
+def poll_finished_jobs_signal(_, current):
+    signal = get_finished_jobs_signal()
+    if signal == current:
+        return no_update
+    return signal
+
+@callback(
+    Output("active-jobs-list", "children"),
+    Input("active-jobs-signal", "data"),
     Input("color-scheme-toggle", "checked"),
 )
-def update_jobs(_, dark_theme):
-    jobs = get_jobs()
-    saved_jobs = get_saved_jobs()
+def render_active_jobs(_, dark_theme):
+    jobs = get_active_jobs()
+    return make_jobs_list(
+        jobs,
+        "There are no active jobs.",
+        dark_theme,
+    )
 
-    return [
-        make_jobs_list(
-            jobs,
-            "There are no running or finished jobs.",
-            dark_theme,
-        ),
-        make_jobs_list(
-            saved_jobs,
-            "There are no jobs from previous sessions.",
-            dark_theme,
-        ),
-    ]
+@callback(
+    Output("finished-jobs-list", "children"),
+    Input("finished-jobs-signal", "data"),
+    Input("color-scheme-toggle", "checked"),
+)
+def render_finished_jobs(_, dark_theme):
+    jobs = get_finished_jobs()
+    return make_jobs_list(
+        jobs,
+        "There are no finished jobs or jobs from previous sessions.",
+        dark_theme,
+    )
 
 @callback(
         Output("notification-container", "sendNotifications", allow_duplicate=True),
-        Input("jobs-signal", "data"),
+        Input("finished-jobs-signal", "data"),
         prevent_initial_call=True,
 )
 def notify_jobs(_):
-    jobs = get_jobs()
+    jobs = get_finished_jobs()
 
     if not jobs:
         return no_update
