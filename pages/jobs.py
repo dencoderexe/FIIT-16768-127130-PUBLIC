@@ -411,11 +411,29 @@ def make_job_item(job: Job):
         else []
     )
 
+    results = (
+        [
+            dmc.Divider(),
+            dcc.Link(
+                dmc.Button(
+                    "Open results",
+                    variant="light",
+                    color="green",
+                    fullWidth=True,
+                ),
+                href=f"/results/{job.id}",
+                style={"textDecoration": "none"},
+            ),
+        ]
+        if job.status == Status.SUCCESS and job.command.key in ("msi", "mantis", "pro")
+        else []
+    )
+
     body = dmc.Stack(
         children=[
             dmc.Divider(),
             steps_and_actions,
-            #*memory_graph,
+            *results,
             *error_message,
         ],
         gap="sm",
