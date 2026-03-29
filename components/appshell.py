@@ -1,6 +1,6 @@
 import dash_mantine_components as dmc
 
-from dash import Input, Output, State, callback, clientside_callback
+from dash import Input, Output, State, callback, clientside_callback, html
 from dash_iconify import DashIconify
 
 logo = "/assets/fiit/PNG/STU-FIIT-nvf.png"
@@ -23,6 +23,8 @@ def make_appshell(content):
 
     return dmc.AppShell(
         [
+            html.Div(id="theme-dummy", style={"display": "none"}),
+
             dmc.AppShellHeader(
                 dmc.Group(
                     [
@@ -92,12 +94,15 @@ def make_appshell_callbacks():
 
 
     clientside_callback(
-        """ 
-        (switchOn) => {
-        document.documentElement.setAttribute('data-mantine-color-scheme', switchOn ? 'dark' : 'light');  
-        return window.dash_clientside.no_update
+        """
+        function(switchOn) {
+            document.documentElement.setAttribute(
+                "data-mantine-color-scheme",
+                switchOn ? "dark" : "light"
+            );
+            return "";
         }
         """,
-        Output("color-scheme-toggle", "id"),
+        Output("theme-dummy", "children"),
         Input("color-scheme-toggle", "checked"),
     )

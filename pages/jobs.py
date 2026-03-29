@@ -3,14 +3,12 @@ from dash_iconify import DashIconify
 
 from services.job_signal import get_active_jobs_signal, get_finished_jobs_signal
 from services.job_manager import get_active_jobs, get_finished_jobs, get_job_by_id, delete_job, terminate_job_process
+from services.file_manager import write_zip
 from models.jobs import Status, Step, Job, memory_to_str
 
-import os
 import dash
 import logging
-import zipfile
 import dash_mantine_components as dmc
-import plotly.graph_objects as go
 
 logger = logging.getLogger(__name__)
 
@@ -95,8 +93,8 @@ def make_job_actions(job: Job):
     if job.status == Status.RUNNING or job.status == Status.PENDING:
         actions.append(
             dmc.Button(
-                "Cancel",
-                id={"type": "job-cancel-button", "job_id": job.id},
+                "Stop",
+                id={"type": "job-stop-button", "job_id": job.id},
                 variant="subtle",
                 color="red",
                 leftSection=DashIconify(icon="bi:x-octagon-fill"),
@@ -202,7 +200,9 @@ def make_job_item(job: Job):
                 children=[
                     dmc.GridCol(
                         dmc.Text(
-                            job.started_at.strftime("%d.%m.%Y %H:%M:%S") if job.started_at else "—",
+                            f"{job.started_at.strftime("%d.%m.%Y %H:%M:%S")} - {job.finished_at.strftime("%d.%m.%Y %H:%M:%S")}" 
+                            if job.finished_at 
+                            else f"{job.started_at.strftime("%d.%m.%Y %H:%M:%S")}",
                             size="xs",
                             c="dimmed",
                         ), 
@@ -318,79 +318,6 @@ def make_job_item(job: Job):
         ],
     )
 
-    # def make_memory_graph(job):
-    #     history = job.memory_usage_history
-
-    #     if not history:
-    #         return []
-
-    #     x = [entry["Timestamp"] for entry in history]
-    #     y = [entry["Memory"] / (1024 ** 2) for entry in history]
-    #     memory_str = [memory_to_str(entry["Memory"]) for entry in history]
-
-    #     max_entry = max(history, key=lambda entry: entry["Memory"])
-
-    #     fig = go.Figure()
-
-    #     # memory usage line
-    #     fig.add_scatter(
-    #         x=x,
-    #         y=y,
-    #         mode="lines",
-    #         name="Memory",
-    #         customdata=memory_str,
-    #         hovertemplate=(
-    #             "Time: %{x}<br>"
-    #             "Memory: %{customdata}<extra></extra>"
-    #         ),
-    #     )
-
-    #     # max memory usage point
-    #     fig.add_scatter(
-    #         x=[max_entry["Timestamp"]],
-    #         y=[max_entry["Memory"] / (1024 ** 2)],
-    #         mode="markers",
-    #         name="Max",
-    #         customdata=[memory_to_str(max_entry["Memory"])],
-    #         hovertemplate=(
-    #             "MAX<br>"
-    #             "Time: %{x}<br>"
-    #             "Memory: %{customdata}<extra></extra>"
-    #         ),
-    #         marker=dict(
-    #             size=10,
-    #             symbol="circle",
-    #             line=dict(width=2),
-    #         ),
-    #     )
-
-    #     fig.update_layout(
-    #         title="Memory Usage Over Time",
-    #         height=260,
-    #         margin=dict(l=20, r=20, t=40, b=20),
-    #         xaxis_title="Time",
-    #         yaxis_title="MiB",
-    #         hovermode="closest",
-    #         template="plotly_white",
-    #         paper_bgcolor="rgba(0,0,0,0)",
-    #         plot_bgcolor="rgba(0,0,0,0)",
-    #         uirevision=f"memory-graph-{job.id}",
-    #     )
-
-    #     return [
-    #         dmc.Divider(),
-    #         dcc.Graph(
-    #             figure=fig,
-    #             config={"displayModeBar": "hover",
-    #                     "toImageButtonOptions": {
-    #                         "filename": f"memory_usage_{job.id}",
-    #                     },
-    #             },
-    #         ),
-    #     ]
-    
-    # memory_graph = make_memory_graph(job)
-
     error_message = (
         [
             dmc.Divider(),
@@ -449,7 +376,7 @@ def make_job_item(job: Job):
 
 layout = dmc.Container(
     children=[
-        dcc.Interval(id="jobs-poll-interval", interval=3000, n_intervals=0, max_intervals=-1),
+        dcc.Interval(id="jobs-poll-interval", interval=2500, n_intervals=0, max_intervals=-1),
         dcc.Store(id="active-jobs-signal"),
         dcc.Store(id="finished-jobs-signal"),
         dcc.Store(id="opened-job-ids", data=[]),
@@ -483,44 +410,8 @@ layout = dmc.Container(
             type="scroll",
         ),
         
+        dcc.Store(id="download-busy", data=False),
         dcc.Download(id="job-download"),
-
-        dcc.Store(id="delete-job-id"),
-        dmc.Modal(
-            id="delete-job-modal",
-            title="Delete job",
-            centered=True,
-            children=[
-                dmc.Text("Are you sure you want to delete this job and all its files?"),
-                dmc.Space(h=15),
-                dmc.Group(
-                    [
-                        dmc.Button("Cancel", id="delete-job-cancel", variant="outline"),
-                        dmc.Button("Delete", id="delete-job-confirm", color="red"),
-                    ],
-                    justify="flex-end",
-                ),
-            ],
-        ),
-
-        dcc.Store(id="cancel-job-id"),
-        dmc.Modal(
-            id="cancel-job-modal",
-            title="Cancel job",
-            centered=True,
-            children=[
-                dmc.Text("Are you sure you want to cancel this job?"),
-                dmc.Space(h=15),
-                dmc.Group(
-                    [
-                        dmc.Button("No", id="cancel-job-no", variant="outline"),
-                        dmc.Button("Yes", id="cancel-job-yes", color="red"),
-                    ],
-                    justify="flex-end",
-                ),
-            ],
-        ),
-
         dcc.Store(id="job-output-too-big-id"),
         dmc.Modal(
             id="job-output-too-big-modal",
@@ -537,6 +428,42 @@ layout = dmc.Container(
                 ),
             ],
         ),
+
+        dcc.Store(id="delete-job-id"),
+        dmc.Modal(
+            id="delete-job-modal",
+            title="Delete job",
+            centered=True,
+            children=[
+                dmc.Text("Are you sure you want to delete this job and all its files?"),
+                dmc.Space(h=15),
+                dmc.Group(
+                    [
+                        dmc.Button("No", id="delete-job-cancel", variant="outline"),
+                        dmc.Button("Yes", id="delete-job-confirm", color="red"),
+                    ],
+                    justify="flex-end",
+                ),
+            ],
+        ),
+
+        dcc.Store(id="stop-job-id"),
+        dmc.Modal(
+            id="stop-job-modal",
+            title="Stop job",
+            centered=True,
+            children=[
+                dmc.Text("Are you sure you want to stop this job?"),
+                dmc.Space(h=15),
+                dmc.Group(
+                    [
+                        dmc.Button("No", id="stop-job-no", variant="outline"),
+                        dmc.Button("Yes", id="stop-job-yes", color="red"),
+                    ],
+                    justify="flex-end",
+                ),
+            ],
+        ),
     ],
     fluid=True,
     p="md",
@@ -544,25 +471,18 @@ layout = dmc.Container(
 
 @callback(
     Output("active-jobs-signal", "data"),
-    Input("jobs-poll-interval", "n_intervals"),
-    State("active-jobs-signal", "data"),
-)
-def poll_active_jobs_signal(_, current):
-    signal = get_active_jobs_signal()
-    if signal == current:
-        return no_update
-    return signal
-
-@callback(
     Output("finished-jobs-signal", "data"),
     Input("jobs-poll-interval", "n_intervals"),
+    State("active-jobs-signal", "data"),
     State("finished-jobs-signal", "data"),
 )
-def poll_finished_jobs_signal(_, current):
-    signal = get_finished_jobs_signal()
-    if signal == current:
-        return no_update
-    return signal
+def poll_jobs_signals(_, current_active_jobs_signal, current_finished_jobs_signal):
+    active_jobs_signal = get_active_jobs_signal()
+    finished_jobs_signal = get_finished_jobs_signal()
+    return (
+        active_jobs_signal if active_jobs_signal != current_active_jobs_signal else no_update,
+        finished_jobs_signal if finished_jobs_signal != current_finished_jobs_signal else no_update,
+    )
 
 @callback(
     Output("active-jobs-accordion", "children"),
@@ -576,17 +496,18 @@ def render_active_jobs(_, opened_job_ids):
     opened_job_ids = set(opened_job_ids or [])
 
     if not jobs:
-        return [], [], dmc.Alert(
-            "There are no active jobs.",
-            color="gray",
-            variant="light",
+        return (
+            [], 
+            [], 
+            dmc.Alert(
+                "There are no active jobs.",
+                color="gray",
+                variant="light",
+            ),
         )
 
     return (
-        [
-            make_job_item(job)
-            for job in jobs
-        ],
+        [make_job_item(job) for job in jobs],
         [job.id for job in jobs if job.id in opened_job_ids],
         None,
     )
@@ -603,10 +524,14 @@ def render_finished_jobs(_, opened_job_ids):
     opened_job_ids = set(opened_job_ids or [])
 
     if not jobs:
-        return [], [], dmc.Alert(
-            "There are no finished jobs.",
-            color="gray",
-            variant="light",
+        return (
+            [], 
+            [], 
+            dmc.Alert(
+                "There are no finished jobs.",
+                color="gray",
+                variant="light",
+            ),
         )
 
     return (
@@ -649,9 +574,9 @@ def update_opened_jobs(active_value, finished_value, stored):
     return list(result)
 
 @callback(
-        Output("notification-container", "sendNotifications", allow_duplicate=True),
-        Input("finished-jobs-signal", "data"),
-        prevent_initial_call=True,
+    Output("notification-container", "sendNotifications", allow_duplicate=True),
+    Input("finished-jobs-signal", "data"),
+    prevent_initial_call=True,
 )
 def notify_jobs(_):
     jobs = get_finished_jobs()
@@ -733,30 +658,36 @@ clientside_callback(
 )
 
 @callback(
+    Output("active-jobs-signal", "data", allow_duplicate=True),
+    Output("finished-jobs-signal", "data", allow_duplicate=True),
     Output("delete-job-modal", "opened", allow_duplicate=True),
     Output("delete-job-id", "data", allow_duplicate=True),
     Output("notification-container", "sendNotifications", allow_duplicate=True),
     Input("delete-job-confirm", "n_clicks"),
     State("delete-job-id", "data"),
+    State("active-jobs-signal", "data"),
+    State("finished-jobs-signal", "data"),
     prevent_initial_call=True,
 )
-def delete_job_and_files(n_clicks, job_id):
+def delete_job_and_files(n_clicks, job_id, active_jobs_signal, finished_jobs_signal):
     if not n_clicks:
-        return no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update, no_update
 
     if not job_id:
-        return False, None, no_update
+        return no_update, no_update, False, None, no_update
 
     job = get_job_by_id(job_id)
 
     if not job:
         logger.warning("[job:%s] Delete requested from UI, but job was not found", job_id)
-        return False, None, no_update
+        return no_update, no_update, False, None, no_update
 
     logger.info("[job:%s] Delete requested from UI", job.id)
     delete_job(job)
 
     return (
+        active_jobs_signal + 1,
+        finished_jobs_signal + 1,
         False,
         None,
         [dict(
@@ -794,9 +725,9 @@ clientside_callback(
         return [true, triggered.job_id];
     }
     """,
-    Output("cancel-job-modal", "opened"),
-    Output("cancel-job-id", "data"),
-    Input({"type": "job-cancel-button", "job_id": ALL}, "n_clicks"),
+    Output("stop-job-modal", "opened"),
+    Output("stop-job-id", "data"),
+    Input({"type": "job-stop-button", "job_id": ALL}, "n_clicks"),
     prevent_initial_call=True,
 )
 
@@ -812,46 +743,52 @@ clientside_callback(
         return [false, null];
     }
     """,
-    Output("cancel-job-modal", "opened", allow_duplicate=True),
-    Output("cancel-job-id", "data", allow_duplicate=True),
-    Input("cancel-job-no", "n_clicks"),
+    Output("stop-job-modal", "opened", allow_duplicate=True),
+    Output("stop-job-id", "data", allow_duplicate=True),
+    Input("stop-job-no", "n_clicks"),
     prevent_initial_call=True,
 )
 
 @callback(
-    Output("cancel-job-modal", "opened", allow_duplicate=True),
-    Output("cancel-job-id", "data", allow_duplicate=True),
+    Output("active-jobs-signal", "data", allow_duplicate=True),
+    Output("finished-jobs-signal", "data", allow_duplicate=True),
+    Output("stop-job-modal", "opened", allow_duplicate=True),
+    Output("stop-job-id", "data", allow_duplicate=True),
     Output("notification-container", "sendNotifications", allow_duplicate=True),
-    Input("cancel-job-yes", "n_clicks"),
-    State("cancel-job-id", "data"),
+    Input("stop-job-yes", "n_clicks"),
+    State("stop-job-id", "data"),
+    State("active-jobs-signal", "data"),
+    State("finished-jobs-signal", "data"),
     prevent_initial_call=True,
 )
-def cancel_job(n_clicks, job_id):
+def stop_job(n_clicks, job_id, active_jobs_signal, finished_jobs_signal):
     if not n_clicks:
-        return no_update, no_update, no_update
+        return no_update, no_update, no_update, no_update, no_update
 
     if not job_id:
-        return False, None, no_update
+        return no_update, no_update, False, None, no_update
 
     job = get_job_by_id(job_id)
 
     if not job:
-        logger.warning("[job:%s] Cancel requested from UI, but job was not found", job_id)
-        return False, None, no_update
+        logger.warning("[job:%s] Stop requested from UI, but job was not found", job_id)
+        return no_update, no_update, False, None, no_update
 
-    logger.warning("[job:%s] Cancel requested from UI", job.id)
+    logger.warning("[job:%s] Stop requested from UI", job.id)
     job.terminated = True
     terminate_job_process(job)
 
     return (
+        active_jobs_signal + 1,
+        finished_jobs_signal + 1,
         False,
         None,
         [dict(
-            title="Job canceled",
+            title="Job stopped",
             id=f"job-{job.id}",
             action="show",
             color="grey",
-            message=f"{job.tool.name} canceled",
+            message=f"{job.tool.name} stopped",
             autoClose=3000,
             icon=DashIconify(icon="bi:x-octagon-fill"),
         )]
@@ -910,6 +847,7 @@ clientside_callback(
     Input({"type": "job-log-button", "job_id": ALL}, "n_clicks"),
     Input({"type": "job-output-button", "job_id": ALL}, "n_clicks"),
     prevent_initial_call=True,
+    running=[(Output("download-busy", "data"), True, False)],
 )
 def download_job_file(log_clicks, output_clicks):
     if not any(log_clicks or []) and not any(output_clicks or []):
@@ -932,26 +870,31 @@ def download_job_file(log_clicks, output_clicks):
         return dcc.send_file(job.log_file)
 
     if button_type == "job-output-button":
-        def write_zip(bytes_io):
-            excluded_files = {}
-            excluded_extensions = {".log", ".json", ".hist",}
-            
-            with zipfile.ZipFile(bytes_io, "w", zipfile.ZIP_DEFLATED) as z:
-                for file in os.listdir(job.job_dir):
-                    full_path = os.path.join(job.job_dir, file)
-
-                    if not os.path.isfile(full_path):
-                        continue
-
-                    if file in excluded_files:
-                        continue
-
-                    if os.path.splitext(file)[1] in excluded_extensions:
-                        continue
-
-                    z.write(full_path, arcname=file)
-
         logger.info("[job:%s] Downloading job output archive", job.id)
-        return dcc.send_bytes(write_zip, f"{job.tool.name}_{job.command.name}_output.zip")
+        return dcc.send_bytes(lambda bytes_io: write_zip(job.job_dir, bytes_io), f"{job.tool.name}_{job.command.name}_output.zip")
 
     return no_update
+
+clientside_callback(
+    """
+    function(busy, logIds, outputIds) {
+        const isBusy = !!busy;
+        const logs = logIds || [];
+        const outputs = outputIds || [];
+
+        return [
+            Array(logs.length).fill(isBusy),     // log loading
+            Array(outputs.length).fill(isBusy),  // output loading
+            Array(logs.length).fill(isBusy),     // log disabled
+            Array(outputs.length).fill(isBusy),  // output disabled
+        ];
+    }
+    """,
+    Output({"type": "job-log-button", "job_id": ALL}, "loading"),
+    Output({"type": "job-output-button", "job_id": ALL}, "loading"),
+    Output({"type": "job-log-button", "job_id": ALL}, "disabled"),
+    Output({"type": "job-output-button", "job_id": ALL}, "disabled"),
+    Input("download-busy", "data"),
+    State({"type": "job-log-button", "job_id": ALL}, "id"),
+    State({"type": "job-output-button", "job_id": ALL}, "id"),
+)

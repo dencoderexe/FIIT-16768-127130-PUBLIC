@@ -22,6 +22,9 @@ finished_jobs = []
 jobs_lock = threading.Lock()
 
 def get_job_by_id(job_id: str) -> Job|None:
+    if job_id is None:
+        return None
+
     with jobs_lock:
         for job in active_jobs:
             if job.id == job_id:
@@ -267,8 +270,8 @@ def run_job(job: Job):
                 for line in proc.stdout:
                     if job.terminated:
                         terminate_job_process(job)
-                        if "Job terminated by user.\n" not in job.error_message:
-                            job.error_message += "Job terminated by user.\n"
+                        if "Job stopped by user.\n" not in job.error_message:
+                            job.error_message += "Job stopped by user.\n"
                         break
 
                     log.write(line)
@@ -294,10 +297,10 @@ def run_job(job: Job):
             if job.status not in (Status.FAILED, Status.SUCCESS):
                 job.set_status(Status.FAILED)
 
-            if "Job terminated by user.\n" not in job.error_message:
-                job.error_message += "Job terminated by user.\n"
+            if "Job stopped by user.\n" not in job.error_message:
+                job.error_message += "Job stopped by user.\n"
 
-            logger.warning("[job:%s] Job terminated by user", job.id)
+            logger.warning("[job:%s] Job stopped by user", job.id)
         elif job.status not in (Status.FAILED, Status.SUCCESS):
             if return_code == 0:
                 _, current_step = job.get_current_step()
@@ -317,7 +320,7 @@ def run_job(job: Job):
             try:
                 create_output_link(job)
             except Exception as e:
-                job.error_message += f"Failed to create output link: {e}\n"
+                # job.error_message += f"Failed to create output link: {e}\n"
                 logger.exception("[job:%s] Failed to create output link", job.id)
         
         job.get_memory_usage(append_last_recorded_memory=True)
