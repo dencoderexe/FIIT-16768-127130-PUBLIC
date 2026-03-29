@@ -500,3 +500,34 @@ def start_job_memory_monitor() -> None:
 
     thread.start()
     logger.info("Job memory monitor thread started")
+
+def get_brief_output(job: Job):
+    if job.status != Status.SUCCESS:
+        return ""
+
+    if job.command.key not in ("msi", "mantis", "pro"):
+        return ""
+
+    output = job.args.get("output")
+    if output is None:
+        return ""
+
+    try:
+        brief_output = ""
+        if job.command.key in ("msi", "pro"):
+            file_path = os.path.join(job.job_dir, output)
+            with open(file_path, "r", encoding="utf-8") as file:
+                brief_output = file.read()
+                brief_output = brief_output.rstrip("\n")
+                brief_output = brief_output.expandtabs(24)
+        elif job.command.key in ("mantis",):
+            file_path = os.path.join(job.job_dir, output + ".status")
+            with open(file_path, "r", encoding="utf-8") as file:
+                brief_output = file.read()
+                brief_output = brief_output[::-1].replace("\n", " ", 3)[::-1]
+
+        return brief_output
+
+    except Exception:
+        logger.exception("Failed to read job [%s] output file", job.id)
+        return ""
