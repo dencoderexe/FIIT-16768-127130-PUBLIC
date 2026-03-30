@@ -314,7 +314,8 @@ TOOLS = {
                     "-0 {out_site_no_read_coverage} "
                 ),
                 steps=[
-                    "Loading BAM file",
+                    "Loading BAM files",
+                    "Checking homopolymer and microsatellite file",
                     "Loading homopolymer and microsatellite sites",
                     "Preparing analysis windows",
                     "Computing homopolymer and microsatellite distributions",

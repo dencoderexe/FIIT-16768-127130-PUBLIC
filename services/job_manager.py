@@ -105,10 +105,10 @@ def parse_job_output(job: Job, line: str):
     
     if job.tool.key == "msisensor-pro":
         if "Start at:" in line:
-            job.get_step_by_name("Loading .BAM files").set_status(Status.RUNNING)
+            job.get_step_by_name("Loading BAM files").set_status(Status.RUNNING)
             job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.RUNNING)
         elif "loading homopolymer and microsatellite sites ..." in line:
-            job.get_step_by_name("Loading .BAM files").set_status(Status.SUCCESS)
+            job.get_step_by_name("Loading BAM files").set_status(Status.SUCCESS)
             job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.SUCCESS)
 
             job.get_step_by_name("Loading homopolymer and microsatellite sites").set_status(Status.RUNNING)
@@ -519,7 +519,7 @@ def get_brief_output(job: Job):
             with open(file_path, "r", encoding="utf-8") as file:
                 brief_output = file.read()
                 brief_output = brief_output.rstrip("\n")
-                brief_output = brief_output.expandtabs(24)
+                brief_output = brief_output.expandtabs(28)
         elif job.command.key in ("mantis",):
             file_path = os.path.join(job.job_dir, output + ".status")
             with open(file_path, "r", encoding="utf-8") as file:

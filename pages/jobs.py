@@ -233,12 +233,13 @@ def make_job_item(job: Job):
                     dmc.GridCol(
                         dmc.Stack(
                             [
-                                
-                                *(
-                                    [dmc.Text(f"{job.tool.name} [{job.command.name}]", size="sm", fw=600)]
-                                    if job.command.key in ("msi", "scan", "pro", "index", "merge", "faidx")
-                                    else [dmc.Text(f"{job.tool.name}", size="sm", fw=600)]
-                                ),
+                                dmc.Text(f"{job.tool.name} [{job.command.name}]", size="sm", fw=600)
+                                if job.command.key in ("msi", "scan", "pro", "index", "merge", "faidx")
+                                else dmc.Text(f"{job.tool.name}", size="sm", fw=600),
+
+                                dmc.Text(job.get_mode(), size="xs", c="dimmed")
+                                if job.command.key in ("msi", "pro", "mantis")
+                                else None,
                             ],
                             gap=2,
                         ),
