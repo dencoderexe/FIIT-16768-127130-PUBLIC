@@ -327,3 +327,16 @@ class Job:
         })
 
         return memory
+    
+    def get_mode(self) -> str:
+        args = self.args or {}
+
+        tumor_sample = bool(args.get("tumor_bam"))
+        normal_sample = bool(args.get("normal_bam"))
+
+        if tumor_sample and normal_sample:
+            return "Tumor-Normal (paired)"
+        elif tumor_sample:
+            return "Tumor-only"
+        else:
+            return "-"
