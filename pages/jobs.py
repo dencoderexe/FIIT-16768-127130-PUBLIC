@@ -121,7 +121,7 @@ def make_job_actions(job: Job):
                 fullWidth=True,
             ),
         )
-    elif job.command.key not in {"msi", "mantis"}:
+    elif job.command.key not in {"msi", "mantis", "pro"}:
         actions.append(
             dmc.Button(
                 "Log",
@@ -878,24 +878,30 @@ def download_job_file(log_clicks, output_clicks):
 
 clientside_callback(
     """
-    function(busy, logIds, outputIds) {
+    function(busy, logIds, outputIds, deleteIds) {
         const isBusy = !!busy;
         const logs = logIds || [];
         const outputs = outputIds || [];
+        const deletes = deleteIds || [];
 
         return [
             Array(logs.length).fill(isBusy),     // log loading
             Array(outputs.length).fill(isBusy),  // output loading
+            Array(deletes.length).fill(isBusy),  // delete loading
             Array(logs.length).fill(isBusy),     // log disabled
             Array(outputs.length).fill(isBusy),  // output disabled
+            Array(deletes.length).fill(isBusy),  // delete disabled
         ];
     }
     """,
     Output({"type": "job-log-button", "job_id": ALL}, "loading"),
     Output({"type": "job-output-button", "job_id": ALL}, "loading"),
+    Output({"type": "job-delete-button", "job_id": ALL}, "loading"),
     Output({"type": "job-log-button", "job_id": ALL}, "disabled"),
     Output({"type": "job-output-button", "job_id": ALL}, "disabled"),
+    Output({"type": "job-delete-button", "job_id": ALL}, "disabled"),
     Input("download-busy", "data"),
     State({"type": "job-log-button", "job_id": ALL}, "id"),
     State({"type": "job-output-button", "job_id": ALL}, "id"),
+    State({"type": "job-delete-button", "job_id": ALL}, "id"),
 )
