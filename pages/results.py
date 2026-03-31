@@ -7,7 +7,7 @@ import plotly.graph_objects as go
 import dash_mantine_components as dmc
 
 from models.jobs import Job, Step, Status, memory_to_str
-from services.job_manager import get_job_by_id, get_brief_output
+from services.job_manager import get_job_by_id, get_brief_report
 
 dash.register_page(__name__, path_template="/results/<job_id>")
 
@@ -366,10 +366,10 @@ def make_results_content(job: Job):
                     icon="bi:sliders",
                 ),
                 make_section(
-                    "brief-output",
-                    "Brief output",
+                    "brief-report",
+                    "Brief report",
                     dmc.Textarea(
-                        value=get_brief_output(job),
+                        value=get_brief_report(job),
                         readOnly=True,
                         autosize=True,
                         variant="default",

@@ -276,7 +276,8 @@ TOOLS = {
                     "Computing homopolymer and microsatellite distributions",
                 ],
                 defaults={
-                    "reference_genome": None,
+                    "bed_file": None,
+                    # "reference_genome": None,
                     "fdr_threshold": 0.05,
                     "coverage": 15,
                     "coverage_normalization": 0,
@@ -290,6 +291,9 @@ TOOLS = {
                     "microsatellite_only": 0,
                     "include-zero-coverage-sites": 1,
                 },
+                optionals={
+                    "bed_file": "-e",
+                }
             ),
             "pro": Command(
                 key="pro",
@@ -321,7 +325,8 @@ TOOLS = {
                     "Computing homopolymer and microsatellite distributions",
                 ],
                 defaults={
-                    "reference_genome": None,
+                    "bed_file": None,
+                    # "reference_genome": None,
                     "instable_sites_threshold": 0.1,
                     "coverage": 15,
                     "min_homo_size_dist": 8,
@@ -334,6 +339,9 @@ TOOLS = {
                     "microsatellite_only": 0,
                     "out_site_no_read_coverage": 1,
                 },
+                optionals={
+                    "bed_file": "-e",
+                }
             )
         }
     ),

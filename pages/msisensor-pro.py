@@ -265,6 +265,24 @@ def make_msi():
                 dmc.Select(
                     label=dmc.Group(
                         [
+                            dmc.Text("BED file", size="sm", fw=500),
+                            helper("Select an optional BED file defining genomic regions for analysis."),
+                        ],
+                        gap=6,
+                    ),
+                    id="msisensor-pro-msi-bed-file-select",
+                    data=[
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
+                        for file in get_files(extensions=[".bed"])
+                    ],
+                    nothingFoundMessage="Nothing found",
+                    checkIconPosition="right",
+                    placeholder="Select BED file",
+                    searchable=True,
+                ),
+                dmc.Select(
+                    label=dmc.Group(
+                        [
                             dmc.Text("Coverage", size="sm", fw=500),
                             helper("Select the recommended coverage threshold for the input data type."),
                         ],
@@ -496,6 +514,24 @@ def make_pro():
         children=dmc.Stack(
             [
                 dmc.Title("Additional options", order=4),
+                dmc.Select(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("BED file", size="sm", fw=500),
+                            helper("Select an optional BED file defining genomic regions for analysis."),
+                        ],
+                        gap=6,
+                    ),
+                    id="msisensor-pro-pro-bed-file-select",
+                    data=[
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
+                        for file in get_files(extensions=[".bed"])
+                    ],
+                    nothingFoundMessage="Nothing found",
+                    checkIconPosition="right",
+                    placeholder="Select BED file",
+                    searchable=True,
+                ),
                 dmc.NumberInput(
                     label=dmc.Group(
                         [
@@ -801,6 +837,7 @@ def msisensor_pro_msi_start_button(microsatellite_list, normal_bam, tumor_bam):
     State("msisensor-pro-msi-tumor-bam-file-select", "value"),
 
     # State("msisensor-pro-msi-refgenome-file-select", "value"),
+    State("msisensor-pro-msi-bed-file-select", "value"),
     State("msisensor-pro-msi-coverage", "value"),
     State("msisensor-pro-msi-coverage-normalization", "checked"),
     State("msisensor-pro-msi-fdr-threshold", "value"),
@@ -823,6 +860,7 @@ def msisensor_pro_msi_start_job(
     tumor_bam,
 
     # reference_genome,
+    bed_file,
     coverage,
     coverage_normalization,
     fdr_threshold,
@@ -849,6 +887,7 @@ def msisensor_pro_msi_start_job(
             output=os.path.splitext(os.path.basename(tumor_bam))[0],
             
             # reference_genome=reference_genome or None,
+            bed_file=bed_file or None,
             fdr_threshold=fdr_threshold,
             coverage=coverage,
             coverage_normalization=int(bool(coverage_normalization)),
@@ -898,6 +937,7 @@ def msisensor_pro_pro_start_button(microsatellite_list, tumor_bam):
     State("msisensor-pro-pro-tumor-bam-file-select", "value"),
 
     # State("msisensor-pro-msi-refgenome-file-select", "value"),
+    State("msisensor-pro-pro-bed-file-select", "value"),
     State("msisensor-pro-pro-instable-sites-threshold", "value"),
     State("msisensor-pro-pro-coverage", "value"),
     State("msisensor-pro-pro-min-homo-size-dist", "value"),
@@ -918,6 +958,7 @@ def msisensor_pro_pro_start_job(
     tumor_bam,
 
     # reference_genome,
+    bed_file,
     instable_sites_threshold,
     coverage,
     min_homo_size_dist,
@@ -942,6 +983,7 @@ def msisensor_pro_pro_start_job(
             output=os.path.splitext(os.path.basename(tumor_bam))[0],
             
             # reference_genome=reference_genome or None,
+            bed_file=bed_file or None,
             instable_sites_threshold=instable_sites_threshold,
             coverage=coverage,
             min_homo_size_dist=min_homo_size_dist,
