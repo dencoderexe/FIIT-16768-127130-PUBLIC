@@ -20,18 +20,22 @@ import subprocess
 logger = logging.getLogger(__name__)
 
 class Status(Enum):
+    # job/step is currently running
     RUNNING = (
         "bi:arrow-repeat", 
         "yellow"
     )
+    # job/step finished with the error or was terminated
     FAILED = (
         "bi:x-circle-fill", 
         "red"
     )
+    # job/step finished successfully
     SUCCESS = (
         "bi:check-circle-fill", 
         "green"
     )
+    # job/step has not started yet
     PENDING = (
         "bi:clock-history", 
         "gray"
@@ -42,12 +46,21 @@ class Status(Enum):
         self.color = color
 
 def datetime_to_str(dt) -> str|None:
+    """
+    convert a datetime object to ISO string format
+    """
     return datetime.isoformat(dt) if dt else None
 
 def datetime_from_str(dt_str) -> datetime|None:
+    """
+    parse a datetime object from an ISO string
+    """
     return datetime.fromisoformat(dt_str) if dt_str else None
 
 def memory_to_str(memory) -> str | None:
+    """
+    convert memory size in bytes to a human-readable string
+    """
     if memory is None:
         return None
 
@@ -61,13 +74,18 @@ class Step:
     name: str
     status: Status
 
+    # optional progress values for steps with measurable progress
     progress_current: Optional[int] = None
     progress_total: Optional[int] = None
 
+    # timestamps for step lifecycle
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
 
     def set_status(self, status: Status) -> None:
+        """
+        update step status and related timestamps
+        """
         self.status = status
         if status in (Status.SUCCESS, Status.FAILED):
             self.finished_at = datetime.now()
@@ -77,10 +95,16 @@ class Step:
         bump_active_jobs_signal()
     
     def set_progress(self, progress: int) -> None:
+        """
+        update current progress value for the step
+        """
         self.progress_current = progress
         bump_active_jobs_signal()
 
     def to_dict(self) -> Dict[str, Any]:
+        """
+        serialize the step into a dictionary
+        """
         return {
             "name": self.name,
             "status": self.status.name,
@@ -94,6 +118,9 @@ class Step:
 
     @classmethod
     def from_dict(cls, data) -> "Step":
+        """
+        create a Step instance from serialized data
+        """
         return cls(
             name=data["name"],
             status=Status[data["status"]],
@@ -113,29 +140,38 @@ class Job:
     args: Dict[str, object] = field(default_factory=dict)
     error_message: Optional[str] = ""
 
+    # unique job identifier
     id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
+    # runtime-only references (not serialized directly)
     thread: Optional[threading.Thread] = None
     process: Optional[subprocess.Popen] = None
 
+    # job lifecycle timestamps
     started_at: Optional[datetime] = None
     finished_at: Optional[datetime] = None
 
+    # memory usage tracking
     max_memory_usage: int = None
     current_memory_usage: int = None
     memory_usage_history: List[Dict[str, Any]] = field(default_factory=list)
 
+    # runtime flags
     notified: bool = False
     terminated: bool = False
 
     status: Status = Status.PENDING
     steps: List[Step] = field(init=False)
 
+    # paths related to the job
     job_dir: str = field(init=False)
     log_file: str = field(init=False)
     links: List[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
+        """
+        initialize derived fields and load memory history if available
+        """
         self.steps = [Step(step_name, Status.PENDING) for step_name in self.command.steps]
         self.job_dir = os.path.join(jobs_path, self.id)
         self.log_file = os.path.join(self.job_dir, f"{self.id}.log")
@@ -154,10 +190,14 @@ class Job:
             logger.exception("[job:%s] Failed to load memory usage history", self.id)
 
     def set_status(self, status: Status) -> None:
+        """
+        update job status and related timestamps
+        """
         self.status = status
         if status in (Status.SUCCESS, Status.FAILED):
             self.finished_at = datetime.now()
             if status == Status.FAILED:
+                # mark any still-running steps as failed
                 for step in self.steps:
                     if step.status == Status.RUNNING:
                         step.set_status(Status.FAILED)
@@ -166,6 +206,9 @@ class Job:
         bump_active_jobs_signal()
 
     def get_current_step(self) -> tuple[int, "Step"]|tuple[None, None]:
+        """
+        return the currently running step, or the next pending one
+        """
         for i, step in enumerate(self.steps):
             if step.status == Status.RUNNING:
                 return i, step
@@ -175,12 +218,18 @@ class Job:
         return None, None
     
     def get_step_by_name(self, step_name) -> "Step"|None:
+        """
+        find a step by its name
+        """
         for step in self.steps:
             if step.name == step_name:
                 return step
         return None
     
     def to_dict(self) -> Dict[str, Any]:
+        """
+        serialize the job into a dictionary
+        """
         return {
             "id": self.id,
 
@@ -203,6 +252,9 @@ class Job:
     
     @classmethod
     def from_dict(cls, data) -> "Job":
+        """
+        create a Job instance from serialized data
+        """
         tool = TOOLS[data["tool_key"]]
         command = tool.commands[data["command_key"]]
 
@@ -228,11 +280,15 @@ class Job:
         job.steps = [Step.from_dict(item) for item in data.get("steps", [])]
 
         if not job.steps:
+            # fallback for jobs serialized without explicit step data
             job.steps = [Step(step_name, job.status) for step_name in command.steps]
 
         return job
     
     def serialize(self) -> None:
+        """
+        save job metadata and memory usage history to disk
+        """
         os.makedirs(self.job_dir, exist_ok=True)
         serialization_file = os.path.join(self.job_dir, f"{self.id}.json")
         try:
@@ -251,6 +307,9 @@ class Job:
 
     @classmethod
     def deserialize(cls, path: str) -> "Job":
+        """
+        load a serialized job from disk
+        """
         try:
             with open(path, "r", encoding="utf-8") as file:
                 data = json.load(file)
@@ -259,6 +318,9 @@ class Job:
             logger.exception("Failed to deserialize job from %s", path)
     
     def get_duration(self) -> str|None:
+        """
+        return the job duration as a human-readable string
+        """
         if not self.started_at:
             return None
         
@@ -279,6 +341,9 @@ class Job:
             return f"{seconds}s"
 
     def get_memory_usage(self, append_last_recorded_memory: bool = False) -> int | None:
+        """
+        calculate and optionally record current memory usage of the job process group
+        """
         now = datetime.now()
 
         if append_last_recorded_memory and self.memory_usage_history:
@@ -303,6 +368,7 @@ class Job:
         except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
             return None
 
+        # sum memory across all child processes spawned by the job
         for child in children:
             try:
                 memory_info = child.memory_full_info()
@@ -329,6 +395,9 @@ class Job:
         return memory
     
     def get_mode(self) -> str:
+        """
+        return a user-friendly description of analysis mode based on inputs
+        """
         args = self.args or {}
 
         tumor_sample = bool(args.get("tumor_bam"))

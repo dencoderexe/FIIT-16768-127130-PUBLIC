@@ -17,11 +17,17 @@ import subprocess
 
 logger = logging.getLogger(__name__)
 
+# storage for currently running and already finished jobs
 active_jobs = []
 finished_jobs = []
+
+# jobs lock to ensure thread-safe updates and reads
 jobs_lock = threading.Lock()
 
 def get_job_by_id(job_id: str) -> Job|None:
+    """
+    return a job from active or finished jobs by its ID
+    """
     if job_id is None:
         return None
 
@@ -37,10 +43,18 @@ def get_job_by_id(job_id: str) -> Job|None:
         return None
 
 def get_active_jobs() -> List[Job]:
+    """
+    return active jobs in reverse insertion order (newest first)
+    """
     with jobs_lock:
         return list(active_jobs)[::-1]
     
 def get_finished_jobs():  
+    """
+    when called for the first time (no jobs in memory, app initialization), load jobs from disk
+    
+    on subsequent calls, return a list of jobs sorted by start time in descending order
+    """
     global finished_jobs
 
     with jobs_lock:
@@ -69,6 +83,7 @@ def get_finished_jobs():
             logger.exception("Failed to load job from %s", file)
 
     with jobs_lock:
+        # exclude jobs that are currently active
         active_job_ids = {job.id for job in active_jobs}
 
         finished_jobs = [job for job in loaded_jobs if job.id not in active_job_ids]
@@ -80,6 +95,16 @@ def get_finished_jobs():
         return list(finished_jobs)
     
 def parse_job_output(job: Job, line: str):
+    """
+    parse a single output line from a tool process and update
+    job/step state based on recognized progress markers
+    """
+
+    # append error message if job marked as FAILED
+    if job.status == Status.FAILED:
+        job.error_message += line
+
+    # MSIsensor/2/pro scan progress parsing
     if job.command.key == "scan":
         # Scanning reference genome for homopolymers and microsatellites
         if "Start at:" in line:
@@ -93,52 +118,25 @@ def parse_job_output(job: Job, line: str):
             if step is not None:
                 step.set_status(Status.FAILED)
             job.set_status(Status.FAILED)
-        elif job.status == Status.FAILED:
-            job.error_message += line
         return
     
+    # Samtools progress parsing
     if job.tool.key == "samtools":
+        # Samtools commands typically do not print structured information about the execution process, 
+        # so as soon as the output begins, mark the current step as running.
+        # Job status will be updated at the end based on the return code
         _, step = job.get_current_step()
         if step is not None and step.status == Status.PENDING:
             step.set_status(Status.RUNNING)
         return
     
-    if job.tool.key == "msisensor-pro":
-        if "Start at:" in line:
-            job.get_step_by_name("Loading BAM files").set_status(Status.RUNNING)
-            job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.RUNNING)
-        elif "loading homopolymer and microsatellite sites ..." in line:
-            job.get_step_by_name("Loading BAM files").set_status(Status.SUCCESS)
-            job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.SUCCESS)
-
-            job.get_step_by_name("Loading homopolymer and microsatellite sites").set_status(Status.RUNNING)
-            job.get_step_by_name("Preparing analysis windows").set_status(Status.RUNNING)
-        elif "Total loading windows:" in line:
-            job.get_step_by_name("Preparing analysis windows").set_status(Status.SUCCESS)
-            match = re.search(r"Total loading windows:\s+(\d+)", line)
-            if match:
-                job.get_step_by_name("Computing homopolymer and microsatellite distributions").progress_total = int(match.group(1))
-                job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_progress(0)
-        elif "Total loading homopolymer and microsatellites:" in line:
-            job.get_step_by_name("Loading homopolymer and microsatellite sites").set_status(Status.SUCCESS)
-
-            job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_status(Status.RUNNING)
-        elif "Total time consumed:" in line:
-            job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_status(Status.SUCCESS)
-        elif "window:" in line:
-            match = re.search(r"window:\s+(\d+)", line)
-            if match:
-                job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_progress(int(match.group(1)) + 1)
-        elif "Program aborted:" in line or "fatal error:" in line:
-            job.error_message += line
-            job.set_status(Status.FAILED)
-        elif job.status == Status.FAILED:
-            job.error_message += line
-        return
-    
-    if job.tool.key in ("msisensor", "msisensor2"):
+    # MSIsensor/2/pro msi/pro progress parsing
+    if job.tool.key in ("msisensor", "msisensor2", "msisensor-pro"):
         if "Start at:" in line:
             job.get_step_by_name("Processing user defined region").set_status(Status.RUNNING)
+
+            # if BED file is not provided, MSIsensor does not print log line about this step, 
+            # so mark the related steps as RUNNING explicitly
             if job.args.get("bed_file") is None:
                 job.get_step_by_name("Loading BED file").set_status(Status.RUNNING)
                 job.get_step_by_name("Loading BAM files").set_status(Status.RUNNING)
@@ -159,6 +157,7 @@ def parse_job_output(job: Job, line: str):
             job.get_step_by_name("Loading homopolymer and microsatellite sites").set_status(Status.RUNNING)
             job.get_step_by_name("Preparing analysis windows").set_status(Status.RUNNING)
         elif "Total loading windows:" in line:
+            # parse the total number of windows to enable progress tracking
             job.get_step_by_name("Preparing analysis windows").set_status(Status.SUCCESS)
             match = re.search(r"Total loading windows:\s+(\d+)", line)
             if match:
@@ -171,16 +170,16 @@ def parse_job_output(job: Job, line: str):
         elif "Total time consumed:" in line:
             job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_status(Status.SUCCESS)
         elif "window:" in line:
+            # update progress based on currently processed window
             match = re.search(r"window:\s+(\d+)", line)
             if match:
                 job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_progress(int(match.group(1)) + 1)
         elif "Program aborted:" in line or "fatal error:" in line:
             job.error_message += line
             job.set_status(Status.FAILED)
-        elif job.status == Status.FAILED:
-            job.error_message += line
         return
     
+    # MANTIS progress parsing
     if job.tool.key == "mantis":
         if "Getting repeat counts for repeat units (k-mers) ..." in line:
             job.get_step_by_name("Computing k-mer repeat counts").set_status(Status.RUNNING)
@@ -195,25 +194,31 @@ def parse_job_output(job: Job, line: str):
         elif "MANTIS complete." in line:
             job.get_step_by_name("Calculating instability scores").set_status(Status.SUCCESS)
             job.set_status(Status.SUCCESS)
-        elif "Error" in line or "Fatal error" in line:
+        elif "error" in line.lower():
+            # ignore known non-fatal locus alignment warnings
             if "starting point for kmer" in line:
-                return # ignore not fatal error
+                return
             job.error_message += line
-            job.set_status(Status.FAILED)
-        elif job.status == Status.FAILED:
-            job.error_message += line
+            # some log messages contain the word "error" but are not fatal
+            # the final job status will be determined by the process return code
+            # job.set_status(Status.FAILED)
         return
+    
+    # RepeatFinder progress parsing
     if job.tool.key == "repeatfinder":
+        # RepeatFinder does not provide detailed progress logs, so mark the relevant step as running
         if job.get_step_by_name("Scanning reference genome for microsatellite regions").status == Status.PENDING:
             job.get_step_by_name("Scanning reference genome for microsatellite regions").set_status(Status.RUNNING)
-        elif "ERROR:" in line:
+        elif "error:" in line.lower():
             job.error_message += line
             job.set_status(Status.FAILED)
-        elif job.status == Status.FAILED:
-            job.error_message += line
         return
 
 def terminate_job_process(job: Job, timeout: float = 5.0):
+    """
+    first attempts to correctly terminate the job process group, 
+    then force kill it if it does not exit within the timeout
+    """
     proc = job.process
     if proc is None:
         return
@@ -237,26 +242,41 @@ def terminate_job_process(job: Job, timeout: float = 5.0):
         pass
 
 def run_job(job: Job):
+    """
+    - run a single job
+    
+    - stream its combined stdout/stderr into a log file
+
+    - update job state when needed 
+    
+    - save the final result
+
+    - serialize the job to disk
+    """
+
     logger.info("[job:%s] Starting job | tool=%s | command=%s", job.id, job.tool.key, job.command.key)
     logger.debug("[job:%s] cmd: %s", job.id, job.cmd)
 
     try:
+        # create job directory
         os.makedirs(job.job_dir, exist_ok=True)
 
         with open(job.log_file, "w", encoding="utf-8") as log:
+            # copy the current environment
             env = os.environ.copy()
+            # force unbuffered Python output for real-time log parsing
             env["PYTHONUNBUFFERED"] = "1"
 
             proc = subprocess.Popen(
-                job.cmd,
-                cwd=job.tool.dir,
-                shell=True,
+                job.cmd,                    # command to execute
+                cwd=job.tool.dir,           # cwd for the process
+                shell=True,                 # run command with shell
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1,
-                start_new_session=True,
-                env=env,
+                text=True,                  # decode output as text (no bytes)
+                bufsize=1,                  # line-buffered output
+                start_new_session=True,     # run in a separate process group (for safe termination)
+                env=env,                    # custom ENV variables
             )
             job.process = proc
 
@@ -267,7 +287,9 @@ def run_job(job: Job):
             job.get_memory_usage()
 
             try:
+                # read process output line by line
                 for line in proc.stdout:
+                    # terminate the job if a stop request was send from UI
                     if job.terminated:
                         terminate_job_process(job)
                         if "Job stopped by user.\n" not in job.error_message:
@@ -282,6 +304,7 @@ def run_job(job: Job):
                 if job.terminated and proc.poll() is None:
                     terminate_job_process(job)
 
+                # wait for the process to exit and capture its return code
                 return_code = proc.wait()
 
                 logger.info("[job:%s] Process %s finished with return code %s", job.id, proc.pid, return_code)
@@ -302,6 +325,8 @@ def run_job(job: Job):
 
             logger.warning("[job:%s] Job stopped by user", job.id)
         elif job.status not in (Status.FAILED, Status.SUCCESS):
+            # if the job was not explicitly marked as FAILED or SUCCESS,
+            # determine the final status from the process return code
             if return_code == 0:
                 _, current_step = job.get_current_step()
                 if current_step is not None:
@@ -318,11 +343,13 @@ def run_job(job: Job):
 
         if job.status == Status.SUCCESS:
             try:
+                # optionally create a link to the output file next to the input file,
+                # if this behavior is configured for the tool (see configs/tools.py)
                 create_output_link(job)
             except Exception as e:
-                # job.error_message += f"Failed to create output link: {e}\n"
                 logger.exception("[job:%s] Failed to create output link", job.id)
         
+        # save the last memory usage record before finishing
         job.get_memory_usage(append_last_recorded_memory=True)
         job.serialize()
     except Exception as e:
@@ -340,14 +367,20 @@ def run_job(job: Job):
         job.process = None
         job.thread = None
 
+        # move the job from active to finished jobs
         with jobs_lock:
             active_jobs[:] = [j for j in active_jobs if j.id != job.id]
             finished_jobs.insert(0, job)
-            
+        
+        # notify listeners that the job state changed
         bump_active_jobs_signal()
         bump_finished_jobs_signal()
 
 def create_job(tool: Tool, command: Command, **kwargs):
+    """
+    build a job from tool/command configuration, start it in a dedicated thread,
+    register it as active
+    """
     args = {**command.defaults, **kwargs}
 
     job = Job(
@@ -357,10 +390,12 @@ def create_job(tool: Tool, command: Command, **kwargs):
         args=dict(args)
     )
 
+    # resolve output path inside the job directory
     args["output"] = os.path.join(job.job_dir, args["output"])
 
     cmd = command.template.format(**args)
 
+    # append optional command-line args only when provided by the user
     for arg_name, flag in command.optionals.items():
         value = args.get(arg_name)
         if value is None or value == "":
@@ -387,6 +422,9 @@ def create_job(tool: Tool, command: Command, **kwargs):
     bump_active_jobs_signal()
 
 def delete_job(job: Job):
+    """
+    remove a finished job from memory and delete its job directory together with any created (output file) links
+    """
     logger.info("[job:%s] Deleting job", job.id)
 
     with jobs_lock:
@@ -394,6 +432,7 @@ def delete_job(job: Job):
             finished_jobs.remove(job)
 
     if job.job_dir and os.path.isdir(job.job_dir):
+        # only delete directories that are inside the configured jobs root
         if os.path.abspath(job.job_dir).startswith(os.path.abspath(jobs_path)):
             shutil.rmtree(job.job_dir)
             logger.info("[job:%s] Removed job directory: %s", job.id, job.job_dir)
@@ -408,6 +447,9 @@ def delete_job(job: Job):
     bump_finished_jobs_signal()
 
 def cleanup_corrupted_jobs():
+    """
+    remove incomplete job directories (e.g., if app crashed) missing required metadata or log file/s
+    """
     if not os.path.isdir(jobs_path):
         return
     
@@ -426,6 +468,10 @@ def cleanup_corrupted_jobs():
             shutil.rmtree(job_dir_path)
 
 def create_output_link(job: Job):
+    """
+    create a hardlink (or fallback symlink) to the output file
+    next to the selected input file when supported by the tool/command config
+    """
     input_arg = job.command.link_output_to_input_arg
     if not input_arg:
         return
@@ -446,6 +492,7 @@ def create_output_link(job: Job):
     output_name = os.path.basename(output_path)
     link_path = os.path.join(input_dir, output_name)
 
+    # skip linking if output already exists in the same location
     if os.path.abspath(link_path) == os.path.abspath(output_path):
         return
 
@@ -471,6 +518,10 @@ def create_output_link(job: Job):
         logger.warning("[job:%s] Failed to create symlink %s: %s", job.id, link_path)
 
 def start_job_memory_monitor() -> None:
+    """
+    start a background thread that periodically updates memory usage
+    for running jobs and triggers UI refresh signals when needed
+    """
     def job_memory_monitor() -> None:
         while True:
             with jobs_lock:
@@ -502,6 +553,10 @@ def start_job_memory_monitor() -> None:
     logger.info("Job memory monitor thread started")
 
 def get_brief_report(job: Job):
+    """
+    read and return a short text summary from the main output file
+    for supported successful jobs
+    """
     if job.status != Status.SUCCESS:
         return ""
 
