@@ -9,7 +9,7 @@ _signal_lock = threading.Lock()
 
 def bump_active_jobs_signal():
     """
-    increment active jobs signal (notify listeners)
+    Increment active jobs signal (notify listeners).
     """
     global _active_jobs_signal
     with _signal_lock:
@@ -17,7 +17,7 @@ def bump_active_jobs_signal():
 
 def bump_finished_jobs_signal():
     """
-    increment finished jobs signal (notify listeners)
+    Increment finished jobs signal (notify listeners).
     """
     global _finished_jobs_signal
     with _signal_lock:
@@ -25,14 +25,14 @@ def bump_finished_jobs_signal():
 
 def get_active_jobs_signal():
     """
-    get current active jobs signal value
+    Get current active jobs signal value.
     """
     with _signal_lock:
         return _active_jobs_signal
 
 def get_finished_jobs_signal():
     """
-    get current finished jobs signal value
+    Get current finished jobs signal value.
     """
     with _signal_lock:
         return _finished_jobs_signal

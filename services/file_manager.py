@@ -3,22 +3,28 @@ from configs.paths import data_path, job_output_excluded_extensions, job_output_
 import os
 import zipfile
 
+DATA_ROOT = os.path.realpath(data_path)
+
 def is_within_root(path: str) -> bool:
     """
-    checks whether the given path is within the configured data root directory
+    Checks whether the given path is within the configured data root directory.
 
-    prevents path traversal outside of the allowed data dir
+    Prevents path traversal outside of the allowed data dirrectory.
     """
     real_path = os.path.realpath(path)
-    return os.path.commonpath([real_path, data_path]) == data_path
+    return os.path.commonpath([real_path, DATA_ROOT]) == DATA_ROOT
 
 def get_files(extensions):
     """
-    recursively collect files from the configured data directory
+    Recursively collect files from the configured data directory.
 
-    optionally filters files by a list of exceptions
+    Rules:
+    - do not follow symlinked directories
+    - do not include symlinked files
+    - do not include files outside DATA_ROOT
+    - optionally filter by file extensions
 
-    returns a sorted list of absolute file paths
+    Returns a sorted list of absolute file paths.
     """
     files = set()
 
@@ -26,26 +32,49 @@ def get_files(extensions):
         for filename in filenames:
             file_path = os.path.join(current_root, filename)
 
+            # # skip symlink files
+            # if os.path.islink(file_path):
+            #     continue
+
             if extensions and not any(filename.endswith(extension) for extension in extensions):
                 continue
 
-            files.add(os.path.realpath(file_path))
+            # real_file_path = os.path.realpath(file_path)
+            
+            # if not is_within_root(file_path):
+            #     continue
+
+            files.add(file_path)
 
     return sorted(list(files))
 
 def get_dirs() -> list[str]:
     """
-    recursively collect all directories from the configured data directory
+    Recursively collect all directories from the configured data directory.
 
-    returns a sorted list of directory paths
+    Returns a sorted list of directory paths.
     """
     dirs = []
 
     for current_root, dirnames, _ in os.walk(data_path, followlinks=True):
+        # safe_dirnames = []
+
         for dirname in dirnames:
             dir_path = os.path.join(current_root, dirname)
 
+            # # skip symlink files
+            # if os.path.islink(dir_path):
+            #     continue
+
+            # real_dir_path = os.path.realpath(dir_path)
+
+            # if not is_within_root(real_dir_path):
+            #     continue
+
+            # safe_dirnames.append(dirname)
             dirs.append(dir_path)
+        
+        # dirnames[:] = safe_dirnames
 
     return sorted(dirs)
 

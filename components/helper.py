@@ -4,7 +4,7 @@ from dash_iconify import DashIconify
 
 def helper(help_message: str):
     """
-    returns a small hover tooltip with a help message for user
+    Returns a small hover tooltip with a help message for user.
     """
     return dmc.HoverCard(
         withArrow=True,

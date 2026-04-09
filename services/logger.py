@@ -5,13 +5,10 @@ import logging
 
 def setup_logging():
     """
-    configure application logging:
-
+    Configure application logging:
     - logs are written both to console and rotating log files
-
     - log files rotate everyday (midnight) with a retention of 7 days
-
-    - refuce verbosity of Dash and Werkzeug internal logs
+    - reduce verbosity of Dash and Werkzeug internal logs
     """
 
     # ensure log dir exists

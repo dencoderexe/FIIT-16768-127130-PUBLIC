@@ -269,6 +269,8 @@ TOOLS = {
                     "-0 {include_zero_coverage_sites} "
                 ),
                 steps=[
+                    "Processing user defined region",
+                    "Loading BED file",
                     "Loading BAM files",
                     "Checking homopolymer and microsatellite file",
                     "Loading homopolymer and microsatellite sites",
@@ -277,7 +279,6 @@ TOOLS = {
                 ],
                 defaults={
                     "bed_file": None,
-                    # "reference_genome": None,
                     "fdr_threshold": 0.05,
                     "coverage": 15,
                     "coverage_normalization": 0,
@@ -319,6 +320,7 @@ TOOLS = {
                 ),
                 steps=[
                     "Loading BAM files",
+                    "Loading BED file",
                     "Checking homopolymer and microsatellite file",
                     "Loading homopolymer and microsatellite sites",
                     "Preparing analysis windows",
@@ -326,7 +328,6 @@ TOOLS = {
                 ],
                 defaults={
                     "bed_file": None,
-                    # "reference_genome": None,
                     "instable_sites_threshold": 0.1,
                     "coverage": 15,
                     "min_homo_size_dist": 8,
@@ -364,9 +365,11 @@ TOOLS = {
                 name="mantis",
                 description="Run MANTIS MSI analysis",
                 template=(
-                    "/home/danilovd/.conda/envs/mantis/bin/python ./mantis.py "
+                    "/home/danilovd/.conda/envs/mantis/bin/python -u ./mantis.py "
                     "-n {normal_bam} "
                     "-t {tumor_bam} "
+                    "--genome {reference_genome} "
+                    "-b {bed_file} "
                     "-o {output} "
 
                     "--threads {threads} "
@@ -390,10 +393,6 @@ TOOLS = {
                     "min_locus_coverage": 30,
                     "min_repeat_reads": 3,
                     "standard_deviations": 3.0,
-                },
-                optionals={
-                    "reference_genome": "--genome",
-                    "bed_file": "-b",
                 },
             )
         }

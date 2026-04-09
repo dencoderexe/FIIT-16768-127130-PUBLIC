@@ -47,19 +47,19 @@ class Status(Enum):
 
 def datetime_to_str(dt) -> str|None:
     """
-    convert a datetime object to ISO string format
+    Convert a datetime object to ISO string format.
     """
     return datetime.isoformat(dt) if dt else None
 
 def datetime_from_str(dt_str) -> datetime|None:
     """
-    parse a datetime object from an ISO string
+    Parse a datetime object from an ISO string.
     """
     return datetime.fromisoformat(dt_str) if dt_str else None
 
 def memory_to_str(memory) -> str | None:
     """
-    convert memory size in bytes to a human-readable string
+    Convert memory size in bytes to a human-readable string.
     """
     if memory is None:
         return None
@@ -84,7 +84,7 @@ class Step:
 
     def set_status(self, status: Status) -> None:
         """
-        update step status and related timestamps
+        Update step status and related timestamps.
         """
         self.status = status
         if status in (Status.SUCCESS, Status.FAILED):
@@ -96,14 +96,14 @@ class Step:
     
     def set_progress(self, progress: int) -> None:
         """
-        update current progress value for the step
+        Update current progress value for the step.
         """
         self.progress_current = progress
         bump_active_jobs_signal()
 
     def to_dict(self) -> Dict[str, Any]:
         """
-        serialize the step into a dictionary
+        Serialize the step into a dictionary.
         """
         return {
             "name": self.name,
@@ -119,7 +119,7 @@ class Step:
     @classmethod
     def from_dict(cls, data) -> "Step":
         """
-        create a Step instance from serialized data
+        Create a Step instance from serialized data.
         """
         return cls(
             name=data["name"],
@@ -170,7 +170,7 @@ class Job:
 
     def __post_init__(self) -> None:
         """
-        initialize derived fields and load memory history if available
+        Initialize derived fields and load memory history if available.
         """
         self.steps = [Step(step_name, Status.PENDING) for step_name in self.command.steps]
         self.job_dir = os.path.join(jobs_path, self.id)
@@ -191,7 +191,7 @@ class Job:
 
     def set_status(self, status: Status) -> None:
         """
-        update job status and related timestamps
+        Update job status and related timestamps.
         """
         self.status = status
         if status in (Status.SUCCESS, Status.FAILED):
@@ -207,7 +207,7 @@ class Job:
 
     def get_current_step(self) -> tuple[int, "Step"]|tuple[None, None]:
         """
-        return the currently running step, or the next pending one
+        Return the currently running step, or the next pending one.
         """
         for i, step in enumerate(self.steps):
             if step.status == Status.RUNNING:
@@ -219,7 +219,7 @@ class Job:
     
     def get_step_by_name(self, step_name) -> "Step"|None:
         """
-        find a step by its name
+        Find a step by its name.
         """
         for step in self.steps:
             if step.name == step_name:
@@ -228,7 +228,7 @@ class Job:
     
     def to_dict(self) -> Dict[str, Any]:
         """
-        serialize the job into a dictionary
+        Serialize the job into a dictionary.
         """
         return {
             "id": self.id,
@@ -253,7 +253,7 @@ class Job:
     @classmethod
     def from_dict(cls, data) -> "Job":
         """
-        create a Job instance from serialized data
+        Create a Job instance from serialized data.
         """
         tool = TOOLS[data["tool_key"]]
         command = tool.commands[data["command_key"]]
@@ -287,7 +287,7 @@ class Job:
     
     def serialize(self) -> None:
         """
-        save job metadata and memory usage history to disk
+        Save job metadata and memory usage history to disk.
         """
         os.makedirs(self.job_dir, exist_ok=True)
         serialization_file = os.path.join(self.job_dir, f"{self.id}.json")
@@ -308,7 +308,7 @@ class Job:
     @classmethod
     def deserialize(cls, path: str) -> "Job":
         """
-        load a serialized job from disk
+        Load a serialized job from disk.
         """
         try:
             with open(path, "r", encoding="utf-8") as file:
@@ -319,7 +319,7 @@ class Job:
     
     def get_duration(self) -> str|None:
         """
-        return the job duration as a human-readable string
+        Return the job duration as a human-readable string.
         """
         if not self.started_at:
             return None
@@ -342,7 +342,7 @@ class Job:
 
     def get_memory_usage(self, append_last_recorded_memory: bool = False) -> int | None:
         """
-        calculate and optionally record current memory usage of the job process group
+        Calculate and optionally record current memory usage of the job process group.
         """
         now = datetime.now()
 
@@ -396,7 +396,7 @@ class Job:
     
     def get_mode(self) -> str:
         """
-        return a user-friendly description of analysis mode based on inputs
+        Return a user-friendly description of analysis mode based on inputs.
         """
         args = self.args or {}
 

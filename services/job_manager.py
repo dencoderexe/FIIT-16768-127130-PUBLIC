@@ -26,7 +26,7 @@ jobs_lock = threading.Lock()
 
 def get_job_by_id(job_id: str) -> Job|None:
     """
-    return a job from active or finished jobs by its ID
+    Returns a job from active or finished jobs by its ID.
     """
     if job_id is None:
         return None
@@ -44,16 +44,16 @@ def get_job_by_id(job_id: str) -> Job|None:
 
 def get_active_jobs() -> List[Job]:
     """
-    return active jobs in reverse insertion order (newest first)
+    Returns active jobs in reverse insertion order (newest first).
     """
     with jobs_lock:
         return list(active_jobs)[::-1]
     
 def get_finished_jobs():  
     """
-    when called for the first time (no jobs in memory, app initialization), load jobs from disk
+    When called for the first time (no jobs in memory, app initialization), load jobs from disk.
     
-    on subsequent calls, return a list of jobs sorted by start time in descending order
+    On subsequent calls, return a list of jobs sorted by start time in descending order.
     """
     global finished_jobs
 
@@ -96,8 +96,8 @@ def get_finished_jobs():
     
 def parse_job_output(job: Job, line: str):
     """
-    parse a single output line from a tool process and update
-    job/step state based on recognized progress markers
+    Parse a single output line from a tool process and update
+    job/step state based on recognized progress markers.
     """
 
     # append error message if job marked as FAILED
@@ -216,8 +216,8 @@ def parse_job_output(job: Job, line: str):
 
 def terminate_job_process(job: Job, timeout: float = 5.0):
     """
-    first attempts to correctly terminate the job process group, 
-    then force kill it if it does not exit within the timeout
+    First attempts to correctly terminate the job process group, 
+    then force kills it if it does not exit within the timeout.
     """
     proc = job.process
     if proc is None:
@@ -243,15 +243,11 @@ def terminate_job_process(job: Job, timeout: float = 5.0):
 
 def run_job(job: Job):
     """
-    - run a single job
-    
-    - stream its combined stdout/stderr into a log file
-
-    - update job state when needed 
-    
-    - save the final result
-
-    - serialize the job to disk
+    - Runs a single job
+    - Streams its combined stdout/stderr into a log file
+    - Updates job state when needed 
+    - Saves the final result
+    - Serializes the job to disk
     """
 
     logger.info("[job:%s] Starting job | tool=%s | command=%s", job.id, job.tool.key, job.command.key)
@@ -378,8 +374,8 @@ def run_job(job: Job):
 
 def create_job(tool: Tool, command: Command, **kwargs):
     """
-    build a job from tool/command configuration, start it in a dedicated thread,
-    register it as active
+    Builds a job from tool/command configuration, start it in a dedicated thread,
+    register it as active.
     """
     args = {**command.defaults, **kwargs}
 
@@ -423,7 +419,7 @@ def create_job(tool: Tool, command: Command, **kwargs):
 
 def delete_job(job: Job):
     """
-    remove a finished job from memory and delete its job directory together with any created (output file) links
+    Removes a finished job from memory and deletes its job directory together with any created (output file) links.
     """
     logger.info("[job:%s] Deleting job", job.id)
 
@@ -448,7 +444,7 @@ def delete_job(job: Job):
 
 def cleanup_corrupted_jobs():
     """
-    remove incomplete job directories (e.g., if app crashed) missing required metadata or log file/s
+    Removes incomplete job directories (e.g., if app crashed) missing required metadata or log file/s.
     """
     if not os.path.isdir(jobs_path):
         return
@@ -469,8 +465,8 @@ def cleanup_corrupted_jobs():
 
 def create_output_link(job: Job):
     """
-    create a hardlink (or fallback symlink) to the output file
-    next to the selected input file when supported by the tool/command config
+    Create a hardlink (or fallback symlink) to the output file
+    next to the selected input file when supported by the tool/command config.
     """
     input_arg = job.command.link_output_to_input_arg
     if not input_arg:
@@ -519,8 +515,8 @@ def create_output_link(job: Job):
 
 def start_job_memory_monitor() -> None:
     """
-    start a background thread that periodically updates memory usage
-    for running jobs and triggers UI refresh signals when needed
+    Start a background thread that periodically updates memory usage
+    for running jobs and triggers UI refresh signals when needed.
     """
     def job_memory_monitor() -> None:
         while True:
@@ -554,8 +550,8 @@ def start_job_memory_monitor() -> None:
 
 def get_brief_report(job: Job):
     """
-    read and return a short text summary from the main output file
-    for supported successful jobs
+    Read and return a short text summary from the main output file
+    for supported successful jobs.
     """
     if job.status != Status.SUCCESS:
         return ""
