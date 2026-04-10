@@ -79,6 +79,7 @@ def make_appshell(content):
 
                             dmc.NavLink(label="Samtools", href="/samtools"),
                             dmc.NavLink(label="RepeatFinder", href="/repeatfinder"),
+                            dmc.NavLink(label="Microsat2Bed", href="/microsat2bed"),
 
                             dmc.Text(
                                 "MSI analysis", 

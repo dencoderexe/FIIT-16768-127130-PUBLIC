@@ -515,4 +515,30 @@ TOOLS = {
             ),
         }
     ),
+    "microsat2bed": Tool(
+        key="microsat2bed",
+        name="Microsat2Bed",
+        description=(
+            "Microsat2Bed converts a microsatellite list into BED format following RepeatFinder coordinate conventions. "
+            "It is designed for use with MANTIS to ensure consistent locus definitions and enable accurate comparison "
+            "across tools (like MSIsensor) using the same reference loci."
+        ),
+        dir="/home/danilovd/tools/",
+        commands={
+            "convert": Command(
+                key="convert",
+                name="convert",
+                description="Converts microsatellite list into BED file",
+                template=(
+                    "python -u microsat2bed.py "
+                    "{microsatellite_list} "
+                    "{output} "
+                ),
+                steps=[
+                    "Generating BED file from microsatellite list",
+                ],
+                link_output_to_input_arg="microsatellite_list",
+            ),
+        }
+    )
 }

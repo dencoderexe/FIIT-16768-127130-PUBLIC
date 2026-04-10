@@ -120,9 +120,9 @@ def parse_job_output(job: Job, line: str):
             job.set_status(Status.FAILED)
         return
     
-    # Samtools progress parsing
+    # Samtools and Microsat2Bed progress parsing
     if job.tool.key == "samtools":
-        # Samtools commands typically do not print structured information about the execution process, 
+        # Those commands typically do not print structured information about the execution process, 
         # so as soon as the output begins, mark the current step as running.
         # Job status will be updated at the end based on the return code
         _, step = job.get_current_step()
