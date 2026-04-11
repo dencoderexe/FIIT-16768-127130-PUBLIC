@@ -30,7 +30,9 @@ def make_mantis():
                         [
                             dmc.Text("Normal BAM file", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Select the BAM file for the matched normal sample."),
+                            helper(
+                                "Select the BAM file for the matched normal sample."
+                            ),
                         ],
                         gap=6,
                     ),
@@ -49,7 +51,9 @@ def make_mantis():
                         [
                             dmc.Text("Tumor BAM file", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Select the BAM file for the tumor sample."),
+                            helper(
+                                "Select the BAM file for the tumor sample."
+                            ),
                         ],
                         gap=6,
                     ),
@@ -61,6 +65,49 @@ def make_mantis():
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
                     placeholder="Select tumor BAM file",
+                    searchable=True,
+                ),
+                dmc.Select(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Reference genome file", size="sm", fw=500),
+                            dmc.Text("*", c="red", size="sm", fw=700),
+                            helper(
+                                "Select the reference genome file in FASTA format."
+                            ),
+                        ],
+                        gap=6,
+                    ),
+                    id="mantis-refgenome-file-select",
+                    data=[
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
+                        for file in get_files(extensions=[".fasta", ".fas", ".fa", ".fna", ".ffn", ".faa", ".mpfa", ".frn"])
+                    ],
+                    nothingFoundMessage="Nothing found",
+                    checkIconPosition="right",
+                    placeholder="Select reference genome FASTA file",
+                    searchable=True,
+                ),
+                dmc.Select(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("BED file", size="sm", fw=500),
+                            dmc.Text("*", c="red", size="sm", fw=700),
+                            helper(
+                                "Select the BED file containing the targeted MSI loci. "
+                                "The BED file must follow the format expected by MANTIS."
+                            ),
+                        ],
+                        gap=6,
+                    ),
+                    id="mantis-bed-file-select",
+                    data=[
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
+                        for file in get_files(extensions=[".bed"])
+                    ],
+                    nothingFoundMessage="Nothing found",
+                    checkIconPosition="right",
+                    placeholder="Select BED file",
                     searchable=True,
                 ),
                 dmc.Space(h="xl"),
@@ -82,49 +129,13 @@ def make_mantis():
         children=dmc.Stack(
             [
                 dmc.Title("Additional options", order=4),
-                dmc.Select(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Reference genome file", size="sm", fw=500),
-                            # dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Select the reference genome file in FASTA format."),
-                        ],
-                        gap=6,
-                    ),
-                    id="mantis-refgenome-file-select",
-                    data=[
-                        {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".fasta", ".fas", ".fa", ".fna", ".ffn", ".faa", ".mpfa", ".frn"])
-                    ],
-                    nothingFoundMessage="Nothing found",
-                    checkIconPosition="right",
-                    placeholder="Select reference genome FASTA file",
-                    searchable=True,
-                ),
-                dmc.Select(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("BED file", size="sm", fw=500),
-                            # dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Select the BED file defining genomic regions for analysis."),
-                        ],
-                        gap=6,
-                    ),
-                    id="mantis-bed-file-select",
-                    data=[
-                        {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".bed"])
-                    ],
-                    nothingFoundMessage="Nothing found",
-                    checkIconPosition="right",
-                    placeholder="Select BED file",
-                    searchable=True,
-                ),
                 dmc.NumberInput(
                     label=dmc.Group(
                         [
                             dmc.Text("Threads", size="sm", fw=500),
-                            helper("Specify the number of threads to use for the analysis."),
+                            helper(
+                                "Number of threads to use for multiprocessing."
+                            ),
                         ],
                         gap=6,
                     ),
@@ -137,12 +148,15 @@ def make_mantis():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimum read quality", size="sm", fw=500),
-                            helper(("Set the minimum average read quality required for a read to pass quality control.")),
+                            helper(
+                                "Minimum average per-base read quality required for a read to pass quality control.\n"
+                                "Example: reads with average quality below 25.0 will be discarded."
+                            ),
                         ],
                         gap=6,
                     ),
                     id="mantis-min-read-quality",
-                    value=25.0,
+                    value=20,
                     min=0,
                     step=0.1,
                     decimalScale=1,
@@ -151,12 +165,15 @@ def make_mantis():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimum locus quality", size="sm", fw=500),
-                            helper(("Set the minimum average base quality within a microsatellite locus for a read to be included in the analysis.")),
+                            helper(
+                                "Minimum average per-base quality for bases within the microsatellite locus.\n"
+                                "Reads that pass the read quality filter may still be discarded if locus quality is too low."
+                            ),
                         ],
                         gap=6,
                     ),
                     id="mantis-min-locus-quality",
-                    value=30.0,
+                    value=25,
                     min=0,
                     step=0.1,
                     decimalScale=1,
@@ -165,7 +182,11 @@ def make_mantis():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimum read length", size="sm", fw=500),
-                            helper(("Set the minimum unclipped read length required for a read to pass quality control.")),
+                            helper(
+                                "Minimum unclipped read length required for a read to pass quality control.\n"
+                                "Soft-clipped and hard-clipped bases are not counted.\n"
+                                "Example: with value 35, reads shorter than 35 unclipped bases will be discarded."
+                            ),
                         ],
                         gap=6,
                     ),
@@ -178,12 +199,15 @@ def make_mantis():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimum locus coverage", size="sm", fw=500),
-                            helper(("Set the minimum post-filter coverage required in both normal and tumor samples for a locus to be analyzed.")),
+                            helper(
+                                "Minimum coverage required in both normal and tumor samples for a locus to be included in the analysis.\n"
+                                "Coverage is evaluated after quality control filtering."
+                            ),
                         ],
                         gap=6,
                     ),
                     id="mantis-min-locus-coverage",
-                    value=30,
+                    value=15,
                     min=1,
                     allowDecimal=False,
                 ),
@@ -191,12 +215,15 @@ def make_mantis():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimum repeat reads", size="sm", fw=500),
-                            helper(("Set the minimum number of reads supporting a repeat count for it to be included in the analysis.")),
+                            helper(
+                                "Minimum number of reads supporting a specific repeat count for that repeat count to be retained.\n"
+                                "Repeat counts supported by fewer reads are discarded during outlier filtering."
+                            ),
                         ],
                         gap=6,
                     ),
                     id="mantis-min-repeat-reads",
-                    value=3,
+                    value=1,
                     min=1,
                     allowDecimal=False,
                 ),
@@ -204,7 +231,11 @@ def make_mantis():
                     label=dmc.Group(
                         [
                             dmc.Text("Standard deviations", size="sm", fw=500),
-                            helper(("Set how far a repeat count can deviate from the mean before it is treated as an outlier.")),
+                            helper(
+                                "Number of standard deviations from the mean allowed before a repeat count is treated as an outlier "
+                                "and discarded.\n"
+                                "Example: with value 3.0, repeat counts far from the mean distribution are removed."
+                            ),
                         ],
                         gap=6,
                     ),
@@ -236,7 +267,10 @@ command_description = dmc.Paper(
     w="100%",
     children=dmc.Stack(
         [
-            dmc.Text(tool.commands["mantis"].description),
+            dmc.Text(
+                tool.commands["mantis"].description,
+                style={"whiteSpace": "pre-line"},
+            ),
         ],
         gap="xs",
     ),
@@ -271,11 +305,11 @@ layout = dmc.Container(
     Output("mantis-start-button", "disabled"),
     Input("mantis-normal-bam-file-select", "value"),
     Input("mantis-tumor-bam-file-select", "value"),
-    # Input("mantis-refgenome-file-select", "value"),
-    # Input("mantis-bed-file-select", "value"),
+    Input("mantis-refgenome-file-select", "value"),
+    Input("mantis-bed-file-select", "value"),
 )
-def mantis_start_button(normal_bam, tumor_bam):
-    return not all([normal_bam, tumor_bam])
+def mantis_start_button(normal_bam, tumor_bam, reference_genome, bed_file):
+    return not all([normal_bam, tumor_bam, reference_genome, bed_file])
 
 @callback(
     Output("notification-container", "sendNotifications", allow_duplicate=True),
@@ -316,8 +350,8 @@ def mantis_start_job(
             command=tool.commands.get("mantis"),
             normal_bam=normal_bam,
             tumor_bam=tumor_bam,
-            reference_genome=reference_genome or None,
-            bed_file=bed_file or None,
+            reference_genome=reference_genome,
+            bed_file=bed_file,
             output=os.path.splitext(os.path.basename(tumor_bam))[0],
 
             threads=threads,

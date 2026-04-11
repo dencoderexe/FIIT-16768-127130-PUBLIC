@@ -354,16 +354,28 @@ TOOLS = {
             "developed for detecting microsatellite instability from paired-end BAM files. "
             "To perform analysis, the program needs a tumor BAM and a matched normal BAM file "
             "(produced using the same pipeline) to determine the instability score between the "
-            "two samples within the pair. Longer reads (ideally, 100 bp or longer) are recommended, "
-            "as shorter reads are unlikely to entirely cover the microsatellite loci, and will be "
-            "discarded after failing the quality control filters."
+            "two samples within the pair."
         ),
         dir="/home/danilovd/tools/MANTIS-1.0.5/",
         commands={
             "mantis": Command(
                 key="mantis",
                 name="mantis",
-                description="Run MANTIS MSI analysis",
+                description=(
+                    "To run the tool, select normal and tumor BAM files generated using the same pipeline, "
+                    "a reference genome in FASTA format, and a BED file with microsatellite loci.\n"
+                    "The BED file can be generated using the RepeatFinder (tool included with MANTIS), "
+                    "or by using our Microsat2Bed tool to convert microsatellite lists produced by MSIsensor.\n"
+                    "Additional parameters allow you to control quality filtering and analysis thresholds:\n"
+                    "- Threads control parallel processing.\n"
+                    "- Minimum read quality and locus quality define quality control thresholds.\n"
+                    "- Minimum read length filters out short or clipped reads.\n"
+                    "- Minimum locus coverage defines how many reads are required in both samples.\n"
+                    "- Minimum repeat reads control support required for repeat counts.\n"
+                    "- Standard deviations define how outliers are filtered from repeat distributions.\n"
+                    "Longer reads (ideally >= 100 bp) are recommended, as shorter reads may not fully cover "
+                    "microsatellite loci and can be removed during quality control."
+                ),
                 template=(
                     "/home/danilovd/.conda/envs/mantis/bin/python -u ./mantis.py "
                     "-n {normal_bam} "
