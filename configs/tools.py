@@ -409,7 +409,16 @@ TOOLS = {
             "repeatfinder": Command(
                 key="repeatfinder",
                 name="repeatfinder",
-                description="Detect microsatellite regions and generate a BED file",
+                description=(
+                    "RepeatFinder scans a reference genome in FASTA format and identifies microsatellite regions, "
+                    "generating a BED file compatible with MANTIS.\n"
+                    "To run the tool, select a reference genome file from the list on the left. "
+                    "Additional parameters allow you to control which microsatellite regions are reported:\n"
+                    "- Minimum and maximum repeat region length define the allowed size of detected microsatellites.\n"
+                    "- Minimum k-mer repeats specify how many motif repetitions are required.\n"
+                    "- Minimum and maximum k-mer length define the motif sizes to search for.\n"
+                    "The default maximum k-mer length is 5, as larger values may include telomeric repeats."
+                ),
                 template=(
                     "./RepeatFinder "
                     "-i {reference_genome} "
@@ -519,16 +528,21 @@ TOOLS = {
         key="microsat2bed",
         name="Microsat2Bed",
         description=(
-            "Microsat2Bed converts a microsatellite list into BED format following RepeatFinder coordinate conventions. "
-            "It is designed for use with MANTIS to ensure consistent locus definitions and enable accurate comparison "
-            "across tools (like MSIsensor) using the same reference loci."
+            "We developed Microsat2Bed to convert a microsatellite list into BED format "
+            "following RepeatFinder coordinate conventions. "
+            "It is designed for use with MANTIS to ensure consistent locus definitions "
+            "and enable accurate comparison across tools (like MSIsensor) using the same reference loci."
         ),
         dir="/home/danilovd/tools/",
         commands={
             "convert": Command(
                 key="convert",
                 name="convert",
-                description="Converts microsatellite list into BED file",
+                description=(
+                    "Converts a microsatellite list into a BED file. First, generate the microsatellite "
+                    "list using MSIsensor scan, then convert it to a BED file compatible with RepeatFinder format, "
+                    "which can be used for running MANTIS."
+                ),
                 template=(
                     "python -u microsat2bed.py "
                     "{microsatellite_list} "

@@ -30,7 +30,9 @@ def make_repeatfinder():
                         [
                             dmc.Text("Reference genome file", size="sm", fw=500),
                             dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Select the reference genome file in FASTA format."),
+                            helper(
+                                "Select the reference genome file in FASTA format."
+                            ),
                         ],
                         gap=6,
                     ),
@@ -66,8 +68,11 @@ def make_repeatfinder():
                 dmc.NumberInput(
                     label=dmc.Group(
                         [
-                            dmc.Text("Minimum repeat region length", size="sm", fw=500),
-                            helper("Set the minimum length of a repeat region to be reported as a microsatellite."),
+                            dmc.Text("Minimum repeat region length (bp)", size="sm", fw=500),
+                            helper(
+                                "Minimum number of bases a repeat region must span to be reported as a microsatellite.\n"
+                                "Example: a region of length 8 bp will be ignored if the threshold is set to 10."
+                            ),
                         ],
                         gap=6,
                     ),
@@ -79,8 +84,11 @@ def make_repeatfinder():
                 dmc.NumberInput(
                     label=dmc.Group(
                         [
-                            dmc.Text("Maximum repeat region length", size="sm", fw=500),
-                            helper("Set the maximum length of a repeat region to be reported as a microsatellite."),
+                            dmc.Text("Maximum repeat region length (bp)", size="sm", fw=500),
+                            helper(
+                                "Maximum number of bases a repeat region can span to be reported as a microsatellite.\n"
+                                "Example: a region of length 120 bp will be ignored if the threshold is set to 100."
+                            ),
                         ],
                         gap=6,
                     ),
@@ -93,7 +101,10 @@ def make_repeatfinder():
                     label=dmc.Group(
                         [
                             dmc.Text("Minimum k-mer repeats", size="sm", fw=500),
-                            helper("Set the minimum number of k-mer repeats required to report a microsatellite."),
+                            helper(
+                                "Minimum number of repeated k-mer units required to report a microsatellite.\n"
+                                "Example: (AC)2 will be ignored if the threshold is set to 3."
+                            ),
                         ],
                         gap=6,
                     ),
@@ -105,8 +116,11 @@ def make_repeatfinder():
                 dmc.NumberInput(
                     label=dmc.Group(
                         [
-                            dmc.Text("Minimum k-mer length", size="sm", fw=500),
-                            helper("Set the minimum k-mer length to consider when detecting microsatellites."),
+                            dmc.Text("Minimum k-mer length (bp)", size="sm", fw=500),
+                            helper(
+                                "Minimum length of the repeating motif (k-mer) to consider.\n"
+                                "Example: with value 2, single-base repeats like (A)n will be ignored."
+                            ),
                         ],
                         gap=6,
                     ),
@@ -118,8 +132,12 @@ def make_repeatfinder():
                 dmc.NumberInput(
                     label=dmc.Group(
                         [
-                            dmc.Text("Maximum k-mer length", size="sm", fw=500),
-                            helper("Set the maximum k-mer length to consider when detecting microsatellites. Values >=6 may include telomere repeats."),
+                            dmc.Text("Maximum k-mer length (bp)", size="sm", fw=500),
+                            helper(
+                                "Maximum length of the repeating motif (k-mer) to consider.\n"
+                                "Example: with value 5, repeats like (ACGTAC)n will be ignored.\n"
+                                "Values >= 6 are not recommended as they may include telomeric repeats."
+                            ),
                         ],
                         gap=6,
                     ),
@@ -150,7 +168,10 @@ command_description = dmc.Paper(
     w="100%",
     children=dmc.Stack(
         [
-            dmc.Text(tool.commands["repeatfinder"].description),
+            dmc.Text(
+                tool.commands["repeatfinder"].description,
+                style={"whiteSpace": "pre-line"},
+            ),
         ],
         gap="xs",
     ),

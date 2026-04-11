@@ -8,7 +8,7 @@ def helper(help_message: str):
     """
     return dmc.HoverCard(
         withArrow=True,
-        width=260,
+        width=400,
         shadow="xs",
         position="top",
         openDelay=150,
@@ -24,7 +24,7 @@ def helper(help_message: str):
                 dmc.Text(
                     help_message,
                     size="sm",
-                    style={"whiteSpace": "normal"},
+                    style={"whiteSpace": "pre-line"},
                 )
             ),
         ],

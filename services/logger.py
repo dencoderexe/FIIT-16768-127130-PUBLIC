@@ -1,3 +1,5 @@
+from configs.paths import logs_path
+
 from logging.handlers import TimedRotatingFileHandler
 
 import os
@@ -12,7 +14,7 @@ def setup_logging():
     """
 
     # ensure log dir exists
-    os.makedirs(".logs", exist_ok=True)
+    os.makedirs(logs_path, exist_ok=True)
 
     # set log format
     formatter = logging.Formatter(
@@ -22,7 +24,7 @@ def setup_logging():
 
     # file handler with daily rotation
     log_file_handler = TimedRotatingFileHandler(
-        filename=".logs/app.log",
+        filename=f"{logs_path}/app.log",
         when="midnight",    # rotation at midnight
         interval=1,         # every day
         backupCount=7,      # keep up to 7 log files
