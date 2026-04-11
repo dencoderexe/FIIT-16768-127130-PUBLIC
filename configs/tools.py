@@ -5,18 +5,26 @@ TOOLS = {
         key="msisensor2",
         name="MSIsensor2",
         description=(
-            "MSIsensor2 is a novel algorithm based machine learning, featuring a large "
-            "upgrade in the microsatellite instability (MSI) detection for tumor only "
-            "sequencing data, including Cell-Free DNA (cfDNA), Formalin-Fixed "
-            "Paraffin-Embedded(FFPE) and other sample types. The original MSIsensor is "
-            "specially designed for tumor/normal paired sequencing data."
+            "MSIsensor2 is a machine learning-based tool for microsatellite instability (MSI) detection, "
+            "with support for both tumor-only (improved support) and tumor-normal analysis."
         ),
         dir="/home/danilovd/tools/msisensor2/",
         commands={
             "scan": Command(
                 key="scan",
                 name="scan",
-                description="scan homopolymers and miscrosatelites",
+                description=(
+                    "MSIsensor2 scan identifies homopolymer and microsatellite loci in a reference genome "
+                    "and generates a microsatellite list file for MSI analysis.\n"
+                    "It uses the same scanning strategy as the original MSIsensor scan command.\n"
+                    "To run the tool, select a reference genome file in FASTA format.\n"
+                    "Additional parameters allow you to control which loci are reported:\n"
+                    "- Minimum and maximum homopolymer size define the allowed homopolymer length.\n"
+                    "- Context length defines how many flanking bases are stored for each site.\n"
+                    "- Maximum microsatellite length defines the maximum motif size to search for.\n"
+                    "- Minimum microsatellite repeats define how many repeat units are required for a microsatellite to be reported.\n"
+                    "- Homopolymer only limits the output to homopolymer sites."
+                ),
                 template=(
                     "./msisensor2 scan "
                     "-d {reference_genome} "
@@ -44,7 +52,24 @@ TOOLS = {
             "msi": Command(
                 key="msi",
                 name="msi",
-                description="msi scoring",
+                description=(
+                    "MSIsensor2 msi performs MSI scoring using a tumor BAM file, with optional support for a matched "
+                    "normal BAM file for tumor-normal analysis.\n"
+                    "To run the tool, select a model and a tumor BAM file. "
+                    "You may optionally provide a matched normal BAM file to run in tumor-normal mode.\n"
+                    "A microsatellite list file, BED file, and genomic region can also be provided to limit the analysis "
+                    "to specific loci or regions.\n"
+                    "Additional parameters allow you to control analysis thresholds and filtering:\n"
+                    "- Coverage defines the minimum recommended sequencing depth for analysis.\n"
+                    "- Coverage normalization enables normalization for paired tumor-normal analysis.\n"
+                    "- FDR threshold controls the false discovery rate used for calling unstable sites.\n"
+                    "- Homopolymer and microsatellite size parameters define which loci are included in distribution analysis.\n"
+                    "- Span size window defines the window around each site used for read extraction.\n"
+                    "- Threads control parallel processing.\n"
+                    "- Homopolymer only and microsatellite only restrict the analysis to one locus type.\n"
+                    "Tumor-only mode is suitable when no matched normal sample is available, while tumor-normal mode "
+                    "can be used when both tumor and matched normal BAM files are provided."
+                ),
                 template=(
                     "./msisensor2 msi "
                     "-M {model} "
@@ -104,18 +129,26 @@ TOOLS = {
         key="msisensor",
         name="MSIsensor",
         description=(
-            "MSIsensor is a C++ program to detect replication slippage variants at "
-            "microsatellite regions, and differentiate them as somatic or germline. "
-            "Given paired tumor and normal sequence data, it builds a distribution "
-            "for expected (normal) and observed (tumor) lengths of repeated sequence "
-            "per microsatellite, and compares them using Pearson's Chi-Squared Test. "
+            "MSIsensor is a tool for microsatellite instability (MSI) detection that analyzes "
+            "repeat length distributions at microsatellite loci using tumor sequencing data, "
+            "with optional support for matched normal samples."
         ),
         dir="/home/danilovd/tools/msisensor/",
         commands={
             "scan": Command(
                 key="scan",
                 name="scan",
-                description="scan homopolymers and miscrosatelites",
+                description=(
+                    "MSIsensor scan identifies homopolymer and microsatellite loci in a reference genome "
+                    "and generates a microsatellite list file for MSI analysis.\n"
+                    "To run the tool, select a reference genome file in FASTA format.\n"
+                    "Additional parameters allow you to control which loci are reported:\n"
+                    "- Minimum and maximum homopolymer size define the allowed homopolymer length.\n"
+                    "- Context length defines how many flanking bases are stored for each site.\n"
+                    "- Maximum microsatellite length defines the maximum motif size to search for.\n"
+                    "- Minimum microsatellite repeats define how many repeat units are required for a microsatellite to be reported.\n"
+                    "- Homopolymer only limits the output to homopolymer sites."
+                ),
                 template=(
                     "./msisensor.linux scan "
                     "-d {reference_genome} "
@@ -143,7 +176,22 @@ TOOLS = {
             "msi": Command(
                 key="msi",
                 name="msi",
-                description="msi scoring",
+                description=(
+                    "MSIsensor msi performs MSI scoring using a tumor BAM file and a microsatellite list file, "
+                    "with optional support for a matched normal BAM file for tumor-normal analysis.\n"
+                    "To run the tool, select a microsatellite list file and a tumor BAM file. "
+                    "You may optionally provide a matched normal BAM file to run in tumor-normal mode.\n"
+                    "A BED file and genomic region can also be provided to restrict the analysis to specific loci or regions.\n"
+                    "Additional parameters allow you to control analysis thresholds and filtering:\n"
+                    "- Coverage defines the minimum sequencing depth threshold used for analysis.\n"
+                    "- Coverage normalization enables normalization for paired tumor-normal analysis.\n"
+                    "- FDR threshold controls the false discovery rate used for calling unstable sites.\n"
+                    "- Homopolymer and microsatellite size parameters define which loci are included in distribution analysis.\n"
+                    "- Span size window defines the window around each site used for read extraction.\n"
+                    "- Threads control parallel processing.\n"
+                    "- Homopolymer only and microsatellite only restrict the analysis to one locus type.\n"
+                    "MSIsensor was originally designed for paired tumor-normal sequencing data."
+                ),
                 template=(
                     "./msisensor.linux msi "
                     "-d {microsatellite_list} "
@@ -202,23 +250,28 @@ TOOLS = {
         key="msisensor-pro",
         name="MSIsensor-pro",
         description=(
-            "MSIsensor-pro is an updated version of msisensor. MSIsensor-pro evaluates "
+            "MSIsensor-pro is an updated version of MSIsensor. MSIsensor-pro evaluates "
             "Microsatellite Instability (MSI) for cancer patients with next generation "
-            "sequencing data. It accepts the whole genome sequencing, whole exome sequencing "
-            "and target region (panel) sequencing data as input. MSIsensor-pro introduces a "
-            "multinomial distribution model to quantify polymerase slippages for each tumor "
-            "sample and a discriminative sites selection method to enable MSI detection "
-            "without matched normal samples. For samples of various sequencing depths and "
-            "tumor purities, MSIsensor-pro significantly outperformed the current leading "
-            "methods which required matched normal samples in terms of both accuracy and "
-            "computational cost."
+            "sequencing data with support for both paired tumor-normal and tumor-only analysis." 
+            "It accepts the whole genome sequencing, whole exome sequencing "
+            "and target region (panel) sequencing data as input. "
         ),
         dir="/home/danilovd/tools/msisensor-pro/",
         commands={
             "scan": Command(
                 key="scan",
                 name="scan",
-                description="scan homopolymers and miscrosatelites",
+                description=(
+                    "MSIsensor-pro scan identifies homopolymer and microsatellite loci in a reference genome "
+                    "and generates a microsatellite list file for downstream MSI analysis.\n"
+                    "To run the tool, select a reference genome file in FASTA format.\n"
+                    "Additional parameters allow you to control which loci are reported:\n"
+                    "- Minimum and maximum homopolymer size define the allowed homopolymer length.\n"
+                    "- Context length defines how many flanking bases are stored for each site.\n"
+                    "- Maximum microsatellite motif length defines the maximum repeat unit size to search for.\n"
+                    "- Minimum microsatellite repeats define how many repeat units are required for a microsatellite to be reported.\n"
+                    "- Homopolymer only limits the output to homopolymer sites."
+                ),
                 template=(
                     "./msisensor-pro-v1.3.0 scan "
                     "-d {reference_genome} "
@@ -247,7 +300,20 @@ TOOLS = {
             "msi": Command(
                 key="msi",
                 name="msi",
-                description="msi scoring",
+                description=(
+                    "MSIsensor-pro msi performs MSI scoring using paired normal and tumor BAM files.\n"
+                    "To run the tool, select a microsatellite list file, a matched normal BAM file, and a tumor BAM file.\n"
+                    "An optional BED file can be provided to restrict the analysis to specific loci or regions.\n"
+                    "Additional parameters allow you to control analysis thresholds and filtering:\n"
+                    "- Coverage defines the sequencing depth threshold used for MSI analysis.\n"
+                    "- Coverage normalization enables normalization for paired tumor-normal analysis.\n"
+                    "- FDR threshold controls somatic unstable site detection.\n"
+                    "- Homopolymer and microsatellite size parameters define which loci are included in distribution analysis.\n"
+                    "- Span size window defines the window around each site used for read extraction.\n"
+                    "- Threads control parallel processing.\n"
+                    "- Homopolymer only and microsatellite only restrict the analysis to one locus type.\n"
+                    "- Include sites with no read coverage controls whether zero-coverage sites are retained in the output."
+                ),
                 template=(
                     "./msisensor-pro-v1.3.0 msi "
                     "-d {microsatellite_list} "
@@ -299,7 +365,19 @@ TOOLS = {
             "pro": Command(
                 key="pro",
                 name="pro",
-                description="",
+                description=(
+                    "MSIsensor-pro pro performs MSI scoring using a single tumor sample without a matched normal BAM file.\n"
+                    "To run the tool, select a microsatellite list file and a tumor BAM file.\n"
+                    "An optional BED file can be provided to restrict the analysis to specific loci or regions.\n"
+                    "Additional parameters allow you to control analysis thresholds and filtering:\n"
+                    "- Unstable sites threshold defines the minimum threshold used for unstable site detection in tumor-only analysis.\n"
+                    "- Coverage defines the sequencing depth threshold used for MSI analysis.\n"
+                    "- Homopolymer and microsatellite size parameters define which loci are included in distribution analysis.\n"
+                    "- Span size window defines the window around each site used for read extraction.\n"
+                    "- Threads control parallel processing.\n"
+                    "- Homopolymer only and microsatellite only restrict the analysis to one locus type.\n"
+                    "- Include sites with no read coverage controls whether zero-coverage sites are retained in the output."
+                ),
                 template=(
                     "./msisensor-pro-v1.3.0 pro "
                     "-d {microsatellite_list} "
@@ -460,15 +538,20 @@ TOOLS = {
         key="samtools",
         name="Samtools",
         description=(
-            "SAMtools is a set of utilities for interacting with and post-processing "
-            "short DNA sequence read alignments in the SAM, BAM and CRAM formats, written by Heng Li."
+            "SAMtools is a set of utilities for interacting with and processing "
+            "sequence alignment files in SAM, BAM and CRAM formats."
         ),
         dir="/home/danilovd/tools/",
         commands={
             "index": Command(
                 key="index",
                 name="index",
-                description="Index BAM file",
+                description=(
+                    "Samtools index creates an index for a BAM file to enable fast random access "
+                    "to alignment data.\n"
+                    "To run the command, select a BAM file. The resulting index file (.bai) allows "
+                    "efficient querying of specific genomic regions without reading the entire file."
+                ),
                 template=(
                     "samtools index --bai "
                     "{bam_file} "
@@ -485,7 +568,12 @@ TOOLS = {
             "sort": Command(
                 key="sort",
                 name="sort",
-                description="Sort BAM file",
+                description=(
+                    "Samtools sort sorts a BAM file by genomic coordinates or read name.\n"
+                    "To run the command, select a BAM file. Sorting is typically required before indexing "
+                    "and for many downstream analyses.\n"
+                    "By default, sorting is performed by genomic coordinates."
+                ),
                 template=(
                     "samtools sort "
                     "{bam_file} "
@@ -502,7 +590,12 @@ TOOLS = {
             "merge": Command(
                 key="merge",
                 name="merge",
-                description="Merge BAM files",
+                description=(
+                    "Samtools merge combines multiple sorted BAM files into a single output BAM file.\n"
+                    "To run the command, select multiple BAM files. All input files should be sorted "
+                    "by genomic coordinates.\n"
+                    "The resulting file can optionally be indexed during the merge process."
+                ),
                 template=(
                     "samtools merge "
                     "-o {output} "
@@ -513,14 +606,17 @@ TOOLS = {
                 ],
                 optionals={
                     "threads": "--threads",
-                    "write_index": "--write-index"
                 },
                 link_output_to_input_arg="save_next_to",
             ),
             "faidx": Command(
                 key="faidx",
                 name="faidx",
-                description="Index FASTA file",
+                description=(
+                    "Samtools faidx indexes a FASTA reference genome file.\n"
+                    "To run the command, select a FASTA file. The generated index (.fai) allows "
+                    "fast random access to specific regions of the reference genome."
+                ),
                 template=(
                     "samtools faidx "
                     "{reference_genome} "
@@ -533,6 +629,27 @@ TOOLS = {
                     "threads": "--threads"
                 },
                 link_output_to_input_arg="reference_genome",
+            ),
+            "stats": Command(
+                key="stats",
+                name="stats",
+                description=(
+                    "Samtools stats generates comprehensive statistics from a BAM file.\n"
+                    "To run the command, select a BAM file. The output includes information such as "
+                    "total reads, mapped reads, coverage, insert size distribution, and quality metrics.\n"
+                    "The resulting report can be used for quality control and downstream analysis."
+                ),
+                template=(
+                    "samtools stats "
+                    "{bam_file} "
+                    "> {output} "
+                ),
+                steps=[
+                    "Producing comprehensive statistics from alignment file",
+                ],
+                optionals={
+                    "threads": "--threads"
+                },
             ),
         }
     ),
