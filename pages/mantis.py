@@ -6,7 +6,7 @@ from services.job_manager import create_job
 from services.file_manager import get_files
 
 from configs.tools import TOOLS
-from configs.paths import data_path
+from configs.paths import data_path, BAM_EXT, BED_EXT, FASTA_EXT
 
 import os
 import dash
@@ -39,7 +39,7 @@ def make_mantis():
                     id="mantis-normal-bam-file-select",
                     data=[
                         {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".bam"])
+                        for file in get_files(extensions=BAM_EXT)
                     ],
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
@@ -60,7 +60,7 @@ def make_mantis():
                     id="mantis-tumor-bam-file-select",
                     data=[
                         {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".bam"])
+                        for file in get_files(extensions=BAM_EXT)
                     ],
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
@@ -81,7 +81,7 @@ def make_mantis():
                     id="mantis-refgenome-file-select",
                     data=[
                         {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".fasta", ".fas", ".fa", ".fna", ".ffn", ".faa", ".mpfa", ".frn"])
+                        for file in get_files(extensions=FASTA_EXT)
                     ],
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
@@ -103,7 +103,7 @@ def make_mantis():
                     id="mantis-bed-file-select",
                     data=[
                         {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".bed"])
+                        for file in get_files(extensions=BED_EXT)
                     ],
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
