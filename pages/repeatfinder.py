@@ -6,7 +6,7 @@ from services.job_manager import create_job
 from services.file_manager import get_files
 
 from configs.tools import TOOLS
-from configs.paths import data_path
+from configs.paths import data_path, FASTA_EXT, BED_EXT
 
 import os
 import dash
@@ -39,7 +39,7 @@ def make_repeatfinder():
                     id="repeatfinder-refgenome-file-select",
                     data=[
                         {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".fasta", ".fas", ".fa", ".fna", ".ffn", ".faa", ".mpfa", ".frn"])
+                        for file in get_files(extensions=FASTA_EXT)
                     ],
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
@@ -237,7 +237,7 @@ def repeatfinder_start_job(
             tool=tool,
             command=tool.commands.get("repeatfinder"),
             reference_genome=reference_genome,
-            output=f"{os.path.splitext(os.path.basename(reference_genome))[0]}.loci.bed",
+            output=f"{os.path.splitext(os.path.basename(reference_genome))[0]}{BED_EXT[0]}",
 
             min_length=min_length,
             max_length=max_length,
