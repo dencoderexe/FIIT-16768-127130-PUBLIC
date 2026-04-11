@@ -1,4 +1,4 @@
-from dash import Input, Output, State, callback, no_update, html
+from dash import Input, Output, callback, no_update
 from dash_iconify import DashIconify
 
 from components.helper import helper
@@ -6,7 +6,7 @@ from services.job_manager import create_job
 from services.file_manager import get_files
 
 from configs.tools import TOOLS
-from configs.paths import data_path
+from configs.paths import data_path, MICROSAT_LIST_EXT, BED_EXT
 
 import os
 import dash
@@ -37,7 +37,7 @@ def make_convert():
                     id="microsat2bed-convert-microsat-list-file-select",
                     data=[
                         {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".microsatellite.list"])
+                        for file in get_files(extensions=MICROSAT_LIST_EXT)
                     ],
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
@@ -129,7 +129,7 @@ def microsat2bed_convert_start_job(
             tool=tool,
             command=tool.commands.get("convert"),
             microsatellite_list=microsatellite_list,
-            output=f"{os.path.basename(microsatellite_list)}.bed",
+            output=f"{os.path.basename(microsatellite_list)}{BED_EXT[0]}",
         )
 
         return [dict(
