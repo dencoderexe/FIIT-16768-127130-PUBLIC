@@ -6,7 +6,7 @@ from services.job_manager import create_job
 from services.file_manager import get_files
 
 from configs.tools import TOOLS
-from configs.paths import data_path
+from configs.paths import data_path, BAM_EXT, FASTA_EXT, FASTA_IDX_EXT, BAM_IDX_EXT
 
 import os
 import dash
@@ -37,7 +37,7 @@ def make_index():
                     id="samtools-index-bam-file-select",
                     data=[
                         {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".bam"])
+                        for file in get_files(extensions=BAM_EXT)
                     ],
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
@@ -112,7 +112,7 @@ def make_merge():
                     id="samtools-merge-bam-files-select",
                     data=[
                         {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".bam"])
+                        for file in get_files(extensions=BAM_EXT)
                     ],
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
@@ -187,7 +187,7 @@ def make_sort():
                     id="samtools-sort-bam-file-select",
                     data=[
                         {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".bam"])
+                        for file in get_files(extensions=BAM_EXT)
                     ],
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
@@ -262,7 +262,7 @@ def make_faidx():
                     id="samtools-faidx-refgenome-file-select",
                     data=[
                         {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=[".fasta", ".fas", ".fa", ".fna", ".ffn", ".faa", ".mpfa", ".frn"])
+                        for file in get_files(extensions=FASTA_EXT)
                     ],
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
@@ -316,6 +316,82 @@ def make_faidx():
         align="stretch",
     )
 
+
+def make_stats():
+    required_options = dmc.Paper(
+        withBorder=True,
+        radius="md",
+        p="md",
+        h="100%",
+        children=dmc.Stack(
+            [
+                dmc.Title("Required options", order=4),
+                dmc.Select(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("BAM file", size="sm", fw=500),
+                            dmc.Text("*", c="red", size="sm", fw=700),
+                            helper("Select the alignment BAM file."),
+                        ],
+                        gap=6,
+                    ),
+                    id="samtools-stats-bam-file-select",
+                    data=[
+                        {"value": str(file), "label": str(file).replace(data_path, "")}
+                        for file in get_files(extensions=BAM_EXT)
+                    ],
+                    nothingFoundMessage="Nothing found",
+                    checkIconPosition="right",
+                    placeholder="Select the alignment BAM file",
+                    searchable=True,
+                ),
+                dmc.Space(h="xl"),
+                
+                dmc.Box(style={"flexGrow": 1}),
+
+                dmc.Button("Start", id="samtools-stats-start-button", disabled=True),
+            ],
+            gap="md",
+            h="100%",
+        ),
+    )
+
+    additional_options = dmc.Paper(
+        withBorder=True,
+        radius="md",
+        p="md",
+        h="100%",
+        children=dmc.Stack(
+            [
+                dmc.Title("Additional options", order=4),
+                dmc.NumberInput(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Threads", size="sm", fw=500),
+                            helper("Specify the number of threads to use for producing statistics."),
+                        ],
+                        gap=6,
+                    ),
+                    id="samtools-stats-threads",
+                    value=1,
+                    min=1,
+                    allowDecimal=False,
+                ),
+            ],
+            gap="md",
+            h="100%",
+        ),
+    )
+
+    return dmc.Grid(
+        [
+            dmc.GridCol(required_options, span=6),
+            dmc.GridCol(additional_options, span=6),
+        ],
+        gutter="md",
+        align="stretch",
+    )
+
 command_select = dmc.Paper(
     withBorder=True,
     radius="md",
@@ -334,7 +410,10 @@ command_select = dmc.Paper(
                 ],
                 allowDeselect=False,
             ),
-            dmc.Text(id="samtools-command-description"),
+            dmc.Text(
+                id="samtools-command-description",
+                style={"whiteSpace": "pre-line"},
+            ),
         ],
         gap="xs",
     ),
@@ -385,6 +464,8 @@ def samtools_select_command(value):
         return make_sort()
     elif value == "faidx":
         return make_faidx()
+    elif value == "stats":
+        return make_stats()
     else:
         return None
     
@@ -417,7 +498,7 @@ def samtools_index_start_job(
             tool=tool,
             command=tool.commands.get(command_key),
             bam_file=bam_file,
-            output=f"{os.path.basename(bam_file)}.bai",
+            output=f"{os.path.basename(bam_file)}{BAM_IDX_EXT[0]}",
 
             threads=(threads-1) if threads > 1 else None,
         )
@@ -470,7 +551,7 @@ def samtools_sort_start_job(
             tool=tool,
             command=tool.commands.get(command_key),
             bam_file=bam_file,
-            output=f"{os.path.splitext(os.path.basename(bam_file))[0]}.sorted.bam",
+            output=f"{os.path.splitext(os.path.basename(bam_file))[0]}.sorted{BAM_EXT[0]}",
 
             threads=(threads-1) if threads > 1 else None,
         )
@@ -525,7 +606,7 @@ def samtools_merge_start_job(
             tool=tool,
             command=tool.commands.get(command_key),
             bam_files=" ".join(bam_files),
-            output=f"{os.path.splitext(os.path.basename(bam_files[0]))[0]}.merged.bam",
+            output=f"{os.path.splitext(os.path.basename(bam_files[0]))[0]}.merged{BAM_EXT[0]}",
 
             threads=(threads-1) if threads > 1 else None,
 
@@ -580,7 +661,60 @@ def samtools_faidx_start_job(
             tool=tool,
             command=tool.commands.get(command_key),
             reference_genome=reference_genome,
-            output=f"{os.path.basename(reference_genome)}.fai",
+            output=f"{os.path.basename(reference_genome)}{FASTA_IDX_EXT[0]}",
+
+            threads=(threads-1) if threads > 1 else None,
+        )
+
+        return [dict(
+            title="Job started",
+            action="show",
+            color="yellow",
+            message=f"{tool.name} started",
+            autoClose=3000,
+            icon=DashIconify(icon="bi:arrow-repeat"),
+        )]
+
+    except Exception as e:
+        return [dict(
+            title="Failed to start job",
+            action="show",
+            color="red",
+            message=str(e),
+            autoClose=3000,
+            icon=DashIconify(icon="bi:x-circle-fill"),
+        )]
+    
+@callback(
+    Output("samtools-stats-start-button", "disabled"),
+    Input("samtools-stats-bam-file-select", "value"),
+)
+def samtools_stats_start_button(bam_file):
+    return not bool(bam_file)
+
+@callback(
+    Output("notification-container", "sendNotifications", allow_duplicate=True),
+    Input("samtools-stats-start-button", "n_clicks"),
+    State("samtools-command-select", "value"),
+    State("samtools-stats-bam-file-select", "value"),
+    State("samtools-stats-threads", "value"),
+    prevent_initial_call=True,
+)
+def samtools_stats_start_job(
+    n_clicks,
+    command_key,
+    bam_file,
+    threads,
+):
+    if not n_clicks:
+        return no_update
+
+    try:
+        create_job(
+            tool=tool,
+            command=tool.commands.get(command_key),
+            bam_file=bam_file,
+            output=f"{os.path.basename(bam_file)}.stats",
 
             threads=(threads-1) if threads > 1 else None,
         )
