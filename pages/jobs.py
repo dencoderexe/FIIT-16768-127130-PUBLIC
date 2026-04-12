@@ -293,6 +293,61 @@ def make_job_item(job: Job):
         value=job.id,
     )
 
+filters = dmc.SimpleGrid(
+    cols={"base": 1, "sm": 2, "lg": 4},
+    spacing="sm",
+    children=[
+        dmc.MultiSelect(
+            id="jobs-tool-filter",
+            placeholder="Select tools",
+            data=[],
+            clearable=True,
+            searchable=True,
+        ),
+        dmc.MultiSelect(
+            id="jobs-command-filter",
+            placeholder="Select commands",
+            data=[],
+            clearable=True,
+            searchable=True,
+        ),
+        dmc.MultiSelect(
+            id="jobs-output-filter",
+            placeholder="Select output",
+            data=[],
+            clearable=True,
+            searchable=True,
+        ),
+        dmc.MultiSelect(
+            id="jobs-status-filter",
+            placeholder="Select status",
+            data=[],
+            clearable=True,
+            searchable=True,
+        ),
+    ],
+)
+
+def filter_jobs(
+    jobs: list[Job],
+    selected_tools,
+    selected_commands,
+    selected_outputs,
+    selected_statuses,
+) -> list[Job]:
+    selected_tools = selected_tools or []
+    selected_commands = selected_commands or []
+    selected_outputs = selected_outputs or []
+    selected_statuses = selected_statuses or []
+
+    return [
+        job for job in jobs
+        if (not selected_tools or job.tool.name in selected_tools)
+        and (not selected_commands or job.command.name in selected_commands)
+        and (not selected_outputs or job.args.get("output", "-") in selected_outputs)
+        and (not selected_statuses or job.status.name in selected_statuses)
+    ]
+
 layout = dmc.Container(
     children=[
         dcc.Interval(id="jobs-poll-interval", interval=2500, n_intervals=0, max_intervals=-1),
@@ -301,32 +356,29 @@ layout = dmc.Container(
 
         dmc.Title("Jobs", order=2, mb="md"),
 
-        dmc.ScrollArea(
-            children=[
-                dmc.Divider(label="Active jobs", labelPosition="center"),
-                dmc.Accordion(
-                    id="active-jobs-accordion",
-                    multiple=True,
-                    variant="separated",
-                    radius="md",
-                    children=[],
-                    value=[],
-                ),
-                html.Div(id="active-jobs-empty-text"),
-                dmc.Divider(label="Finished jobs", labelPosition="center"),
-                dmc.Accordion(
-                    id="finished-jobs-accordion",
-                    multiple=True,
-                    variant="separated",
-                    radius="md",
-                    children=[],
-                    value=[],
-                ),
-                html.Div(id="finished-jobs-empty-text"),
-            ],
-            offsetScrollbars=True,
-            type="scroll",
+        filters,
+
+        dmc.Divider(label="Active jobs", labelPosition="center"),
+        dmc.Accordion(
+            id="active-jobs-accordion",
+            multiple=True,
+            variant="separated",
+            radius="md",
+            children=[],
+            value=[],
         ),
+        html.Div(id="active-jobs-empty-text"),
+
+        dmc.Divider(label="Finished jobs", labelPosition="center"),
+        dmc.Accordion(
+            id="finished-jobs-accordion",
+            multiple=True,
+            variant="separated",
+            radius="md",
+            children=[],
+            value=[],
+        ),
+        html.Div(id="finished-jobs-empty-text"),
         
         dcc.Store(id="download-busy", data=False),
         dcc.Download(id="job-download"),
@@ -440,9 +492,20 @@ def poll_jobs_signals(_, current_active_jobs_signal, current_finished_jobs_signa
     Output("active-jobs-accordion", "children"),
     Output("active-jobs-empty-text", "children"),
     Input("active-jobs-signal", "data"),
+    Input("jobs-tool-filter", "value"),
+    Input("jobs-command-filter", "value"),
+    Input("jobs-output-filter", "value"),
+    Input("jobs-status-filter", "value"),
 )
-def render_active_jobs(_):
+def render_active_jobs(_, selected_tools, selected_commands, selected_outputs, selected_statuses):
     jobs = get_active_jobs()
+    jobs = filter_jobs(
+        jobs,
+        selected_tools,
+        selected_commands,
+        selected_outputs,
+        selected_statuses,
+    )
 
     if not jobs:
         return (
@@ -463,26 +526,57 @@ def render_active_jobs(_):
     Output("finished-jobs-accordion", "children"),
     Output("finished-jobs-empty-text", "children"),
     Input("finished-jobs-signal", "data"),
+    Input("jobs-tool-filter", "value"),
+    Input("jobs-command-filter", "value"),
+    Input("jobs-output-filter", "value"),
+    Input("jobs-status-filter", "value"),
 )
-def render_finished_jobs(_):
+def render_finished_jobs(_, selected_tools, selected_commands, selected_outputs, selected_statuses):
     jobs = get_finished_jobs()
+    jobs = filter_jobs(
+        jobs,
+        selected_tools,
+        selected_commands,
+        selected_outputs,
+        selected_statuses,
+    )
 
     if not jobs:
         return (
-            [], 
+            [],
             dmc.Alert(
-                "There are no finished jobs.",
+                "There are no finished jobs matching the selected filters.",
                 color="gray",
                 variant="light",
             ),
         )
 
     return (
-        [
-            make_job_item(job)
-            for job in jobs
-        ],
+        [make_job_item(job) for job in jobs],
         None,
+    )
+
+@callback(
+    Output("jobs-tool-filter", "data"),
+    Output("jobs-command-filter", "data"),
+    Output("jobs-output-filter", "data"),
+    Output("jobs-status-filter", "data"),
+    Input("active-jobs-signal", "data"),
+    Input("finished-jobs-signal", "data"),
+)
+def update_filter_options(_, __):
+    jobs = get_active_jobs() + get_finished_jobs()
+
+    tool_options = sorted({job.tool.name for job in jobs})
+    command_options = sorted({job.command.name for job in jobs if len(job.args) > 1})
+    output_options = sorted({job.args.get("output", "-") for job in jobs})
+    status_options = [status.name for status in Status]
+
+    return (
+        [{"value": tool, "label": tool} for tool in tool_options],
+        [{"value": command, "label": command} for command in command_options],
+        [{"value": output, "label": output} for output in output_options],
+        [{"value": status, "label": status.title()} for status in status_options],
     )
 
 @callback(
