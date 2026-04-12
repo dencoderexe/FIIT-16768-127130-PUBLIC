@@ -359,7 +359,7 @@ TOOLS = {
                     "threads": 1,
                     "homopolymer_only": 0,
                     "microsatellite_only": 0,
-                    "include-zero-coverage-sites": 1,
+                    "include_zero_coverage_sites": 1,
                 },
                 optionals={
                     "bed_file": "-e",
@@ -397,7 +397,7 @@ TOOLS = {
                     "-b {threads} "
                     "-x {homopolymer_only} "
                     "-y {microsatellite_only} "
-                    "-0 {out_site_no_read_coverage} "
+                    "-0 {include_zero_coverage_sites} "
                 ),
                 steps=[
                     "Loading BAM files",
@@ -419,7 +419,7 @@ TOOLS = {
                     "threads": 1,
                     "homopolymer_only": 0,
                     "microsatellite_only": 0,
-                    "out_site_no_read_coverage": 1,
+                    "include_zero_coverage_sites": 1,
                 },
                 optionals={
                     "bed_file": "-e",

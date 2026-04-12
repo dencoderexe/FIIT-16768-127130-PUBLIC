@@ -288,8 +288,8 @@ def run_job(job: Job):
                     # terminate the job if a stop request was send from UI
                     if job.terminated:
                         terminate_job_process(job)
-                        if "Job stopped by user.\n" not in job.error_message:
-                            job.error_message += "Job stopped by user.\n"
+                        if "Job stopped by user." not in job.error_message:
+                            job.error_message += "Job stopped by user."
                         break
 
                     log.write(line)
@@ -316,8 +316,8 @@ def run_job(job: Job):
             if job.status not in (Status.FAILED, Status.SUCCESS):
                 job.set_status(Status.FAILED)
 
-            if "Job stopped by user.\n" not in job.error_message:
-                job.error_message += "Job stopped by user.\n"
+            if "Job stopped by user." not in job.error_message:
+                job.error_message += "Job stopped by user."
 
             logger.warning("[job:%s] Job stopped by user", job.id)
         elif job.status not in (Status.FAILED, Status.SUCCESS):

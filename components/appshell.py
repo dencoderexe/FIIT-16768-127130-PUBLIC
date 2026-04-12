@@ -45,7 +45,7 @@ def make_appshell(content):
                                 ),
                                 # FIIT STU logo
                                 dmc.Image(src=logo, h=50, flex=0),
-                                dmc.Title("MSI Analyzer", c="blue"),
+                                dmc.Title("MSI Pipeline Dashboard", c="blue"),
                             ]
                         ),
                         theme_toggle,
