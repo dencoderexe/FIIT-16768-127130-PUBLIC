@@ -1,14 +1,16 @@
 import dash_mantine_components as dmc
 
+from models.jobs import Job
+from components.job_arg_table import job_arg_table
+
 from dash_iconify import DashIconify
 
-def helper(help_message: str):
+def helper(content: str|Job):
     """
     Returns a small hover tooltip with a help message for user.
     """
     return dmc.HoverCard(
         withArrow=True,
-        width=400,
         shadow="xs",
         position="top",
         openDelay=150,
@@ -21,10 +23,25 @@ def helper(help_message: str):
                 )
             ),
             dmc.HoverCardDropdown(
-                dmc.Text(
-                    help_message,
-                    size="sm",
-                    style={"whiteSpace": "pre-line"},
+                style={
+                    "maxHeight": "400px",
+                    "overflowY": "auto",
+                    "maxWidth": "600px",
+                },
+                children=(
+                    dmc.Text(
+                        content,
+                        size="sm",
+                        style={"whiteSpace": "pre-line"},
+                    )
+                    if isinstance(content, str)
+                    else dmc.Stack(
+                        gap="xs",
+                        children=[
+                            dmc.Text("Run parameters", size="sm", fw=500),
+                            job_arg_table(content),
+                        ],
+                    )
                 )
             ),
         ],

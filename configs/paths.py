@@ -1,10 +1,16 @@
+# MAIN DIR PATHS
 logs_path   = "/home/danilovd/logs/"
 jobs_path   = "/home/danilovd/jobs2/"
 data_path   = "/home/danilovd/data/"
 tools_path  = "/home/danilovd/tools/"
 
+# TOOL PATHS
+
+# JOBS OUTPUT
 job_output_excluded_extensions = {".log", ".json", ".hist",}
 job_output_excluded_files = {}
+
+MAX_OUTPUT_SIZE = 200 * 1024 * 1024 # 200 MiB
 
 # EXTENSIONS
 FASTA_EXT = (".fasta", ".fas", ".fa", ".fna", ".ffn", ".faa", ".mpfa", ".frn",)

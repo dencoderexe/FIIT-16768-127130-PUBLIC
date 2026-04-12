@@ -3,8 +3,13 @@ from dash_iconify import DashIconify
 
 from services.job_signal import get_active_jobs_signal, get_finished_jobs_signal
 from services.job_manager import get_active_jobs, get_finished_jobs, get_job_by_id, delete_job, terminate_job_process
-from services.file_manager import write_zip
-from models.jobs import Status, Step, Job, memory_to_str
+from services.file_manager import write_zip, is_file_empty, is_output_too_big
+from models.jobs import Status, Job, memory_to_str
+from components.status_icon import status_icon
+from components.step_row import step_row
+from components.helper import helper
+
+from configs.tools import msi_analysis_commands
 
 import dash
 import logging
@@ -14,173 +19,80 @@ logger = logging.getLogger(__name__)
 
 dash.register_page(__name__, path="/jobs")
 
-def make_status_icon(status: Status):
-    return dmc.ThemeIcon(
-        DashIconify(icon=status.icon, height=18),
-        color=status.color,
-        variant="light",
-        radius="xl",
-        size="md",
+def make_stop_button(job: Job) -> dmc.Button:
+    return dmc.Button(
+        "Stop",
+        id={"type": "job-stop-button", "job_id": job.id},
+        variant="subtle",
+        color="red",
+        leftSection=DashIconify(icon="bi:x-octagon-fill"),
+        fullWidth=True,
     )
 
-def make_step_row(step: Step):
-    return dmc.Grid(
-        align="center",
-        children=[
-            dmc.GridCol(
-                dmc.Group(
-                    gap="sm",
-                    wrap="nowrap",
-                    children=[
-                        dmc.ThemeIcon(
-                            DashIconify(icon=step.status.icon, height=14),
-                            color=step.status.color,
-                            variant="light",
-                            radius="xl",
-                            size="sm",
-                        ),
-                        dmc.Text(step.name, size="sm"),
-                    ],
-                ),
-                span=6,
-            ),
-            dmc.GridCol(
-                dmc.Text(
-                    step.started_at.strftime("%d.%m.%Y %H:%M:%S") if step.started_at else "-",
-                    size="xs",
-                    c="dimmed",
-                ),
-                span=3,
-                style={"textAlign": "center"},
-            ),
-            dmc.GridCol(
-                dmc.Group(
-                    gap="xs",
-                    justify="center",
-                    wrap="nowrap",
-                    children=[
-                        *(
-                            [
-                                dmc.Progress(
-                                    color="yellow",
-                                    size="md",
-                                    value=int((step.progress_current / step.progress_total) * 100) if step.progress_total else 0,
-                                    w=110,
-                                    animated=True,
-                                )
-                            ]
-                            if not step.finished_at
-                            and step.progress_current is not None
-                            and step.progress_total is not None
-                            else [
-                                dmc.Text(
-                                    step.finished_at.strftime("%d.%m.%Y %H:%M:%S") if step.finished_at else "-",
-                                    size="xs",
-                                    c="dimmed",
-                                ),
-                            ]
-                        ),
-                    ],
-                ),
-                span=3,
-            ),
-        ],
+def make_log_button(job: Job) -> dmc.Button:
+    return dmc.Button(
+        "Log",
+        id={"type": "job-log-button", "job_id": job.id},
+        variant="light",
+        leftSection=DashIconify(icon="bi:file-earmark-text"),
+        fullWidth=True,
+    )
+
+def make_empty_log_button(job: Job) -> dmc.Button:
+    return dmc.Button(
+        "Log",
+        id={"type": "job-empty-log-button", "job_id": job.id},
+        variant="light",
+        leftSection=DashIconify(icon="bi:file-earmark-text"),
+        fullWidth=True,
+    )
+
+def make_output_button(job: Job) -> dmc.Button:
+    return dmc.Button(
+        "Output",
+        id={"type": "job-output-button", "job_id": job.id},
+        variant="light",
+        leftSection=DashIconify(icon="bi:download"),
+        fullWidth=True,
+    )
+
+def make_output_too_big_button(job: Job) -> dmc.Button:
+    return dmc.Button(
+        "Output",
+        id={"type": "job-output-too-big-button", "job_id": job.id},
+        variant="light",
+        leftSection=DashIconify(icon="bi:download"),
+        fullWidth=True,
+    )
+
+def make_delete_button(job: Job) -> dmc.Button:
+    return dmc.Button(
+        "Delete",
+        id={"type": "job-delete-button", "job_id": job.id},
+        variant="subtle",
+        color="red",
+        leftSection=DashIconify(icon="bi:trash"),
+        fullWidth=True,
     )
 
 def make_job_actions(job: Job):
-    actions = []
-
     if job.status == Status.RUNNING or job.status == Status.PENDING:
-        actions.append(
-            dmc.Button(
-                "Stop",
-                id={"type": "job-stop-button", "job_id": job.id},
-                variant="subtle",
-                color="red",
-                leftSection=DashIconify(icon="bi:x-octagon-fill"),
-                fullWidth=True,
-            )
-        )
+        actions = [
+            make_stop_button(job)
+        ]
     elif job.status == Status.FAILED:
-        actions.append(
-            dmc.Button(
-                "Log",
-                id={"type": "job-log-button", "job_id": job.id},
-                variant="light",
-                leftSection=DashIconify(icon="bi:file-earmark-text"),
-                fullWidth=True,
-            )
-        )
-        actions.append(
-            dmc.Button(
-                "Delete",
-                id={"type": "job-delete-button", "job_id": job.id},
-                variant="subtle",
-                color="red",
-                leftSection=DashIconify(icon="bi:trash"),
-                fullWidth=True,
-            ),
-        )
-    elif job.command.key not in {"msi", "mantis", "pro"}:
-        actions.append(
-            dmc.Button(
-                "Log",
-                id={"type": "job-log-button", "job_id": job.id},
-                variant="light",
-                leftSection=DashIconify(icon="bi:file-earmark-text"),
-                fullWidth=True, 
-            )
-        )
-        actions.append(
-           dmc.Button(
-                "Output",
-                id={"type": "job-output-too-big-button", "job_id": job.id},
-                variant="light",
-                leftSection=DashIconify(icon="bi:download"),
-                fullWidth=True,
-            ),
-        )
-        actions.append(
-            dmc.Button(
-                "Delete",
-                id={"type": "job-delete-button", "job_id": job.id},
-                variant="subtle",
-                color="red",
-                leftSection=DashIconify(icon="bi:trash"),
-                fullWidth=True,
-            ),
-        )
+        actions = [
+            make_log_button(job) if not is_file_empty(job.log_file) else make_empty_log_button(job),
+            make_delete_button(job),
+        ]
     elif job.status == Status.SUCCESS:
-        actions.append(
-            dmc.Button(
-                "Log",
-                id={"type": "job-log-button", "job_id": job.id},
-                variant="light",
-                leftSection=DashIconify(icon="bi:file-earmark-text"),
-                fullWidth=True,
-            )
-        )
-        actions.append(
-            dmc.Button(
-                "Output",
-                id={"type": "job-output-button", "job_id": job.id},
-                variant="light",
-                leftSection=DashIconify(icon="bi:download"),
-                fullWidth=True,
-            ),
-        )
-        actions.append(
-            dmc.Button(
-                "Delete",
-                id={"type": "job-delete-button", "job_id": job.id},
-                variant="subtle",
-                color="red",
-                leftSection=DashIconify(icon="bi:trash"),
-                fullWidth=True,
-            ),
-        )
+        actions = [
+            make_log_button(job) if not is_file_empty(job.log_file) else make_empty_log_button(job),
+            make_output_button(job) if not is_output_too_big(job.job_dir) else make_output_too_big_button(job),
+            make_delete_button(job),
+        ]
     else:
-        return
+        return []
 
     return dmc.Stack(
         gap="xs",
@@ -233,12 +145,18 @@ def make_job_item(job: Job):
                     dmc.GridCol(
                         dmc.Stack(
                             [
-                                dmc.Text(f"{job.tool.name} [{job.command.name}]", size="sm", fw=600)
-                                if job.command.key in ("msi", "scan", "pro", "index", "merge", "faidx")
-                                else dmc.Text(f"{job.tool.name}", size="sm", fw=600),
+                                dmc.Group(
+                                    children = [
+                                        dmc.Text(f"{job.tool.name} [{job.command.name}]", size="sm", fw=600)
+                                        if len(job.tool.commands.keys()) > 1
+                                        else dmc.Text(f"{job.tool.name}", size="sm", fw=600),
+                                        helper(job),
+                                    ]
+                                ),
+                                
 
                                 dmc.Text(job.get_mode(), size="xs", c="dimmed")
-                                if job.command.key in ("msi", "pro", "mantis")
+                                if job.command.key in msi_analysis_commands
                                 else None,
                             ],
                             gap=2,
@@ -274,7 +192,7 @@ def make_job_item(job: Job):
                         span=2,
                     ),
                     dmc.GridCol(
-                        dmc.Center(make_status_icon(job.status)),
+                        dmc.Center(status_icon(job.status)),
                         span=1,
                     ),
                 ],
@@ -310,7 +228,7 @@ def make_job_item(job: Job):
                         ],
                     ),
                     dmc.Stack(
-                        [make_step_row(step) for step in job.steps],
+                        [step_row(step) for step in job.steps],
                         gap="xs",
                     ),
                 ],
@@ -380,7 +298,6 @@ layout = dmc.Container(
         dcc.Interval(id="jobs-poll-interval", interval=2500, n_intervals=0, max_intervals=-1),
         dcc.Store(id="active-jobs-signal"),
         dcc.Store(id="finished-jobs-signal"),
-        dcc.Store(id="opened-job-ids", data=[]),
 
         dmc.Title("Jobs", order=2, mb="md"),
 
@@ -413,13 +330,35 @@ layout = dmc.Container(
         
         dcc.Store(id="download-busy", data=False),
         dcc.Download(id="job-download"),
+        dcc.Store(id="job-empty-log-id"),
+        dmc.Modal(
+            id="job-empty-log-modal",
+            title="Empty log file",
+            centered=True,
+            children=[
+                dmc.Text("This job log file is empty, so there is nothing to download."),
+                dmc.Space(h=15),
+                dmc.Group(
+                    [
+                        dmc.Button("Ok", id="job-empty-log-ok", color="green"),
+                    ],
+                    justify="flex-end",
+                ),
+            ],
+        ),
         dcc.Store(id="job-output-too-big-id"),
         dmc.Modal(
             id="job-output-too-big-modal",
-            title="Job output is too big",
+            title="Output is too large",
             centered=True,
             children=[
-                dmc.Text("Job output is too big to be downloaded, please ask administrator if you really need those files."),
+                dmc.Text("This job output is too large to download from the web interface."),
+                dmc.Text(
+                    "If you still need these files, please contact the administrator.",
+                    c="dimmed",
+                    size="sm",
+                    mt="xs",
+                ),
                 dmc.Space(h=15),
                 dmc.Group(
                     [
@@ -436,7 +375,13 @@ layout = dmc.Container(
             title="Delete job",
             centered=True,
             children=[
-                dmc.Text("Are you sure you want to delete this job and all its files?"),
+                dmc.Text("Are you sure you want to delete this job?"),
+                dmc.Text(
+                    "All job files will be permanently removed.",
+                    c="dimmed",
+                    size="sm",
+                    mt="xs",
+                ),
                 dmc.Space(h=15),
                 dmc.Group(
                     [
@@ -455,6 +400,12 @@ layout = dmc.Container(
             centered=True,
             children=[
                 dmc.Text("Are you sure you want to stop this job?"),
+                dmc.Text(
+                    "The running process will be terminated.",
+                    c="dimmed",
+                    size="sm",
+                    mt="xs",
+                ),
                 dmc.Space(h=15),
                 dmc.Group(
                     [
@@ -487,18 +438,14 @@ def poll_jobs_signals(_, current_active_jobs_signal, current_finished_jobs_signa
 
 @callback(
     Output("active-jobs-accordion", "children"),
-    Output("active-jobs-accordion", "value"),
     Output("active-jobs-empty-text", "children"),
     Input("active-jobs-signal", "data"),
-    State("opened-job-ids", "data"),
 )
-def render_active_jobs(_, opened_job_ids):
+def render_active_jobs(_):
     jobs = get_active_jobs()
-    opened_job_ids = set(opened_job_ids or [])
 
     if not jobs:
         return (
-            [], 
             [], 
             dmc.Alert(
                 "There are no active jobs.",
@@ -509,24 +456,19 @@ def render_active_jobs(_, opened_job_ids):
 
     return (
         [make_job_item(job) for job in jobs],
-        [job.id for job in jobs if job.id in opened_job_ids],
         None,
     )
 
 @callback(
     Output("finished-jobs-accordion", "children"),
-    Output("finished-jobs-accordion", "value"),
     Output("finished-jobs-empty-text", "children"),
     Input("finished-jobs-signal", "data"),
-    State("opened-job-ids", "data"),
 )
-def render_finished_jobs(_, opened_job_ids):
+def render_finished_jobs(_):
     jobs = get_finished_jobs()
-    opened_job_ids = set(opened_job_ids or [])
 
     if not jobs:
         return (
-            [], 
             [], 
             dmc.Alert(
                 "There are no finished jobs.",
@@ -540,39 +482,8 @@ def render_finished_jobs(_, opened_job_ids):
             make_job_item(job)
             for job in jobs
         ],
-        [job.id for job in jobs if job.id in opened_job_ids],
         None,
     )
-
-@callback(
-    Output("opened-job-ids", "data"),
-    Input("active-jobs-accordion", "value"),
-    Input("finished-jobs-accordion", "value"),
-    State("opened-job-ids", "data"),
-    prevent_initial_call=True,
-)
-def update_opened_jobs(active_value, finished_value, stored):
-    active_value = set(active_value or [])
-    finished_value = set(finished_value or [])
-    stored = set(stored or [])
-
-    active_ids = {job.id for job in get_active_jobs()}
-    finished_ids = {job.id for job in get_finished_jobs()}
-    visible_now = active_ids | finished_ids
-
-    triggered = ctx.triggered_id
-
-    result = stored & visible_now
-
-    if triggered == "active-jobs-accordion":
-        result -= active_ids
-        result |= active_value
-
-    elif triggered == "finished-jobs-accordion":
-        result -= finished_ids
-        result |= finished_value
-
-    return list(result)
 
 @callback(
     Output("notification-container", "sendNotifications", allow_duplicate=True),
@@ -819,6 +730,54 @@ clientside_callback(
         return [true, triggered.job_id];
     }
     """,
+    Output("job-empty-log-modal", "opened", allow_duplicate=True),
+    Output("job-empty-log-id", "data", allow_duplicate=True),
+    Input({"type": "job-empty-log-button", "job_id": ALL}, "n_clicks"),
+    prevent_initial_call=True,
+)
+
+clientside_callback(
+    """
+    function(n_clicks) {
+        const no_update = window.dash_clientside.no_update;
+
+        if (!n_clicks) {
+            return [no_update, no_update];
+        }
+
+        return [false, null];
+    }
+    """,
+    Output("job-empty-log-modal", "opened", allow_duplicate=True),
+    Output("job-empty-log-id", "data", allow_duplicate=True),
+    Input("job-empty-log-ok", "n_clicks"),
+    prevent_initial_call=True,
+)
+
+clientside_callback(
+    """
+    function(n_clicks_list) {
+        const no_update = window.dash_clientside.no_update;
+
+        if (!n_clicks_list || !Array.isArray(n_clicks_list)) {
+            return [no_update, no_update];
+        }
+
+        const hasClick = n_clicks_list.some(v => (v || 0) > 0);
+        if (!hasClick) {
+            return [no_update, no_update];
+        }
+
+        const ctx = window.dash_clientside.callback_context;
+        const triggered = ctx.triggered_id;
+
+        if (!triggered || !triggered.job_id) {
+            return [no_update, no_update];
+        }
+
+        return [true, triggered.job_id];
+    }
+    """,
     Output("job-output-too-big-modal", "opened", allow_duplicate=True),
     Output("job-output-too-big-id", "data", allow_duplicate=True),
     Input({"type": "job-output-too-big-button", "job_id": ALL}, "n_clicks"),
@@ -878,30 +837,46 @@ def download_job_file(log_clicks, output_clicks):
 
 clientside_callback(
     """
-    function(busy, logIds, outputIds, deleteIds) {
+    function(busy, logIds, emptyLogIds, outputIds, tooBigOutputIds, deleteIds) {
         const isBusy = !!busy;
+
         const logs = logIds || [];
+        const emptyLogs = emptyLogIds || [];
         const outputs = outputIds || [];
+        const tooBigOutputs = tooBigOutputIds || [];
         const deletes = deleteIds || [];
 
         return [
-            Array(logs.length).fill(isBusy),     // log loading
-            Array(outputs.length).fill(isBusy),  // output loading
-            Array(deletes.length).fill(isBusy),  // delete loading
-            Array(logs.length).fill(isBusy),     // log disabled
-            Array(outputs.length).fill(isBusy),  // output disabled
-            Array(deletes.length).fill(isBusy),  // delete disabled
+            Array(logs.length).fill(isBusy),
+            Array(emptyLogs.length).fill(isBusy),
+            Array(outputs.length).fill(isBusy),
+            Array(tooBigOutputs.length).fill(isBusy),
+            Array(deletes.length).fill(isBusy),
+
+            Array(logs.length).fill(isBusy),
+            Array(emptyLogs.length).fill(isBusy),
+            Array(outputs.length).fill(isBusy),
+            Array(tooBigOutputs.length).fill(isBusy),
+            Array(deletes.length).fill(isBusy),
         ];
     }
     """,
     Output({"type": "job-log-button", "job_id": ALL}, "loading"),
+    Output({"type": "job-empty-log-button", "job_id": ALL}, "loading"),
     Output({"type": "job-output-button", "job_id": ALL}, "loading"),
+    Output({"type": "job-output-too-big-button", "job_id": ALL}, "loading"),
     Output({"type": "job-delete-button", "job_id": ALL}, "loading"),
+
     Output({"type": "job-log-button", "job_id": ALL}, "disabled"),
+    Output({"type": "job-empty-log-button", "job_id": ALL}, "disabled"),
     Output({"type": "job-output-button", "job_id": ALL}, "disabled"),
+    Output({"type": "job-output-too-big-button", "job_id": ALL}, "disabled"),
     Output({"type": "job-delete-button", "job_id": ALL}, "disabled"),
+
     Input("download-busy", "data"),
     State({"type": "job-log-button", "job_id": ALL}, "id"),
+    State({"type": "job-empty-log-button", "job_id": ALL}, "id"),
     State({"type": "job-output-button", "job_id": ALL}, "id"),
+    State({"type": "job-output-too-big-button", "job_id": ALL}, "id"),
     State({"type": "job-delete-button", "job_id": ALL}, "id"),
 )

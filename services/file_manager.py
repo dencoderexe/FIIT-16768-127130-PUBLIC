@@ -1,4 +1,4 @@
-from configs.paths import data_path, job_output_excluded_extensions, job_output_excluded_files
+from configs.paths import data_path, job_output_excluded_extensions, job_output_excluded_files, MAX_OUTPUT_SIZE
 
 import os
 import zipfile
@@ -91,10 +91,10 @@ def write_zip(job_dir, bytes_io):
     
     with zipfile.ZipFile(bytes_io, "w", zipfile.ZIP_DEFLATED) as z:
         for file in os.listdir(job_dir):
-            full_path = os.path.join(job_dir, file)
+            file_path = os.path.join(job_dir, file)
 
             # skip dirs
-            if not os.path.isfile(full_path):
+            if not os.path.isfile(file_path):
                 continue
 
             # skip explicitly excluded files
@@ -106,4 +106,37 @@ def write_zip(job_dir, bytes_io):
                 continue
 
             # add file to archive
-            z.write(full_path, arcname=file)
+            z.write(file_path, arcname=file)
+
+def is_file_empty(file: str) -> bool:
+    if not os.path.exists(file):
+        return True
+
+    if os.path.getsize(file) == 0:
+        return True
+    return False
+
+def get_job_dir_size(job_dir: str) -> int:
+    total_size = 0
+    
+    for file in os.listdir(job_dir):
+        file_path = os.path.join(job_dir, file)
+
+        # skip dirs
+        if not os.path.isfile(file_path):
+            continue
+
+        # skip explicitly excluded files
+        if file in job_output_excluded_files:
+            continue
+
+        # skip excluded files by extension
+        if os.path.splitext(file)[1] in job_output_excluded_extensions:
+            continue
+
+        total_size += os.path.getsize(file_path)
+    
+    return total_size
+
+def is_output_too_big(output_dir: str) -> bool:
+    return get_job_dir_size(output_dir) > MAX_OUTPUT_SIZE

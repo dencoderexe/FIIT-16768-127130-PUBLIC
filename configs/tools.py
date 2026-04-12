@@ -1,5 +1,8 @@
 from models.tools import Tool, Command
 
+
+msi_analysis_commands = ("msi", "pro", "mantis")
+
 TOOLS = {
     "msisensor2": Tool(
         key="msisensor2",
