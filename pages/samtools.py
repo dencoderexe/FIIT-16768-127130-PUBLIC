@@ -3,7 +3,7 @@ from dash_iconify import DashIconify
 
 from components.helper import helper
 from services.job_manager import create_job
-from services.file_manager import get_files
+from services.file_manager import get_files, build_output_name
 
 from configs.tools import TOOLS
 from configs.paths import data_path, BAM_EXT, FASTA_EXT, FASTA_IDX_EXT, BAM_IDX_EXT
@@ -17,14 +17,14 @@ dash.register_page(__name__, path="/samtools")
 tool = TOOLS["samtools"]
 
 def make_index():
-    required_options = dmc.Paper(
+    main_options = dmc.Paper(
         withBorder=True,
         radius="md",
         p="md",
         h="100%",
         children=dmc.Stack(
             [
-                dmc.Title("Required options", order=4),
+                dmc.Title("Main options", order=4),
                 dmc.Select(
                     label=dmc.Group(
                         [
@@ -44,9 +44,20 @@ def make_index():
                     placeholder="Select BAM file",
                     searchable=True,
                 ),
-                dmc.Space(h="xl"),
                 
                 dmc.Box(style={"flexGrow": 1}),
+
+                dmc.TextInput(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Output file name", size="sm", fw=500),
+                            helper("Optional. Enter a custom output file name without extension. The .bai extension will be added automatically."),
+                        ],
+                        gap=6,
+                    ),
+                    id="samtools-index-output-name-input",
+                    placeholder="Leave empty to use the default file name",
+                ),
 
                 dmc.Button("Start", id="samtools-index-start-button", disabled=True),
             ],
@@ -84,7 +95,7 @@ def make_index():
 
     return dmc.Grid(
         [
-            dmc.GridCol(required_options, span=6),
+            dmc.GridCol(main_options, span=6),
             dmc.GridCol(additional_options, span=6),
         ],
         gutter="md",
@@ -92,14 +103,14 @@ def make_index():
     )
 
 def make_merge():
-    required_options = dmc.Paper(
+    main_options = dmc.Paper(
         withBorder=True,
         radius="md",
         p="md",
         h="100%",
         children=dmc.Stack(
             [
-                dmc.Title("Required options", order=4),
+                dmc.Title("Main options", order=4),
                 dmc.MultiSelect(
                     label=dmc.Group(
                         [
@@ -119,9 +130,20 @@ def make_merge():
                     placeholder="Select BAM files",
                     searchable=True,
                 ),
-                dmc.Space(h="xl"),
                 
                 dmc.Box(style={"flexGrow": 1}),
+
+                dmc.TextInput(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Output file name", size="sm", fw=500),
+                            helper("Optional. Enter a custom output file name without extension. The .bam extension will be added automatically."),
+                        ],
+                        gap=6,
+                    ),
+                    id="samtools-merge-output-name-input",
+                    placeholder="Leave empty to use the default file name",
+                ),
 
                 dmc.Button("Start", id="samtools-merge-start-button", disabled=True),
             ],
@@ -159,7 +181,7 @@ def make_merge():
 
     return dmc.Grid(
         [
-            dmc.GridCol(required_options, span=6),
+            dmc.GridCol(main_options, span=6),
             dmc.GridCol(additional_options, span=6),
         ],
         gutter="md",
@@ -167,14 +189,14 @@ def make_merge():
     )
 
 def make_sort():
-    required_options = dmc.Paper(
+    main_options = dmc.Paper(
         withBorder=True,
         radius="md",
         p="md",
         h="100%",
         children=dmc.Stack(
             [
-                dmc.Title("Required options", order=4),
+                dmc.Title("Main options", order=4),
                 dmc.Select(
                     label=dmc.Group(
                         [
@@ -194,9 +216,20 @@ def make_sort():
                     placeholder="Select BAM file",
                     searchable=True,
                 ),
-                dmc.Space(h="xl"),
                 
                 dmc.Box(style={"flexGrow": 1}),
+
+                dmc.TextInput(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Output file name", size="sm", fw=500),
+                            helper("Optional. Enter a custom output file name without extension. The .bam extension will be added automatically."),
+                        ],
+                        gap=6,
+                    ),
+                    id="samtools-sort-output-name-input",
+                    placeholder="Leave empty to use the default file name",
+                ),
 
                 dmc.Button("Start", id="samtools-sort-start-button", disabled=True),
             ],
@@ -234,7 +267,7 @@ def make_sort():
 
     return dmc.Grid(
         [
-            dmc.GridCol(required_options, span=6),
+            dmc.GridCol(main_options, span=6),
             dmc.GridCol(additional_options, span=6),
         ],
         gutter="md",
@@ -242,14 +275,14 @@ def make_sort():
     )
 
 def make_faidx():
-    required_options = dmc.Paper(
+    main_options = dmc.Paper(
         withBorder=True,
         radius="md",
         p="md",
         h="100%",
         children=dmc.Stack(
             [
-                dmc.Title("Required options", order=4),
+                dmc.Title("Main options", order=4),
                 dmc.Select(
                     label=dmc.Group(
                         [
@@ -269,9 +302,20 @@ def make_faidx():
                     placeholder="Select reference genome FASTA file",
                     searchable=True,
                 ),
-                dmc.Space(h="xl"),
                 
                 dmc.Box(style={"flexGrow": 1}),
+
+                dmc.TextInput(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Output file name", size="sm", fw=500),
+                            helper("Optional. Enter a custom output file name without extension. The .fai extension will be added automatically."),
+                        ],
+                        gap=6,
+                    ),
+                    id="samtools-faidx-output-name-input",
+                    placeholder="Leave empty to use the default file name",
+                ),
 
                 dmc.Button("Start", id="samtools-faidx-start-button", disabled=True),
             ],
@@ -309,7 +353,7 @@ def make_faidx():
 
     return dmc.Grid(
         [
-            dmc.GridCol(required_options, span=6),
+            dmc.GridCol(main_options, span=6),
             dmc.GridCol(additional_options, span=6),
         ],
         gutter="md",
@@ -318,14 +362,14 @@ def make_faidx():
 
 
 def make_stats():
-    required_options = dmc.Paper(
+    main_options = dmc.Paper(
         withBorder=True,
         radius="md",
         p="md",
         h="100%",
         children=dmc.Stack(
             [
-                dmc.Title("Required options", order=4),
+                dmc.Title("Main options", order=4),
                 dmc.Select(
                     label=dmc.Group(
                         [
@@ -345,9 +389,20 @@ def make_stats():
                     placeholder="Select the alignment BAM file",
                     searchable=True,
                 ),
-                dmc.Space(h="xl"),
                 
                 dmc.Box(style={"flexGrow": 1}),
+
+                dmc.TextInput(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Output file name", size="sm", fw=500),
+                            helper("Optional. Enter a custom output file name without extension. The .stats extension will be added automatically."),
+                        ],
+                        gap=6,
+                    ),
+                    id="samtools-stats-output-name-input",
+                    placeholder="Leave empty to use the default file name",
+                ),
 
                 dmc.Button("Start", id="samtools-stats-start-button", disabled=True),
             ],
@@ -385,7 +440,7 @@ def make_stats():
 
     return dmc.Grid(
         [
-            dmc.GridCol(required_options, span=6),
+            dmc.GridCol(main_options, span=6),
             dmc.GridCol(additional_options, span=6),
         ],
         gutter="md",
@@ -482,6 +537,7 @@ def samtools_index_start_button(bam_file):
     State("samtools-command-select", "value"),
     State("samtools-index-bam-file-select", "value"),
     State("samtools-index-threads", "value"),
+    State("samtools-index-output-name-input", "value"),
     prevent_initial_call=True,
 )
 def samtools_index_start_job(
@@ -489,6 +545,7 @@ def samtools_index_start_job(
     command_key,
     bam_file,
     threads,
+    output_name,
 ):
     if not n_clicks:
         return no_update
@@ -498,7 +555,7 @@ def samtools_index_start_job(
             tool=tool,
             command=tool.commands.get(command_key),
             bam_file=bam_file,
-            output=f"{os.path.basename(bam_file)}{BAM_IDX_EXT[0]}",
+            output=build_output_name(os.path.basename(bam_file), output_name, BAM_IDX_EXT[0]),
 
             threads=(threads-1) if threads > 1 else None,
         )
@@ -535,6 +592,7 @@ def samtools_sort_start_button(bam_file):
     State("samtools-command-select", "value"),
     State("samtools-sort-bam-file-select", "value"),
     State("samtools-sort-threads", "value"),
+    State("samtools-sort-output-name-input", "value"),
     prevent_initial_call=True,
 )
 def samtools_sort_start_job(
@@ -542,6 +600,7 @@ def samtools_sort_start_job(
     command_key,
     bam_file,
     threads,
+    output_name,
 ):
     if not n_clicks:
         return no_update
@@ -551,7 +610,7 @@ def samtools_sort_start_job(
             tool=tool,
             command=tool.commands.get(command_key),
             bam_file=bam_file,
-            output=f"{os.path.splitext(os.path.basename(bam_file))[0]}.sorted{BAM_EXT[0]}",
+            output=build_output_name(f"{os.path.splitext(os.path.basename(bam_file))[0]}.sorted", output_name, BAM_EXT[0]),
 
             threads=(threads-1) if threads > 1 else None,
         )
@@ -590,6 +649,7 @@ def samtools_merge_start_button(bam_files):
     State("samtools-command-select", "value"),
     State("samtools-merge-bam-files-select", "value"),
     State("samtools-merge-threads", "value"),
+    State("samtools-merge-output-name-input", "value"),
     prevent_initial_call=True,
 )
 def samtools_merge_start_job(
@@ -597,6 +657,7 @@ def samtools_merge_start_job(
     command_key,
     bam_files,
     threads,
+    output_name,
 ):
     if not n_clicks:
         return no_update
@@ -606,7 +667,7 @@ def samtools_merge_start_job(
             tool=tool,
             command=tool.commands.get(command_key),
             bam_files=" ".join(bam_files),
-            output=f"{os.path.splitext(os.path.basename(bam_files[0]))[0]}.merged{BAM_EXT[0]}",
+            output=build_output_name(f"{os.path.splitext(os.path.basename(bam_files[0]))[0]}.merged", output_name, BAM_EXT[0]),
 
             threads=(threads-1) if threads > 1 else None,
 
@@ -645,6 +706,7 @@ def samtools_faidx_start_button(reference_genome):
     State("samtools-command-select", "value"),
     State("samtools-faidx-refgenome-file-select", "value"),
     State("samtools-faidx-threads", "value"),
+    State("samtools-faidx-output-name-input", "value"),
     prevent_initial_call=True,
 )
 def samtools_faidx_start_job(
@@ -652,6 +714,7 @@ def samtools_faidx_start_job(
     command_key,
     reference_genome,
     threads,
+    output_name,
 ):
     if not n_clicks:
         return no_update
@@ -661,7 +724,7 @@ def samtools_faidx_start_job(
             tool=tool,
             command=tool.commands.get(command_key),
             reference_genome=reference_genome,
-            output=f"{os.path.basename(reference_genome)}{FASTA_IDX_EXT[0]}",
+            output=build_output_name(os.path.basename(reference_genome), output_name, FASTA_IDX_EXT[0]),
 
             threads=(threads-1) if threads > 1 else None,
         )
@@ -698,6 +761,7 @@ def samtools_stats_start_button(bam_file):
     State("samtools-command-select", "value"),
     State("samtools-stats-bam-file-select", "value"),
     State("samtools-stats-threads", "value"),
+    State("samtools-stats-output-name-input", "value"),
     prevent_initial_call=True,
 )
 def samtools_stats_start_job(
@@ -705,6 +769,7 @@ def samtools_stats_start_job(
     command_key,
     bam_file,
     threads,
+    output_name,
 ):
     if not n_clicks:
         return no_update
@@ -714,7 +779,7 @@ def samtools_stats_start_job(
             tool=tool,
             command=tool.commands.get(command_key),
             bam_file=bam_file,
-            output=f"{os.path.basename(bam_file)}.stats",
+            output=build_output_name(os.path.basename(bam_file), output_name, ".stats"),
 
             threads=(threads-1) if threads > 1 else None,
         )

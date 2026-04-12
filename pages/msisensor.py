@@ -3,7 +3,7 @@ from dash_iconify import DashIconify
 
 from components.helper import helper
 from services.job_manager import create_job
-from services.file_manager import get_files
+from services.file_manager import get_files, build_output_name
 
 from configs.tools import TOOLS
 from configs.paths import data_path, BAM_EXT, BED_EXT, FASTA_EXT, MICROSAT_LIST_EXT
@@ -18,14 +18,14 @@ dash.register_page(__name__, path="/msisensor")
 tool = TOOLS["msisensor"]
 
 def make_scan():
-    required_options = dmc.Paper(
+    main_options = dmc.Paper(
         withBorder=True,
         radius="md",
         p="md",
         h="100%",
         children=dmc.Stack(
             [
-                dmc.Title("Required options", order=4),
+                dmc.Title("Main options", order=4),
                 dmc.Select(
                     label=dmc.Group(
                         [
@@ -45,9 +45,20 @@ def make_scan():
                     placeholder="Select reference genome FASTA file",
                     searchable=True,
                 ),
-                dmc.Space(h="xl"),
 
                 dmc.Box(style={"flexGrow": 1}),
+
+                dmc.TextInput(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Output file name", size="sm", fw=500),
+                            helper("Optional. Enter a custom output file name without extension. The .microsatellite.list extension will be added automatically."),
+                        ],
+                        gap=6,
+                    ),
+                    id="msisensor-scan-output-name-input",
+                    placeholder="Leave empty to use the default file name",
+                ),
 
                 dmc.Button("Start", id="msisensor-scan-start-button", disabled=True),
             ],
@@ -164,7 +175,7 @@ def make_scan():
 
     return dmc.Grid(
         [
-            dmc.GridCol(required_options, span=6),
+            dmc.GridCol(main_options, span=6),
             dmc.GridCol(additional_options, span=6),
         ],
         gutter="md",
@@ -172,14 +183,14 @@ def make_scan():
     )
 
 def make_msi():
-    required_options = dmc.Paper(
+    main_options = dmc.Paper(
         withBorder=True,
         radius="md",
         p="md",
         h="100%",
         children=dmc.Stack(
             [
-                dmc.Title("Required options", order=4),
+                dmc.Title("Main options", order=4),
                 dmc.Select(
                     label=dmc.Group(
                         [
@@ -218,25 +229,6 @@ def make_msi():
                     placeholder="Select tumor BAM file",
                     searchable=True,
                 ),
-                dmc.Space(h="xl"),
-                
-                dmc.Box(style={"flexGrow": 1}),
-
-                dmc.Button("Start", id="msisensor-msi-start-button", disabled=True),
-            ],
-            gap="md",
-            h="100%",
-        ),
-    )
-
-    additional_options = dmc.Paper(
-        withBorder=True,
-        radius="md",
-        p="md",
-        h="100%",
-        children=dmc.Stack(
-            [
-                dmc.Title("Additional options", order=4),
                 dmc.Select(
                     label=dmc.Group(
                         [
@@ -277,6 +269,36 @@ def make_msi():
                     placeholder="Select BED file",
                     searchable=True,
                 ),
+                
+                dmc.Box(style={"flexGrow": 1}),
+
+                dmc.TextInput(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Output file name", size="sm", fw=500),
+                            helper("Optional. Enter a custom output file name without extension."),
+                        ],
+                        gap=6,
+                    ),
+                    id="msisensor-msi-output-name-input",
+                    placeholder="Leave empty to use the default file name",
+                ),
+
+                dmc.Button("Start", id="msisensor-msi-start-button", disabled=True),
+            ],
+            gap="md",
+            h="100%",
+        ),
+    )
+
+    additional_options = dmc.Paper(
+        withBorder=True,
+        radius="md",
+        p="md",
+        h="100%",
+        children=dmc.Stack(
+            [
+                dmc.Title("Additional options", order=4),
                 dmc.TextInput(
                     label=dmc.Group(
                         [
@@ -494,7 +516,7 @@ def make_msi():
 
     return dmc.Grid(
         [
-            dmc.GridCol(required_options, span=6),
+            dmc.GridCol(main_options, span=6),
             dmc.GridCol(additional_options, span=6),
         ],
         gutter="md",
@@ -583,6 +605,7 @@ def msisensor_scan_start_button(refgenome):
     State("msisensor-scan-max-microsat-len", "value"),
     State("msisensor-scan-min-microsat-rep", "value"),
     State("msisensor-scan-homopolymer-only", "checked"),
+    State("msisensor-scan-output-name-input", "value"),
     prevent_initial_call=True,
 )
 def msisensor_scan_start_job(
@@ -595,6 +618,7 @@ def msisensor_scan_start_job(
     max_microsat_len,
     min_microsat_rep,
     homopolymer_only,
+    output_name,
 ):
     if not n_clicks:
         return no_update
@@ -604,7 +628,7 @@ def msisensor_scan_start_job(
             tool=tool,
             command=tool.commands.get(command_key),
             reference_genome=reference_genome,
-            output=f"{os.path.splitext(os.path.basename(reference_genome))[0]}{MICROSAT_LIST_EXT[0]}",
+            output=build_output_name(os.path.splitext(os.path.basename(reference_genome))[0], output_name, MICROSAT_LIST_EXT[0]),
             min_homo_size=min_homo_size,
             max_homo_size=max_homo_size,
             context_len=context_len,
@@ -670,6 +694,7 @@ def msisensor_msi_start_button(microsatellite_list, tumor_bam, region):
     State("msisensor-msi-threads", "value"),
     State("msisensor-msi-homopolymer-only", "checked"),
     State("msisensor-msi-microsatellite-only", "checked"),
+    State("msisensor-msi-output-name-input", "value"),
     prevent_initial_call=True,
 )
 def msisensor_msi_start_job(
@@ -693,6 +718,7 @@ def msisensor_msi_start_job(
     threads,
     homopolymer_only,
     microsatellite_only,
+    output_name,
 ):
     if not n_clicks:
         return no_update
@@ -704,7 +730,7 @@ def msisensor_msi_start_job(
             microsatellite_list=microsatellite_list,
             normal_bam=normal_bam or None,
             tumor_bam=tumor_bam,
-            output=os.path.splitext(os.path.basename(tumor_bam))[0],
+            output=build_output_name(os.path.splitext(os.path.basename(tumor_bam))[0], output_name, None),
             
             bed_file=bed_file or None,
             region=region or None,

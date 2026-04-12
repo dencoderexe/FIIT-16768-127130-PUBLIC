@@ -3,7 +3,7 @@ from dash_iconify import DashIconify
 
 from components.helper import helper
 from services.job_manager import create_job
-from services.file_manager import get_files
+from services.file_manager import get_files, build_output_name
 
 from configs.tools import TOOLS
 from configs.paths import data_path, BAM_EXT, BED_EXT, FASTA_EXT
@@ -17,14 +17,14 @@ dash.register_page(__name__, path="/mantis")
 tool = TOOLS["mantis"]
 
 def make_mantis():
-    required_options = dmc.Paper(
+    main_options = dmc.Paper(
         withBorder=True,
         radius="md",
         p="md",
         h="100%",
         children=dmc.Stack(
             [
-                dmc.Title("Required options", order=4),
+                dmc.Title("Main options", order=4),
                 dmc.Select(
                     label=dmc.Group(
                         [
@@ -110,9 +110,20 @@ def make_mantis():
                     placeholder="Select BED file",
                     searchable=True,
                 ),
-                dmc.Space(h="xl"),
                 
                 dmc.Box(style={"flexGrow": 1}),
+
+                dmc.TextInput(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Output file name", size="sm", fw=500),
+                            helper("Optional. Enter a custom output file name without extension."),
+                        ],
+                        gap=6,
+                    ),
+                    id="mantis-output-name-input",
+                    placeholder="Leave empty to use the default file name",
+                ),
 
                 dmc.Button("Start", id="mantis-start-button", disabled=True),
             ],
@@ -253,7 +264,7 @@ def make_mantis():
 
     return dmc.Grid(
         [
-            dmc.GridCol(required_options, span=6),
+            dmc.GridCol(main_options, span=6),
             dmc.GridCol(additional_options, span=6),
         ],
         gutter="md",
@@ -325,6 +336,7 @@ def mantis_start_button(normal_bam, tumor_bam, reference_genome, bed_file):
     State("mantis-min-locus-coverage", "value"),
     State("mantis-min-repeat-reads", "value"),
     State("mantis-standard-deviations", "value"),
+    State("mantis-output-name-input", "value"),
     prevent_initial_call=True,
 )
 def mantis_start_job(
@@ -340,6 +352,7 @@ def mantis_start_job(
     min_locus_coverage,
     min_repeat_reads,
     standard_deviations,
+    output_name,
 ):
     if not n_clicks:
         return no_update
@@ -352,7 +365,7 @@ def mantis_start_job(
             tumor_bam=tumor_bam,
             reference_genome=reference_genome,
             bed_file=bed_file,
-            output=os.path.splitext(os.path.basename(tumor_bam))[0],
+            output=build_output_name(os.path.splitext(os.path.basename(tumor_bam))[0], output_name, None),
 
             threads=threads,
             min_read_quality=min_read_quality,

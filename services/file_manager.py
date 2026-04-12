@@ -140,3 +140,17 @@ def get_job_dir_size(job_dir: str) -> int:
 
 def is_output_too_big(output_dir: str) -> bool:
     return get_job_dir_size(output_dir) > MAX_OUTPUT_SIZE
+
+def build_output_name(default_name: str, custom_name: str | None, extension: str|None) -> str:
+    if custom_name and custom_name.strip():
+        name = custom_name.strip()
+    else:
+        name = os.path.basename(default_name)
+
+    if extension is not None:
+        if name.endswith(extension):
+            name = name[: -len(extension)]
+
+        return f"{name}{extension}"
+    
+    return name

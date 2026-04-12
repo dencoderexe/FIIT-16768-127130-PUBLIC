@@ -3,7 +3,7 @@ from dash_iconify import DashIconify
 
 from components.helper import helper
 from services.job_manager import create_job
-from services.file_manager import get_files
+from services.file_manager import get_files, build_output_name
 
 from configs.tools import TOOLS
 from configs.paths import data_path, FASTA_EXT, BED_EXT
@@ -17,14 +17,14 @@ dash.register_page(__name__, path="/repeatfinder")
 tool = TOOLS["repeatfinder"]
 
 def make_repeatfinder():
-    required_options = dmc.Paper(
+    main_options = dmc.Paper(
         withBorder=True,
         radius="md",
         p="md",
         h="100%",
         children=dmc.Stack(
             [
-                dmc.Title("Required options", order=4),
+                dmc.Title("Main options", order=4),
                 dmc.Select(
                     label=dmc.Group(
                         [
@@ -46,9 +46,20 @@ def make_repeatfinder():
                     placeholder="Select reference genome FASTA file",
                     searchable=True,
                 ),
-                dmc.Space(h="xl"),
                 
                 dmc.Box(style={"flexGrow": 1}),
+
+                dmc.TextInput(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Output file name", size="sm", fw=500),
+                            helper("Optional. Enter a custom output file name without extension. The .bed extension will be added automatically."),
+                        ],
+                        gap=6,
+                    ),
+                    id="repeatfinder-output-name-input",
+                    placeholder="Leave empty to use the default file name",
+                ),
 
                 dmc.Button("Start", id="repeatfinder-start-button", disabled=True),
             ],
@@ -154,7 +165,7 @@ def make_repeatfinder():
 
     return dmc.Grid(
         [
-            dmc.GridCol(required_options, span=6),
+            dmc.GridCol(main_options, span=6),
             dmc.GridCol(additional_options, span=6),
         ],
         gutter="md",
@@ -218,6 +229,7 @@ def repeatfinder_start_button(refgenome):
     State("repeatfinder-min-repeats", "value"),
     State("repeatfinder-min-kmer", "value"),
     State("repeatfinder-max-kmer", "value"),
+    State("repeatfinder-output-name-input", "value"),
     prevent_initial_call=True,
 )
 def repeatfinder_start_job(
@@ -228,6 +240,7 @@ def repeatfinder_start_job(
     min_repeats,
     min_kmer,
     max_kmer,
+    output_name,
 ):
     if not n_clicks:
         return no_update
@@ -237,7 +250,7 @@ def repeatfinder_start_job(
             tool=tool,
             command=tool.commands.get("repeatfinder"),
             reference_genome=reference_genome,
-            output=f"{os.path.splitext(os.path.basename(reference_genome))[0]}{BED_EXT[0]}",
+            output=build_output_name(os.path.splitext(os.path.basename(reference_genome))[0], output_name, BED_EXT[0]),
 
             min_length=min_length,
             max_length=max_length,

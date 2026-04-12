@@ -1,9 +1,9 @@
-from dash import Input, Output, callback, no_update
+from dash import Input, Output, State, callback, no_update
 from dash_iconify import DashIconify
 
 from components.helper import helper
 from services.job_manager import create_job
-from services.file_manager import get_files
+from services.file_manager import get_files, build_output_name
 
 from configs.tools import TOOLS
 from configs.paths import data_path, MICROSAT_LIST_EXT, BED_EXT
@@ -17,14 +17,14 @@ dash.register_page(__name__, path="/microsat2bed")
 tool = TOOLS["microsat2bed"]
 
 def make_convert():
-    required_options = dmc.Paper(
+    main_options = dmc.Paper(
         withBorder=True,
         radius="md",
         p="md",
         h="100%",
         children=dmc.Stack(
             [
-                dmc.Title("Required options", order=4),
+                dmc.Title("Main options", order=4),
                 dmc.Select(
                     label=dmc.Group(
                         [
@@ -44,9 +44,20 @@ def make_convert():
                     placeholder="Select MSIsensor microsatellite list file",
                     searchable=True,
                 ),
-                dmc.Space(h="xl"),
                 
                 dmc.Box(style={"flexGrow": 1}),
+
+                dmc.TextInput(
+                    label=dmc.Group(
+                        [
+                            dmc.Text("Output file name", size="sm", fw=500),
+                            helper("Optional. Enter a custom output file name without extension. The .bed extension will be added automatically."),
+                        ],
+                        gap=6,
+                    ),
+                    id="microsat2bed-convert-output-name-input",
+                    placeholder="Leave empty to use the default file name",
+                ),
 
                 dmc.Button("Start", id="microsat2bed-convert-start-button", disabled=True),
             ],
@@ -57,7 +68,7 @@ def make_convert():
 
     return dmc.Grid(
         [
-            dmc.GridCol(required_options, span=12),
+            dmc.GridCol(main_options, span=12),
         ],
         gutter="md",
         align="stretch",
@@ -114,12 +125,14 @@ def microsat2bed_convert_start_button(microsatellite_list):
 @callback(
     Output("notification-container", "sendNotifications", allow_duplicate=True),
     Input("microsat2bed-convert-start-button", "n_clicks"),
-    Input("microsat2bed-convert-microsat-list-file-select", "value"),
+    State("microsat2bed-convert-microsat-list-file-select", "value"),
+    State("microsat2bed-convert-output-name-input", "value"),
     prevent_initial_call=True,
 )
 def microsat2bed_convert_start_job(
     n_clicks,
     microsatellite_list,
+    output_name,
 ):
     if not n_clicks:
         return no_update
@@ -129,7 +142,7 @@ def microsat2bed_convert_start_job(
             tool=tool,
             command=tool.commands.get("convert"),
             microsatellite_list=microsatellite_list,
-            output=f"{os.path.basename(microsatellite_list)}{BED_EXT[0]}",
+            output=build_output_name(microsatellite_list, output_name, BED_EXT[0]),
         )
 
         return [dict(
