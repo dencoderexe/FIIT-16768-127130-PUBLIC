@@ -1,5 +1,4 @@
 from dash import html, dcc, Input, Output, State, callback, clientside_callback
-from dash_iconify import DashIconify
 
 import dash
 import plotly.graph_objects as go
@@ -9,6 +8,7 @@ from models.jobs import Job, Status, memory_to_str
 from services.job_manager import get_job_by_id, get_brief_report
 from components.job_arg_table import job_arg_table
 from components.step_row import step_row
+from components.accordion_section import make_section
 
 dash.register_page(__name__, path_template="/results/<job_id>")
 
@@ -167,14 +167,6 @@ def make_memory_usage_graph(job):
         ),
     ]
 
-def loading_block(children):
-    return dcc.Loading(
-        type="circle",
-        delay_show=150,
-        overlay_style={"visibility":"visible", "filter": "blur(2px)"},
-        children=html.Div(children)
-    )
-
 def make_results_content(job: Job):
     basic_info_table = [
         dmc.TableTbody([
@@ -233,27 +225,6 @@ def make_results_content(job: Job):
             gap="xs",
         ),
     ]
-
-    def make_section(value: str, title: str, children, icon: str | None = None):
-        return dmc.AccordionItem(
-            value=value,
-            children=[
-                dmc.AccordionControl(
-                    dmc.Group(
-                        gap="sm",
-                        children=[
-                            DashIconify(icon=icon, height=18) if icon else None,
-                            dmc.Text(title, fw=700),
-                        ],
-                    )
-                ),
-                dmc.AccordionPanel(
-                    loading_block(
-                        dmc.Box(children=children, pt="xs")
-                    )
-                ),
-            ],
-        )
 
     return dmc.Container(
         dmc.Accordion(

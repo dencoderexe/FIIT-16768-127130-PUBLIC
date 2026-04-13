@@ -8,6 +8,7 @@ from models.jobs import Status, Job, memory_to_str
 from components.status_icon import status_icon
 from components.step_row import step_row
 from components.helper import helper
+from components.accordion_section import make_section
 
 from configs.tools import msi_analysis_commands
 
@@ -298,6 +299,7 @@ filters = dmc.SimpleGrid(
     spacing="sm",
     children=[
         dmc.MultiSelect(
+            label="Filter by tool",
             id="jobs-tool-filter",
             placeholder="Select tools",
             data=[],
@@ -305,6 +307,7 @@ filters = dmc.SimpleGrid(
             searchable=True,
         ),
         dmc.MultiSelect(
+            label="Filter by command",
             id="jobs-command-filter",
             placeholder="Select commands",
             data=[],
@@ -312,6 +315,7 @@ filters = dmc.SimpleGrid(
             searchable=True,
         ),
         dmc.MultiSelect(
+            label="Filter by output",
             id="jobs-output-filter",
             placeholder="Select output",
             data=[],
@@ -319,6 +323,7 @@ filters = dmc.SimpleGrid(
             searchable=True,
         ),
         dmc.MultiSelect(
+            label="Filter by job status",
             id="jobs-status-filter",
             placeholder="Select status",
             data=[],
@@ -327,6 +332,25 @@ filters = dmc.SimpleGrid(
         ),
     ],
 )
+
+def make_status_legend():
+    return dmc.Group(
+        gap="lg",
+        mb="md",
+        children=[
+            dmc.Text("Job/Step status:", size="sm", fw=600),
+            *[
+                dmc.Group(
+                    gap="xs",
+                    children=[
+                        status_icon(status),
+                        dmc.Text(status.name.title(), size="sm"),
+                    ],
+                )
+                for status in Status
+            ],
+        ],
+    )
 
 def filter_jobs(
     jobs: list[Job],
@@ -356,7 +380,33 @@ layout = dmc.Container(
 
         dmc.Title("Jobs", order=2, mb="md"),
 
-        filters,
+        dmc.Accordion(
+            chevronPosition="right",
+            variant="separated",
+            radius="md",
+            multiple=True,
+            # value=["introduction", "legend", "job-filters"],
+            children=[
+                make_section(
+                    "introduction",
+                    "Introduction",
+                    dmc.Text(""),
+                    icon="bi:info-circle",
+                ),
+                make_section(
+                    "legend",
+                    "Legend",
+                    make_status_legend(),
+                    icon="bi:question-circle",
+                ),
+                make_section(
+                    "job-filters",
+                    "Filters",
+                    filters,
+                    icon="bi:funnel",
+                ),
+            ],
+        ),
 
         dmc.Divider(label="Active jobs", labelPosition="center"),
         dmc.Accordion(

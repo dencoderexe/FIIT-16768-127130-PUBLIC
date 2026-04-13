@@ -25,15 +25,15 @@ class Status(Enum):
         "bi:arrow-repeat", 
         "yellow"
     )
-    # job/step finished with the error or was terminated
-    FAILED = (
-        "bi:x-circle-fill", 
-        "red"
-    )
     # job/step finished successfully
     SUCCESS = (
         "bi:check-circle-fill", 
         "green"
+    )
+    # job/step finished with the error or was terminated
+    FAILED = (
+        "bi:x-circle-fill", 
+        "red"
     )
     # job/step has not started yet
     PENDING = (
