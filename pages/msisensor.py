@@ -2,6 +2,7 @@ from dash import Input, Output, State, callback, html, no_update, ctx
 from dash_iconify import DashIconify
 
 from components.helper import helper
+from components.notifications import job_started_notification, job_started_failed_notification
 from services.job_manager import create_job
 from services.file_manager import get_files, build_output_name
 
@@ -637,24 +638,10 @@ def msisensor_scan_start_job(
             homopolymer_only=int(bool(homopolymer_only)),
         )
 
-        return [dict(
-            title="Job started",
-            action="show",
-            color="yellow",
-            message=f"{tool.name} scan started",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:arrow-repeat"),
-        )]
+        return job_started_notification(f"{tool.name} scan started")
 
     except Exception as e:
-        return [dict(
-            title="Failed to start job",
-            action="show",
-            color="red",
-            message=str(e),
-            autoClose=3000,
-            icon=DashIconify(icon="bi:x-circle-fill"),
-        )]
+        return job_started_failed_notification(e)
     
 @callback(
     Output("msisensor-msi-start-button", "disabled"),
@@ -749,24 +736,10 @@ def msisensor_msi_start_job(
             microsatellite_only=int(bool(microsatellite_only)),
         )
 
-        return [dict(
-            title="Job started",
-            action="show",
-            color="yellow",
-            message=f"{tool.name} msi started",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:arrow-repeat"),
-        )]
+        return job_started_notification(f"{tool.name} msi started")
 
     except Exception as e:
-        return [dict(
-            title="Failed to start job",
-            action="show",
-            color="red",
-            message=str(e),
-            autoClose=3000,
-            icon=DashIconify(icon="bi:x-circle-fill"),
-        )]
+        return job_started_failed_notification(e)
     
 @callback(
     Output("msisensor-msi-homopolymer-only", "checked"),

@@ -2,6 +2,7 @@ from dash import Input, Output, State, callback, html, no_update
 from dash_iconify import DashIconify
 
 from components.helper import helper
+from components.notifications import job_started_notification, job_started_failed_notification
 from services.job_manager import create_job
 from services.file_manager import get_files, build_output_name
 
@@ -894,24 +895,10 @@ def msisensor_pro_scan_start_job(
             homopolymer_only=int(bool(homopolymer_only)),
         )
 
-        return [dict(
-            title="Job started",
-            action="show",
-            color="yellow",
-            message=f"{tool.name} scan started",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:arrow-repeat"),
-        )]
+        return job_started_notification(f"{tool.name} scan started")
 
     except Exception as e:
-        return [dict(
-            title="Failed to start job",
-            action="show",
-            color="red",
-            message=str(e),
-            autoClose=3000,
-            icon=DashIconify(icon="bi:x-circle-fill"),
-        )]
+        return job_started_failed_notification(e)
     
 @callback(
     Output("msisensor-pro-msi-start-button", "disabled"),
@@ -995,24 +982,10 @@ def msisensor_pro_msi_start_job(
             include_zero_coverage_sites=int(bool(include_zero_coverage_sites)),
         )
 
-        return [dict(
-            title="Job started",
-            action="show",
-            color="yellow",
-            message=f"{tool.name} msi started",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:arrow-repeat"),
-        )]
+        return job_started_notification(f"{tool.name} msi started")
 
     except Exception as e:
-        return [dict(
-            title="Failed to start job",
-            action="show",
-            color="red",
-            message=str(e),
-            autoClose=3000,
-            icon=DashIconify(icon="bi:x-circle-fill"),
-        )]
+        return job_started_failed_notification(e)
     
 @callback(
     Output("msisensor-pro-pro-start-button", "disabled"),
@@ -1089,24 +1062,10 @@ def msisensor_pro_pro_start_job(
             include_zero_coverage_sites=int(bool(include_zero_coverage_sites)),
         )
 
-        return [dict(
-            title="Job started",
-            action="show",
-            color="yellow",
-            message=f"{tool.name} msi started",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:arrow-repeat"),
-        )]
+        return job_started_notification(f"{tool.name} pro started")
 
     except Exception as e:
-        return [dict(
-            title="Failed to start job",
-            action="show",
-            color="red",
-            message=str(e),
-            autoClose=3000,
-            icon=DashIconify(icon="bi:x-circle-fill"),
-        )]
+        return job_started_failed_notification(e)
 
 @callback(
     Output("msisensor-pro-command-description", "children"),

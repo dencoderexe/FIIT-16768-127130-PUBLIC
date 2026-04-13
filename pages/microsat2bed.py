@@ -2,13 +2,13 @@ from dash import Input, Output, State, callback, no_update
 from dash_iconify import DashIconify
 
 from components.helper import helper
+from components.notifications import job_started_notification, job_started_failed_notification
 from services.job_manager import create_job
 from services.file_manager import get_files, build_output_name
 
 from configs.tools import TOOLS
 from configs.paths import data_path, MICROSAT_LIST_EXT, BED_EXT
 
-import os
 import dash
 import dash_mantine_components as dmc
 
@@ -145,21 +145,7 @@ def microsat2bed_convert_start_job(
             output=build_output_name(microsatellite_list, output_name, BED_EXT[0]),
         )
 
-        return [dict(
-            title="Job started",
-            action="show",
-            color="yellow",
-            message=f"{tool.name} started",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:arrow-repeat"),
-        )]
+        return job_started_notification(f"{tool.name} started")
 
     except Exception as e:
-        return [dict(
-            title="Failed to start job",
-            action="show",
-            color="red",
-            message=str(e),
-            autoClose=3000,
-            icon=DashIconify(icon="bi:x-circle-fill"),
-        )]
+        return job_started_failed_notification(e)

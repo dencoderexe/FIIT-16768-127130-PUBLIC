@@ -4,6 +4,7 @@ from services.job_signal import bump_active_jobs_signal, bump_finished_jobs_sign
 from models.jobs import Status, Job
 from models.tools import Tool, Command
 
+from configs.tools import msi_analysis_commands
 from configs.paths import jobs_path
 
 import os
@@ -556,7 +557,7 @@ def get_brief_report(job: Job):
     if job.status != Status.SUCCESS:
         return ""
 
-    if job.command.key not in ("msi", "mantis", "pro"):
+    if job.command.key not in msi_analysis_commands:
         return ""
 
     output = job.args.get("output")

@@ -2,6 +2,7 @@ from dash import Input, Output, State, callback, no_update, html
 from dash_iconify import DashIconify
 
 from components.helper import helper
+from components.notifications import job_started_notification, job_started_failed_notification
 from services.job_manager import create_job
 from services.file_manager import get_files, build_output_name
 
@@ -560,24 +561,10 @@ def samtools_index_start_job(
             threads=(threads-1) if threads > 1 else None,
         )
 
-        return [dict(
-            title="Job started",
-            action="show",
-            color="yellow",
-            message=f"{tool.name} started",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:arrow-repeat"),
-        )]
+        return job_started_notification(f"{tool.name} index started")
 
     except Exception as e:
-        return [dict(
-            title="Failed to start job",
-            action="show",
-            color="red",
-            message=str(e),
-            autoClose=3000,
-            icon=DashIconify(icon="bi:x-circle-fill"),
-        )]
+        return job_started_failed_notification(e)
     
 @callback(
     Output("samtools-sort-start-button", "disabled"),
@@ -615,24 +602,10 @@ def samtools_sort_start_job(
             threads=(threads-1) if threads > 1 else None,
         )
 
-        return [dict(
-            title="Job started",
-            action="show",
-            color="yellow",
-            message=f"{tool.name} started",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:arrow-repeat"),
-        )]
+        return job_started_notification(f"{tool.name} sort started")
 
     except Exception as e:
-        return [dict(
-            title="Failed to start job",
-            action="show",
-            color="red",
-            message=str(e),
-            autoClose=3000,
-            icon=DashIconify(icon="bi:x-circle-fill"),
-        )]
+        return job_started_failed_notification(e)
     
 @callback(
     Output("samtools-merge-start-button", "disabled"),
@@ -674,24 +647,10 @@ def samtools_merge_start_job(
             save_next_to=bam_files[0],
         )
 
-        return [dict(
-            title="Job started",
-            action="show",
-            color="yellow",
-            message=f"{tool.name} started",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:arrow-repeat"),
-        )]
+        return job_started_notification(f"{tool.name} merge started")
 
     except Exception as e:
-        return [dict(
-            title="Failed to start job",
-            action="show",
-            color="red",
-            message=str(e),
-            autoClose=3000,
-            icon=DashIconify(icon="bi:x-circle-fill"),
-        )]
+        return job_started_failed_notification(e)
     
 @callback(
     Output("samtools-faidx-start-button", "disabled"),
@@ -729,24 +688,10 @@ def samtools_faidx_start_job(
             threads=(threads-1) if threads > 1 else None,
         )
 
-        return [dict(
-            title="Job started",
-            action="show",
-            color="yellow",
-            message=f"{tool.name} started",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:arrow-repeat"),
-        )]
+        return job_started_notification(f"{tool.name} faidx started")
 
     except Exception as e:
-        return [dict(
-            title="Failed to start job",
-            action="show",
-            color="red",
-            message=str(e),
-            autoClose=3000,
-            icon=DashIconify(icon="bi:x-circle-fill"),
-        )]
+        return job_started_failed_notification(e)
     
 @callback(
     Output("samtools-stats-start-button", "disabled"),
@@ -784,24 +729,10 @@ def samtools_stats_start_job(
             threads=(threads-1) if threads > 1 else None,
         )
 
-        return [dict(
-            title="Job started",
-            action="show",
-            color="yellow",
-            message=f"{tool.name} started",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:arrow-repeat"),
-        )]
+        return job_started_notification(f"{tool.name} stats started")
 
     except Exception as e:
-        return [dict(
-            title="Failed to start job",
-            action="show",
-            color="red",
-            message=str(e),
-            autoClose=3000,
-            icon=DashIconify(icon="bi:x-circle-fill"),
-        )]
+        return job_started_failed_notification(e)
     
 @callback(
     Output("samtools-command-description", "children"),

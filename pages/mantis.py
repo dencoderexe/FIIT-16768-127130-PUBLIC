@@ -2,6 +2,7 @@ from dash import Input, Output, State, callback, no_update
 from dash_iconify import DashIconify
 
 from components.helper import helper
+from components.notifications import job_started_notification, job_started_failed_notification
 from services.job_manager import create_job
 from services.file_manager import get_files, build_output_name
 
@@ -376,21 +377,7 @@ def mantis_start_job(
             standard_deviations=standard_deviations,
         )
 
-        return [dict(
-            title="Job started",
-            action="show",
-            color="yellow",
-            message=f"{tool.name} started",
-            autoClose=3000,
-            icon=DashIconify(icon="bi:arrow-repeat"),
-        )]
+        return job_started_notification(f"{tool.name} started")
 
     except Exception as e:
-        return [dict(
-            title="Failed to start job",
-            action="show",
-            color="red",
-            message=str(e),
-            autoClose=3000,
-            icon=DashIconify(icon="bi:x-circle-fill"),
-        )]
+        return job_started_failed_notification(e)

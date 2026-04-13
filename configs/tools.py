@@ -645,6 +645,7 @@ TOOLS = {
                     "To run the command, select a BAM file. The output includes information such as "
                     "total reads, mapped reads, coverage, insert size distribution, and quality metrics.\n"
                     "The resulting report can be used for quality control and downstream analysis."
+                    "It can also be used to verify whether the BAM file is properly sorted."
                 ),
                 template=(
                     "samtools stats "
