@@ -281,6 +281,8 @@ def run_job(job: Job):
 
             job.set_status(Status.RUNNING)
             job.steps[0].set_status(Status.RUNNING)
+
+            job.get_cpu_usage()
             job.get_memory_usage()
 
             try:
@@ -346,7 +348,8 @@ def run_job(job: Job):
             except Exception as e:
                 logger.exception("[job:%s] Failed to create output link", job.id)
         
-        # save the last memory usage record before finishing
+        # save the last cpu/memory usage record before finishing
+        job.get_cpu_usage(append_last_recorded_cpu=True)
         job.get_memory_usage(append_last_recorded_memory=True)
         job.serialize()
     except Exception as e:
@@ -514,12 +517,12 @@ def create_output_link(job: Job):
     except OSError:
         logger.warning("[job:%s] Failed to create symlink %s: %s", job.id, link_path)
 
-def start_job_memory_monitor() -> None:
+def start_job_resource_monitor() -> None:
     """
-    Start a background thread that periodically updates memory usage
+    Start a background thread that periodically updates cpu and memory usage
     for running jobs and triggers UI refresh signals when needed.
     """
-    def job_memory_monitor() -> None:
+    def job_resource_monitor() -> None:
         while True:
             with jobs_lock:
                 current_jobs = list(active_jobs)
@@ -531,23 +534,24 @@ def start_job_memory_monitor() -> None:
                     continue
                 
                 try:
+                    job.get_cpu_usage()
                     job.get_memory_usage()
                     changed = True
                 except Exception:
-                    logger.exception("[job:%s] Failed to get memory usage", job.id)
+                    logger.exception("[job:%s] Failed to get resource usage", job.id)
 
             if changed:
                 bump_active_jobs_signal()
             time.sleep(1 if current_jobs else 3)
     
     thread = threading.Thread(
-        target=job_memory_monitor,
+        target=job_resource_monitor,
         daemon=True,
-        name="job-memory-monitor"
+        name="job-recource-monitor"
     )
 
     thread.start()
-    logger.info("Job memory monitor thread started")
+    logger.info("Job resource monitor thread started")
 
 def get_brief_report(job: Job):
     """

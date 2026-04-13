@@ -4,7 +4,7 @@ import dash
 import dash_mantine_components as dmc
 
 from components.appshell import make_appshell, make_appshell_callbacks
-from services.job_manager import cleanup_corrupted_jobs, start_job_memory_monitor, get_finished_jobs
+from services.job_manager import cleanup_corrupted_jobs, start_job_resource_monitor, get_finished_jobs
 from services.logger import setup_logging
 
 # initialize Dash app with multi-page suppor
@@ -26,12 +26,12 @@ app.layout = dmc.MantineProvider(
 def main():
     setup_logging()
     cleanup_corrupted_jobs()
-    start_job_memory_monitor()
+    start_job_resource_monitor()
 
     get_finished_jobs()
 
     # define run parameters and start app
-    app.run(host="0.0.0.0", port=8050, debug=True)
+    app.run(host="0.0.0.0", port=50000, debug=True)
 
 if __name__ == "__main__":
     main()

@@ -156,6 +156,14 @@ class Job:
     current_memory_usage: int = None
     memory_usage_history: List[Dict[str, Any]] = field(default_factory=list)
 
+    # cpu usage tracking
+    _last_cpu_usage: float | None = None
+    _last_cpu_timestamp: datetime | None = None
+
+    current_cpu_usage: float | None = None
+    max_cpu_usage: float | None = None
+    cpu_usage_history: List[Dict[str, Any]] = field(default_factory=list)
+
     # runtime flags
     notified: bool = False
     terminated: bool = False
@@ -175,6 +183,19 @@ class Job:
         self.steps = [Step(step_name, Status.PENDING) for step_name in self.command.steps]
         self.job_dir = os.path.join(jobs_path, self.id)
         self.log_file = os.path.join(self.job_dir, f"{self.id}.log")
+
+        try:
+            path = os.path.join(self.job_dir, f"{self.id}.cpu.hist")
+            if os.path.isfile(path):
+                with open(path, "r") as file:
+                    for line in file:
+                        cpu, timestamp = line.strip().split(",")
+                        self.cpu_usage_history.append({
+                            "CPU": float(cpu),
+                            "Timestamp": datetime.fromisoformat(timestamp),
+                        })
+        except Exception:
+            logger.exception("[job:%s] Failed to load cpu usage history", self.id)
 
         try:
             path = os.path.join(self.job_dir, f"{self.id}.mem.hist")
@@ -297,6 +318,14 @@ class Job:
         except Exception:
             logger.exception("[job:%s] Failed to serialize job json", self.id)
 
+        cpu_usage_history_file = os.path.join(self.job_dir, f"{self.id}.cpu.hist")
+        try:
+            with open(cpu_usage_history_file, "w") as file:
+                for entry in self.cpu_usage_history:
+                    file.write(f"{entry['CPU']},{entry['Timestamp'].isoformat()}\n")
+        except Exception:
+            logger.exception("[job:%s] Failed to serialize cpu usage history", self.id)
+
         memory_usage_history_file = os.path.join(self.job_dir, f"{self.id}.mem.hist")
         try:
             with open(memory_usage_history_file, "w") as file:
@@ -339,6 +368,71 @@ class Job:
             return f"{minutes}m {seconds}s"
         else:
             return f"{seconds}s"
+        
+    def get_cpu_usage(self, append_last_recorded_cpu: bool = False) -> float | None:
+        """
+        Calculate and optionally record current CPU usage of the job process group.
+        """
+        now = datetime.now()
+
+        if append_last_recorded_cpu and self.cpu_usage_history:
+            self.cpu_usage_history.append({
+                "CPU": self.cpu_usage_history[-1]["CPU"],
+                "Timestamp": now,
+            })
+            return None
+
+        if not self.process:
+            return None
+
+        try:
+            proc = psutil.Process(self.process.pid)
+        except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
+            return None
+
+        cpu = 0.0
+        total_cpu_time = 0.0
+        
+        try:
+            children = proc.children(recursive=True)
+        except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
+            return None
+
+        # sum cpu usage across all child processes spawned by the job
+        for child in children:
+            try:
+                times = child.cpu_times()
+                total_cpu_time += times.user + times.system
+            except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
+                pass
+
+        if self._last_cpu_usage is None or self._last_cpu_timestamp is None:
+            self._last_cpu_usage = total_cpu_time
+            self._last_cpu_timestamp = now
+            return None
+        
+        delta_cpu = total_cpu_time - self._last_cpu_usage
+        delta_time = (now - self._last_cpu_timestamp).total_seconds()
+
+        self._last_cpu_usage = total_cpu_time
+        self._last_cpu_timestamp = now
+
+        if delta_time <= 0:
+            return None
+        
+        cpu = (delta_cpu / delta_time) * 100.0
+
+        self.current_cpu_usage = cpu
+
+        if self.max_cpu_usage is None or cpu > self.max_cpu_usage:
+            self.max_cpu_usage = cpu
+
+        self.cpu_usage_history.append({
+            "CPU": cpu,
+            "Timestamp": now,
+        })
+
+        return cpu
 
     def get_memory_usage(self, append_last_recorded_memory: bool = False) -> int | None:
         """
@@ -368,7 +462,7 @@ class Job:
         except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
             return None
 
-        # sum memory across all child processes spawned by the job
+        # sum memory usage across all child processes spawned by the job
         for child in children:
             try:
                 memory_info = child.memory_full_info()

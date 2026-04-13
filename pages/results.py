@@ -1,24 +1,94 @@
 from dash import html, dcc, Input, Output, State, callback, clientside_callback
 from dash_iconify import DashIconify
 
-import os
 import dash
 import plotly.graph_objects as go
 import dash_mantine_components as dmc
 
-from models.jobs import Job, Step, Status, memory_to_str
+from models.jobs import Job, Status, memory_to_str
 from services.job_manager import get_job_by_id, get_brief_report
+from components.job_arg_table import job_arg_table
+from components.step_row import step_row
 
 dash.register_page(__name__, path_template="/results/<job_id>")
 
-def make_status_icon(status: Status):
-    return dmc.ThemeIcon(
-        DashIconify(icon=status.icon, height=18),
-        color=status.color,
-        variant="light",
-        radius="xl",
-        size="md",
+def make_cpu_usage_graph(job):
+    history = job.cpu_usage_history
+
+    if not history:
+        return []
+
+    x = [entry["Timestamp"] for entry in history]
+    y = [entry["CPU"] for entry in history]
+    cpu_str = [f"{entry['CPU']:.1f}%" for entry in history]
+
+    max_entry = max(history, key=lambda entry: entry["CPU"])
+
+    fig = go.Figure()
+
+    # cpu usage line
+    fig.add_scatter(
+        x=x,
+        y=y,
+        mode="lines",
+        name="CPU",
+        customdata=cpu_str,
+        line=dict(color="#00c853"),
+        hovertemplate=(
+            "Timestamp: %{x}<br>"
+            "CPU: %{customdata}<extra></extra>"
+        ),
     )
+
+    # max cpu usage point
+    fig.add_scatter(
+        x=[max_entry["Timestamp"]],
+        y=[max_entry["CPU"]],
+        mode="markers",
+        name="Max",
+        customdata=[f"{max_entry['CPU']:.1f}%"],
+        hovertemplate=(
+            "MAX<br>"
+            "Timestamp: %{x}<br>"
+            "CPU: %{customdata}<extra></extra>"
+        ),
+        marker=dict(
+            size=10,
+            symbol="circle",
+            line=dict(width=2),
+            color="#ff9800",
+        ),
+    )
+
+    fig.update_layout(
+        title=dict(
+            text="CPU Usage Over Time",
+            x=0.5,
+            xanchor="center"
+        ),
+        height=260,
+        margin=dict(l=20, r=20, t=40, b=20),
+        xaxis_title="Timestamp",
+        yaxis_title="CPU (%)",
+        hovermode="closest",
+        template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        uirevision=f"cpu-graph-{job.id}",
+    )
+
+    return [
+        dcc.Graph(
+            id="cpu-usage-graph",
+            figure=fig,
+            config={
+                "displayModeBar": "hover",
+                "toImageButtonOptions": {
+                    "filename": f"cpu_usage_{job.id}",
+                },
+            },
+        ),
+    ]
 
 def make_memory_usage_graph(job):
     history = job.memory_usage_history
@@ -43,7 +113,7 @@ def make_memory_usage_graph(job):
         customdata=memory_str,
         line=dict(color="#0062ff"),
         hovertemplate=(
-            "Time: %{x}<br>"
+            "Timestamp: %{x}<br>"
             "Memory: %{customdata}<extra></extra>"
         ),
     )
@@ -57,7 +127,7 @@ def make_memory_usage_graph(job):
         customdata=[memory_to_str(max_entry["Memory"])],
         hovertemplate=(
             "MAX<br>"
-            "Time: %{x}<br>"
+            "Timestamp: %{x}<br>"
             "Memory: %{customdata}<extra></extra>"
         ),
         marker=dict(
@@ -76,8 +146,8 @@ def make_memory_usage_graph(job):
         ),
         height=260,
         margin=dict(l=20, r=20, t=40, b=20),
-        xaxis_title="Time",
-        yaxis_title="MiB",
+        xaxis_title="Timestamp",
+        yaxis_title="Memory (MiB)",
         hovermode="closest",
         template="plotly_dark",
         paper_bgcolor="rgba(0,0,0,0)",
@@ -96,48 +166,6 @@ def make_memory_usage_graph(job):
             },
         ),
     ]
-
-def make_step_row(step: Step):
-    return dmc.Grid(
-        align="center",
-        children=[
-            dmc.GridCol(
-                dmc.Group(
-                    gap="sm",
-                    wrap="nowrap",
-                    children=[
-                        dmc.ThemeIcon(
-                            DashIconify(icon=step.status.icon, height=14),
-                            color=step.status.color,
-                            variant="light",
-                            radius="xl",
-                            size="sm",
-                        ),
-                        dmc.Text(step.name, size="sm"),
-                    ],
-                ),
-                span=6,
-            ),
-            dmc.GridCol(
-                dmc.Text(
-                    step.started_at.strftime("%d.%m.%Y %H:%M:%S") if step.started_at else "-",
-                    size="xs",
-                    c="dimmed",
-                ),
-                span=3,
-                style={"textAlign": "center"},
-            ),
-            dmc.GridCol(
-                dmc.Text(
-                    step.finished_at.strftime("%d.%m.%Y %H:%M:%S") if step.finished_at else "-",
-                    size="xs",
-                    c="dimmed",
-                ),
-                span=3,
-                style={"textAlign": "center"},
-            ),
-        ],
-    )
 
 def loading_block(children):
     return dcc.Loading(
@@ -181,112 +209,6 @@ def make_results_content(job: Job):
         ])
     ]
 
-    def format_arg_name(arg: str) -> str:
-        match arg:
-            case "reference_genome":
-                return "Reference genome"
-            case "microsatellite_list":
-                return "Microsatellite list"
-            case "tumor_bam":
-                return "Tumor BAM"
-            case "normal_bam":
-                return "Normal BAM"
-            case "bed_file":
-                return "BED file"
-            case "model":
-                return "Model"
-            case "output":
-                return "Output"
-            
-            case "threads":
-                return "Threads"
-            
-            case "region":
-                return "Region"
-            
-            case "fdr_threshold":
-                return "FDR threshold"
-            case "instable_sites_threshold":
-                return "Instable sites threshold"
-            
-            case "coverage":
-                return "Coverage"
-            case "coverage_normalization":
-                return "Coverage normalization"
-            
-            case "min_homo_size":
-                return "Min homopolymer size"
-            case "min_homo_size_dist":
-                return "Min homopolymer size for distribution analysis"
-            case "max_homo_size_dist":
-                return "Max homopolymer size for distribution analysis"
-            
-            case "min_microsat_size":
-                return "Min microsatellite size"
-            case "min_microsat_size_dist":
-                return "Min microsatellite size for distribution analysis"
-            case "max_microsat_size_dist":
-                return "Max microsatellite size for distribution analysis"
-            
-            case "span_size_window":
-                return "Span size around window for extracting reads"
-            
-            case "homopolymer_only":
-                return "Homopolymer only"
-            case "microsatellite_only":
-                return "Microsatellite only"
-            
-            case "include_zero_coverage_sites":
-                return "Include zero coverage sites"
-            case "out_site_no_read_coverage":
-                return "Include sites with no read coverage"
-            
-            case "min_read_quality":
-                return "Min read quality"
-            case "min_locus_quality":
-                return "Min locus quality"
-            case "min_read_length":
-                return "Min read length"
-            case "min_locus_coverage":
-                return "Min locus coverage"
-            case "min_repeat_reads":
-                return "Min repeat reads"
-            case "standard_deviations":
-                return "Standard deviations"
-
-            case _:
-                return arg.replace("_", " ").capitalize()
-
-    def format_arg_value(arg: str, value):
-        if value in (None, "", []):
-            return "—"
-
-        match arg:
-            case ("homopolymer_only" | "microsatellite_only" | "coverage_normalization" | "write_index" |
-                  "include_zero_coverage_sites" | "include-zero-coverage-sites" | "out_site_no_read_coverage"):
-                return "Yes" if value == 1 else "No"
-            case ("reference_genome" | "microsatellite_list" | "tumor_bam" | "normal_bam" | "bam_file" | "bed_file"):
-                return os.path.basename(value)
-            case _:
-                return value
-
-    run_params = [
-        dmc.TableTbody([
-            dmc.TableTr([
-                dmc.TableTh(format_arg_name(arg), w=160),
-                dmc.TableTd(format_arg_value(arg, value) if value is not None else "not selected"),
-            ])
-            for arg, value in sorted(
-                job.args.items(),
-                key=lambda x: (
-                    x[0] not in ("tumor_bam", "normal_bam", "bed_file", "microsatellite_list"),
-                    x[0],
-                )
-            )
-            if arg not in ("output",)
-        ])
-    ]
-
     steps = [
         dmc.Grid(
             children=[
@@ -307,7 +229,7 @@ def make_results_content(job: Job):
             ],
         ),
         dmc.Stack(
-            [make_step_row(step) for step in job.steps],
+            [step_row(step) for step in job.steps],
             gap="xs",
         ),
     ]
@@ -339,7 +261,7 @@ def make_results_content(job: Job):
             variant="separated",
             radius="md",
             multiple=True,
-            value=["basic-info", "run-params", "brief-output", "steps", "graphs"],
+            value=["basic-info", "run-params", "brief-report", "steps", "graphs"],
             children=[
                 make_section(
                     "basic-info",
@@ -361,7 +283,7 @@ def make_results_content(job: Job):
                         withTableBorder=True,
                         withColumnBorders=True,
                         variant="vertical",
-                        children=run_params,
+                        children=job_arg_table(job),
                     ),
                     icon="bi:sliders",
                 ),
@@ -397,7 +319,11 @@ def make_results_content(job: Job):
                     "Graphs",
                     dmc.Stack(
                         gap="md",
-                        children=make_memory_usage_graph(job),
+                        children=[
+                            *make_cpu_usage_graph(job),
+                            dmc.Divider(),
+                            *make_memory_usage_graph(job),
+                        ],
                     ),
                     icon="bi:bar-chart",
                 ),
@@ -422,6 +348,47 @@ def layout(job_id=None):
         p="md",
     )
 
+# cpu usage graph theme switch client-side callback
+clientside_callback(
+    """
+    function(checked, figure) {
+        if (!figure) {
+            return window.dash_clientside.no_update;
+        }
+
+        const newFigure = JSON.parse(JSON.stringify(figure));
+        newFigure.layout = newFigure.layout || {};
+        newFigure.layout.xaxis = newFigure.layout.xaxis || {};
+        newFigure.layout.yaxis = newFigure.layout.yaxis || {};
+
+        if (checked) {
+            newFigure.layout.paper_bgcolor = "rgba(0,0,0,0)";
+            newFigure.layout.plot_bgcolor = "rgba(0,0,0,0)";
+            newFigure.layout.font = {color: "#ffffff"};
+            newFigure.layout.xaxis.gridcolor = "rgba(255,255,255,0.08)";
+            newFigure.layout.yaxis.gridcolor = "rgba(255,255,255,0.08)";
+            newFigure.layout.xaxis.zerolinecolor = "rgba(255,255,255,0.12)";
+            newFigure.layout.yaxis.zerolinecolor = "rgba(255,255,255,0.12)";
+        } else {
+            newFigure.layout.paper_bgcolor = "rgba(0,0,0,0)";
+            newFigure.layout.plot_bgcolor = "rgba(0,0,0,0)";
+            newFigure.layout.font = {color: "#000000"};
+            newFigure.layout.xaxis.gridcolor = "rgba(0,0,0,0.08)";
+            newFigure.layout.yaxis.gridcolor = "rgba(0,0,0,0.08)";
+            newFigure.layout.xaxis.zerolinecolor = "rgba(0,0,0,0.12)";
+            newFigure.layout.yaxis.zerolinecolor = "rgba(0,0,0,0.12)";
+        }
+
+        return newFigure;
+    }
+    """,
+    Output("cpu-usage-graph", "figure"),
+    Input("color-scheme-toggle", "checked"),
+    State("cpu-usage-graph", "figure"),
+    prevent_initial_call=True,
+)
+
+# memory usage graph theme switch client-side callback
 clientside_callback(
     """
     function(checked, figure) {
