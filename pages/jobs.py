@@ -511,7 +511,7 @@ def render_active_jobs(_, selected_tools, selected_commands, selected_outputs, s
         return (
             [], 
             dmc.Alert(
-                "There are no active jobs.",
+                "There are no active jobs matching the selected filters.",
                 color="gray",
                 variant="light",
             ),

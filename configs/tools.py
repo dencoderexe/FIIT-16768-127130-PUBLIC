@@ -380,6 +380,10 @@ TOOLS = {
                     "- Threads control parallel processing.\n"
                     "- Homopolymer only and microsatellite only restrict the analysis to one locus type.\n"
                     "- Include sites with no read coverage controls whether zero-coverage sites are retained in the output."
+                    "\n"
+                    "Note: Although MSIsensor-pro provides a 'baseline' mode for tumor-only MSI classification, "
+                    "baseline generation and usage are not implemented in this workflow.\n"
+                    "MSI classification therefore relies on a manually selected unstable sites threshold."
                 ),
                 template=(
                     "./msisensor-pro-v1.3.0 pro "
