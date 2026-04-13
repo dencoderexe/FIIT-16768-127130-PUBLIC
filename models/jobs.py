@@ -373,10 +373,16 @@ class Job:
             try:
                 memory_info = child.memory_full_info()
 
+                # PSS (Proportional Set Size) - most accurate:
+                # shared memory is divided between processes
                 if hasattr(memory_info, "pss"):
                     memory += memory_info.pss
+                # fallback to USS (Unique Set Size):
+                # counts only private (non-shared) memory
                 elif hasattr(memory_info, "uss"):
                     memory += memory_info.uss
+                # last fallback to RSS:
+                # includes all shared memory, may overestimate usage
                 else:
                     memory += memory_info.rss
             except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):

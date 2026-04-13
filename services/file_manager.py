@@ -117,6 +117,9 @@ def is_file_empty(file: str) -> bool:
     return False
 
 def get_job_dir_size(job_dir: str) -> int:
+    """
+    Calculate total size of files in a job directory, excluding filtered files and directories.
+    """
     total_size = 0
     
     for file in os.listdir(job_dir):
@@ -139,9 +142,18 @@ def get_job_dir_size(job_dir: str) -> int:
     return total_size
 
 def is_output_too_big(output_dir: str) -> bool:
+    """
+    Check if total size of job output files exceeds the allowed limit.
+    """
     return get_job_dir_size(output_dir) > MAX_OUTPUT_SIZE
 
 def build_output_name(default_name: str, custom_name: str | None, extension: str|None) -> str:
+    """
+    Build output file name.
+
+    Uses custom_name if provided, otherwise derives name from default_name.
+    Ensures the given extension is applied (removes existing one if needed).
+    """
     if custom_name and custom_name.strip():
         name = custom_name.strip()
     else:
