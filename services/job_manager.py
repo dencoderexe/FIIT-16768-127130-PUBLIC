@@ -121,7 +121,7 @@ def parse_job_output(job: Job, line: str):
             job.set_status(Status.FAILED)
         return
     
-    # Samtools and Microsat2Bed progress parsing
+    # Samtools and MSlist Converter progress parsing
     if job.tool.key == "samtools":
         # Those commands typically do not print structured information about the execution process, 
         # so as soon as the output begins, mark the current step as running.
@@ -131,28 +131,96 @@ def parse_job_output(job: Job, line: str):
             step.set_status(Status.RUNNING)
         return
     
-    # MSIsensor/2/pro msi/pro progress parsing
-    if job.tool.key in ("msisensor", "msisensor2", "msisensor-pro"):
+    # parse MSIsensor2 progress
+    if job.tool.key == "msisensor2":
+        if "Start at:" in line:
+            job.get_step_by_name("Checking tumor BAM file").set_status(Status.RUNNING)
+            job.get_step_by_name("Checking homopolymer and microsatellite files").set_status(Status.RUNNING)
+        elif "loading homopolymer and microsatellite sites ..." in line:
+            job.get_step_by_name("Checking tumor BAM file").set_status(Status.SUCCESS)
+            job.get_step_by_name("Checking homopolymer and microsatellite files").set_status(Status.SUCCESS)
+
+            job.get_step_by_name("Loading homopolymer and microsatellite sites").set_status(Status.RUNNING)
+            job.get_step_by_name("Preparing analysis windows").set_status(Status.RUNNING)
+        elif "Total loading windows:" in line:
+            # parse the total number of windows to enable progress tracking
+            job.get_step_by_name("Preparing analysis windows").set_status(Status.SUCCESS)
+            match = re.search(r"Total loading windows:\s+(\d+)", line)
+            if match:
+                job.get_step_by_name("Computing homopolymer and microsatellite distributions").progress_total = int(match.group(1))
+                job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_progress(0)
+        elif "Total loading homopolymer and microsatellites:" in line:
+            job.get_step_by_name("Loading homopolymer and microsatellite sites").set_status(Status.SUCCESS)
+
+            job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_status(Status.RUNNING)
+        elif "Total time consumed:" in line:
+            job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_status(Status.SUCCESS)
+        elif "window:" in line:
+            # update progress based on currently processed window
+            match = re.search(r"window:\s+(\d+)", line)
+            if match:
+                job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_progress(int(match.group(1)) + 1)
+        elif "Program aborted:" in line or "fatal error:" in line:
+            job.error_message += line
+            job.set_status(Status.FAILED)
+        return
+
+    # parse MSIsensor progress
+    if job.tool.key == "msisensor":
         if "Start at:" in line:
             job.get_step_by_name("Processing user defined region").set_status(Status.RUNNING)
 
             # if BED file is not provided, MSIsensor does not print log line about this step, 
             # so mark the related steps as RUNNING explicitly
             if job.args.get("bed_file") is None:
-                job.get_step_by_name("Loading BED file").set_status(Status.RUNNING)
-                job.get_step_by_name("Loading BAM files").set_status(Status.RUNNING)
+                job.get_step_by_name("Checking BED file").set_status(Status.RUNNING)
+                job.get_step_by_name("Checking BAM files").set_status(Status.RUNNING)
                 job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.RUNNING)
         elif "loading bed regions ..." in line:
             job.get_step_by_name("Processing user defined region").set_status(Status.SUCCESS)
 
-            job.get_step_by_name("Loading BED file").set_status(Status.RUNNING)
-            job.get_step_by_name("Loading BAM files").set_status(Status.RUNNING)
+            job.get_step_by_name("Checking BED file").set_status(Status.RUNNING)
+            job.get_step_by_name("Checking BAM files").set_status(Status.RUNNING)
             job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.RUNNING)
         elif "loading homopolymer and microsatellite sites ..." in line:
             if job.args.get("bed_file") is None:
                 job.get_step_by_name("Processing user defined region").set_status(Status.SUCCESS)
-            job.get_step_by_name("Loading BED file").set_status(Status.SUCCESS)
-            job.get_step_by_name("Loading BAM files").set_status(Status.SUCCESS)
+            job.get_step_by_name("Checking BED file").set_status(Status.SUCCESS)
+            job.get_step_by_name("Checking BAM files").set_status(Status.SUCCESS)
+            job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.SUCCESS)
+
+            job.get_step_by_name("Loading homopolymer and microsatellite sites").set_status(Status.RUNNING)
+            job.get_step_by_name("Preparing analysis windows").set_status(Status.RUNNING)
+        elif "Total loading windows:" in line:
+            # parse the total number of windows to enable progress tracking
+            job.get_step_by_name("Preparing analysis windows").set_status(Status.SUCCESS)
+            match = re.search(r"Total loading windows:\s+(\d+)", line)
+            if match:
+                job.get_step_by_name("Computing homopolymer and microsatellite distributions").progress_total = int(match.group(1))
+                job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_progress(0)
+        elif "Total loading homopolymer and microsatellites:" in line:
+            job.get_step_by_name("Loading homopolymer and microsatellite sites").set_status(Status.SUCCESS)
+
+            job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_status(Status.RUNNING)
+        elif "Total time consumed:" in line:
+            job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_status(Status.SUCCESS)
+        elif "window:" in line:
+            # update progress based on currently processed window
+            match = re.search(r"window:\s+(\d+)", line)
+            if match:
+                job.get_step_by_name("Computing homopolymer and microsatellite distributions").set_progress(int(match.group(1)) + 1)
+        elif "Program aborted:" in line or "fatal error:" in line:
+            job.error_message += line
+            job.set_status(Status.FAILED)
+        return
+
+    # parse MSIsensor-pro progress
+    if job.tool.key == "msisensor-pro":
+        if "Start at:" in line:
+            job.get_step_by_name("Checking BAM files").set_status(Status.RUNNING)
+            job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.RUNNING)
+        elif "loading homopolymer and microsatellite sites ..." in line:
+            job.get_step_by_name("Checking BAM files").set_status(Status.SUCCESS)
             job.get_step_by_name("Checking homopolymer and microsatellite file").set_status(Status.SUCCESS)
 
             job.get_step_by_name("Loading homopolymer and microsatellite sites").set_status(Status.RUNNING)

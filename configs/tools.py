@@ -9,69 +9,24 @@ TOOLS = {
         name="MSIsensor2",
         description=(
             "MSIsensor2 is a machine learning-based tool for microsatellite instability (MSI) detection, "
-            "with support for both tumor-only (improved support) and tumor-normal analysis."
+            "primarily designed for tumor-only analysis using a pretrained model. "
+            "It evaluates microsatellite loci directly from sequencing data without requiring a matched normal sample."
         ),
         dir="/home/danilovd/tools/msisensor2/",
         commands={
-            "scan": Command(
-                key="scan",
-                name="scan",
-                description=(
-                    "MSIsensor2 scan identifies homopolymer and microsatellite loci in a reference genome "
-                    "and generates a microsatellite list file for MSI analysis.\n"
-                    "It uses the same scanning strategy as the original MSIsensor scan command.\n"
-                    "To run the tool, select a reference genome file in FASTA format.\n"
-                    "Additional parameters allow you to control which loci are reported:\n"
-                    "- Minimum and maximum homopolymer size define the allowed homopolymer length.\n"
-                    "- Context length defines how many flanking bases are stored for each site.\n"
-                    "- Maximum microsatellite length defines the maximum motif size to search for.\n"
-                    "- Minimum microsatellite repeats define how many repeat units are required for a microsatellite to be reported.\n"
-                    "- Homopolymer only limits the output to homopolymer sites."
-                ),
-                template=(
-                    "./msisensor2 scan "
-                    "-d {reference_genome} "
-                    "-o {output} "
-                    "-l {min_homo_size} "
-                    "-m {max_homo_size} "
-                    "-c {context_len} "
-                    "-s {max_microsat_len} "
-                    "-r {min_microsat_rep} "
-                    "-p {homopolymer_only} "
-                ),
-                steps=[
-                    "Scanning reference genome for homopolymers and microsatellites"
-                ],
-                defaults={
-                    "min_homo_size": 5,
-                    "max_homo_size": 50,
-                    "context_len": 5,
-                    "max_microsat_len": 5,
-                    "min_microsat_rep": 3,
-                    "homopolymer_only": 0,
-                },
-                link_output_to_input_arg="reference_genome",
-            ),
             "msi": Command(
                 key="msi",
                 name="msi",
                 description=(
-                    "MSIsensor2 msi performs MSI scoring using a tumor BAM file, with optional support for a matched "
-                    "normal BAM file for tumor-normal analysis.\n"
-                    "To run the tool, select a model and a tumor BAM file. "
-                    "You may optionally provide a matched normal BAM file to run in tumor-normal mode.\n"
-                    "A microsatellite list file, BED file, and genomic region can also be provided to limit the analysis "
-                    "to specific loci or regions.\n"
-                    "Additional parameters allow you to control analysis thresholds and filtering:\n"
+                    "MSIsensor2 performs MSI scoring using a tumor BAM file and a pretrained model.\n\n"
+                    "To run the tool, select one of the provided models and a tumor BAM file.\n"
+                    "The model defines the baseline for instability detection.\n\n"
+                    "Additional parameters allow you to control analysis thresholds and performance:\n"
                     "- Coverage defines the minimum recommended sequencing depth for analysis.\n"
-                    "- Coverage normalization enables normalization for paired tumor-normal analysis.\n"
-                    "- FDR threshold controls the false discovery rate used for calling unstable sites.\n"
-                    "- Homopolymer and microsatellite size parameters define which loci are included in distribution analysis.\n"
-                    "- Span size window defines the window around each site used for read extraction.\n"
                     "- Threads control parallel processing.\n"
                     "- Homopolymer only and microsatellite only restrict the analysis to one locus type.\n"
-                    "Tumor-only mode is suitable when no matched normal sample is available, while tumor-normal mode "
-                    "can be used when both tumor and matched normal BAM files are provided."
+                    "MSIsensor2 reports an MSI score for the sample and evaluates instability at individual loci "
+                    "based on learned patterns from the selected model."
                 ),
                 template=(
                     "./msisensor2 msi "
@@ -79,52 +34,25 @@ TOOLS = {
                     "-t {tumor_bam} "
                     "-o {output} "
                     
-                    "-f {fdr_threshold} "
                     "-c {coverage} "
-                    "-z {coverage_normalization} "
-                    "-l {min_homo_size} "
-                    "-p {min_homo_size_dist} "
-                    "-m {max_homo_size_dist} "
-                    "-q {min_microsat_size} "
-                    "-s {min_microsat_size_dist} "
-                    "-w {max_microsat_size_dist} "
-                    "-u {span_size_window} "
                     "-b {threads} "
                     "-x {homopolymer_only} "
                     "-y {microsatellite_only} "
                 ),
                 steps=[
-                    "Processing user defined region",
-                    "Loading BED file",
-                    "Loading BAM files",
-                    "Checking homopolymer and microsatellite file",
+                    "Checking tumor BAM file",
+                    "Checking homopolymer and microsatellite files",
                     "Loading homopolymer and microsatellite sites",
                     "Preparing analysis windows",
                     "Computing homopolymer and microsatellite distributions",
                 ],
                 defaults={
-                    "bed_file": None,
-                    "fdr_threshold": 0.05,
-                    "coverage": 20,
-                    "coverage_normalization": 0,
-                    "region": None,
-                    "min_homo_size": 5,
-                    "min_homo_size_dist": 10,
-                    "max_homo_size_dist": 50,
-                    "min_microsat_size": 3,
-                    "min_microsat_size_dist": 5,
-                    "max_microsat_size_dist": 40,
-                    "span_size_window": 500,
+                    "coverage": 15,
                     "threads": 1,
                     "homopolymer_only": 0,
                     "microsatellite_only": 0,
                 },
-                optionals={
-                    "normal_bam": "-n",
-                    "bed_file": "-e",
-                    "region": "-r",
-                    "reference_genome": "-d",
-                },
+                msi_threshold=0.2,
             )
         }
     ),
@@ -133,8 +61,7 @@ TOOLS = {
         name="MSIsensor",
         description=(
             "MSIsensor is a tool for microsatellite instability (MSI) detection that analyzes "
-            "repeat length distributions at microsatellite loci using tumor sequencing data, "
-            "with optional support for matched normal samples."
+            "repeat length distributions at microsatellite loci using paired tumor-normal sequencing data."
         ),
         dir="/home/danilovd/tools/msisensor/",
         commands={
@@ -143,8 +70,8 @@ TOOLS = {
                 name="scan",
                 description=(
                     "MSIsensor scan identifies homopolymer and microsatellite loci in a reference genome "
-                    "and generates a microsatellite list file for MSI analysis.\n"
-                    "To run the tool, select a reference genome file in FASTA format.\n"
+                    "and generates a microsatellite list file for MSI analysis.\n\n"
+                    "To run the tool, select a reference genome file in FASTA format.\n\n"
                     "Additional parameters allow you to control which loci are reported:\n"
                     "- Minimum and maximum homopolymer size define the allowed homopolymer length.\n"
                     "- Context length defines how many flanking bases are stored for each site.\n"
@@ -180,11 +107,10 @@ TOOLS = {
                 key="msi",
                 name="msi",
                 description=(
-                    "MSIsensor msi performs MSI scoring using a tumor BAM file and a microsatellite list file, "
-                    "with optional support for a matched normal BAM file for tumor-normal analysis.\n"
-                    "To run the tool, select a microsatellite list file and a tumor BAM file. "
-                    "You may optionally provide a matched normal BAM file to run in tumor-normal mode.\n"
-                    "A BED file and genomic region can also be provided to restrict the analysis to specific loci or regions.\n"
+                    "MSIsensor msi performs MSI scoring using paired tumor and matched normal BAM files "
+                    "together with a microsatellite list file.\n\n"
+                    "To run the tool, select a microsatellite list file, a normal BAM file, and a tumor BAM file.\n"
+                    "A BED file and genomic region can also be provided to restrict the analysis to specific loci or regions.\n\n"
                     "Additional parameters allow you to control analysis thresholds and filtering:\n"
                     "- Coverage defines the minimum sequencing depth threshold used for analysis.\n"
                     "- Coverage normalization enables normalization for paired tumor-normal analysis.\n"
@@ -193,11 +119,16 @@ TOOLS = {
                     "- Span size window defines the window around each site used for read extraction.\n"
                     "- Threads control parallel processing.\n"
                     "- Homopolymer only and microsatellite only restrict the analysis to one locus type.\n"
-                    "MSIsensor was originally designed for paired tumor-normal sequencing data."
+                    "\nMSIsensor was originally designed for paired tumor-normal sequencing data and, in this configuration, "
+                    "is used only in tumor-normal mode. "
+                    "Although a tumor-only mode exists and is based on an entropy-based approach for analyzing microsatellite distributions, "
+                    "it is not well documented, lacks a formal publication, and is considered experimental. "
+                    "In practice, it should be treated as a prototype feature rather than a fully supported analysis mode."
                 ),
                 template=(
                     "./msisensor.linux msi "
                     "-d {microsatellite_list} "
+                    "-n {normal_bam} "
                     "-t {tumor_bam} "
                     "-o {output} "
 
@@ -217,8 +148,8 @@ TOOLS = {
                 ),
                 steps=[
                     "Processing user defined region",
-                    "Loading BED file",
-                    "Loading BAM files",
+                    "Checking BED file",
+                    "Checking BAM files",
                     "Checking homopolymer and microsatellite file",
                     "Loading homopolymer and microsatellite sites",
                     "Preparing analysis windows",
@@ -242,10 +173,10 @@ TOOLS = {
                     "microsatellite_only": 0,
                 },
                 optionals={
-                    "normal_bam": "-n",
                     "bed_file": "-e",
                     "region": "-r",
                 },
+                msi_threshold=0.1,
             ),
         }
     ),
@@ -276,7 +207,7 @@ TOOLS = {
                     "- Homopolymer only limits the output to homopolymer sites."
                 ),
                 template=(
-                    "./msisensor-pro-v1.3.0 scan "
+                    "./binary/msisensor-pro-v1.3.0 scan "
                     "-d {reference_genome} "
                     "-o {output} "
 
@@ -304,9 +235,8 @@ TOOLS = {
                 key="msi",
                 name="msi",
                 description=(
-                    "MSIsensor-pro msi performs MSI scoring using paired normal and tumor BAM files.\n"
-                    "To run the tool, select a microsatellite list file, a matched normal BAM file, and a tumor BAM file.\n"
-                    "An optional BED file can be provided to restrict the analysis to specific loci or regions.\n"
+                    "MSIsensor-pro msi performs MSI scoring using paired normal and tumor BAM files.\n\n"
+                    "To run the tool, select a microsatellite list file, a matched normal BAM file, and a tumor BAM file.\n\n"
                     "Additional parameters allow you to control analysis thresholds and filtering:\n"
                     "- Coverage defines the sequencing depth threshold used for MSI analysis.\n"
                     "- Coverage normalization enables normalization for paired tumor-normal analysis.\n"
@@ -318,7 +248,7 @@ TOOLS = {
                     "- Include sites with no read coverage controls whether zero-coverage sites are retained in the output."
                 ),
                 template=(
-                    "./msisensor-pro-v1.3.0 msi "
+                    "./binary/msisensor-pro-v1.3.0 msi "
                     "-d {microsatellite_list} "
                     "-n {normal_bam} "
                     "-t {tumor_bam} "
@@ -338,16 +268,13 @@ TOOLS = {
                     "-0 {include_zero_coverage_sites} "
                 ),
                 steps=[
-                    "Processing user defined region",
-                    "Loading BED file",
-                    "Loading BAM files",
+                    "Checking BAM files",
                     "Checking homopolymer and microsatellite file",
                     "Loading homopolymer and microsatellite sites",
                     "Preparing analysis windows",
                     "Computing homopolymer and microsatellite distributions",
                 ],
                 defaults={
-                    "bed_file": None,
                     "fdr_threshold": 0.05,
                     "coverage": 15,
                     "coverage_normalization": 0,
@@ -361,17 +288,14 @@ TOOLS = {
                     "microsatellite_only": 0,
                     "include_zero_coverage_sites": 1,
                 },
-                optionals={
-                    "bed_file": "-e",
-                }
+                msi_threshold=0.1,
             ),
             "pro": Command(
                 key="pro",
                 name="pro",
                 description=(
-                    "MSIsensor-pro pro performs MSI scoring using a single tumor sample without a matched normal BAM file.\n"
-                    "To run the tool, select a microsatellite list file and a tumor BAM file.\n"
-                    "An optional BED file can be provided to restrict the analysis to specific loci or regions.\n"
+                    "MSIsensor-pro pro performs MSI scoring using a single tumor sample without a matched normal BAM file.\n\n"
+                    "To run the tool, select a microsatellite list file and a tumor BAM file.\n\n"
                     "Additional parameters allow you to control analysis thresholds and filtering:\n"
                     "- Unstable sites threshold defines the minimum threshold used for unstable site detection in tumor-only analysis.\n"
                     "- Coverage defines the sequencing depth threshold used for MSI analysis.\n"
@@ -379,14 +303,14 @@ TOOLS = {
                     "- Span size window defines the window around each site used for read extraction.\n"
                     "- Threads control parallel processing.\n"
                     "- Homopolymer only and microsatellite only restrict the analysis to one locus type.\n"
-                    "- Include sites with no read coverage controls whether zero-coverage sites are retained in the output."
+                    "- Include sites with no read coverage controls whether zero-coverage sites are retained in the output.\n"
                     "\n"
                     "Note: Although MSIsensor-pro provides a 'baseline' mode for tumor-only MSI classification, "
                     "baseline generation and usage are not implemented in this workflow.\n"
                     "MSI classification therefore relies on a manually selected unstable sites threshold."
                 ),
                 template=(
-                    "./msisensor-pro-v1.3.0 pro "
+                    "./binary/msisensor-pro-v1.3.0 pro "
                     "-d {microsatellite_list} "
                     "-t {tumor_bam} "
                     "-o {output} "
@@ -404,15 +328,13 @@ TOOLS = {
                     "-0 {include_zero_coverage_sites} "
                 ),
                 steps=[
-                    "Loading BAM files",
-                    "Loading BED file",
+                    "Checking BAM files",
                     "Checking homopolymer and microsatellite file",
                     "Loading homopolymer and microsatellite sites",
                     "Preparing analysis windows",
                     "Computing homopolymer and microsatellite distributions",
                 ],
                 defaults={
-                    "bed_file": None,
                     "instable_sites_threshold": 0.1,
                     "coverage": 15,
                     "min_homo_size_dist": 8,
@@ -425,9 +347,7 @@ TOOLS = {
                     "microsatellite_only": 0,
                     "include_zero_coverage_sites": 1,
                 },
-                optionals={
-                    "bed_file": "-e",
-                }
+                msi_threshold=0.1,
             )
         }
     ),
@@ -491,6 +411,7 @@ TOOLS = {
                     "min_repeat_reads": 3,
                     "standard_deviations": 3.0,
                 },
+                msi_threshold=0.4,
             )
         }
     ),
@@ -661,34 +582,52 @@ TOOLS = {
             ),
         }
     ),
-    "microsat2bed": Tool(
-        key="microsat2bed",
-        name="Microsat2Bed",
+    "mslist-converter": Tool(
+        key="mslist-converter",
+        name="MSlist Converter",
         description=(
-            "Microsat2Bed is our tool for converting MSIsensor microsatellite lists into BED format "
-            "compatible with MANTIS and RepeatFinder coordinate conventions."
+            "MSlist Converter is our tool for transforming MSIsensor microsatellite lists "
+            "into formats compatible with other tools such as MSIsensor-pro and MANTIS.\n"
+            "It supports conversion to MSIsensor-pro format and BED format (RepeatFinder/MANTIS compatible)."
         ),
         dir="/home/danilovd/tools/",
         commands={
-            "convert": Command(
-                key="convert",
-                name="convert",
+            "msisensor-pro": Command(
+                key="msisensor-pro",
+                name="msisensor-pro",
                 description=(
-                    "Microsat2Bed converts a microsatellite list generated by MSIsensor scan into "
-                    "a BED file compatible with MANTIS.\n"
-                    "To run the tool, select a microsatellite list file. "
-                    "Note: MSIsensor-pro microsatellite lists are not supported; use MSIsensor only.\n"
-                    "The output BED file follows RepeatFinder coordinate conventions and can be used as input for MANTIS.\n"
-                    "This enables the use of the same reference loci across tools such as MSIsensor and MANTIS, "
-                    "supporting more consistent cross-tool comparison."
+                    "Convert an MSIsensor microsatellite list into MSIsensor-pro format.\n"
+                    "This adds required columns such as threshold, support_num, and filter.\n"
+                    "Default values are used (-1, -1, PASS), matching the default output of MSIsensor-pro scan.\n"
+                    "Note: Input must be generated by MSIsensor scan (not MSIsensor-pro)."
                 ),
                 template=(
-                    "python -u microsat2bed.py "
+                    "python -u mslist-converter.py msisensor-pro "
                     "{microsatellite_list} "
                     "{output} "
                 ),
                 steps=[
-                    "Generating BED file from microsatellite list",
+                    "Converting MSIsensor microsatellite list to MSIsensor-pro format",
+                ],
+                link_output_to_input_arg="microsatellite_list",
+            ),
+
+            "mantis": Command(
+                key="mantis",
+                name="mantis",
+                description=(
+                    "Convert an MSIsensor microsatellite list into BED format.\n"
+                    "The output follows RepeatFinder coordinate conventions and is compatible with MANTIS.\n"
+                    "End coordinates are adjusted using overlap between repeat unit and right flank bases.\n"
+                    "This allows consistent locus definitions across MSIsensor and MANTIS."
+                ),
+                template=(
+                    "python -u mslist-converter.py mantis "
+                    "{microsatellite_list} "
+                    "{output} "
+                ),
+                steps=[
+                    "Converting MSIsensor microsatellite list to MANTIS-compatible BED file",
                 ],
                 link_output_to_input_arg="microsatellite_list",
             ),

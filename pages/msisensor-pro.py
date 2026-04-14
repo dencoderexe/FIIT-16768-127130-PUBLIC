@@ -7,7 +7,7 @@ from services.job_manager import create_job
 from services.file_manager import get_files, build_output_name
 
 from configs.tools import TOOLS
-from configs.paths import data_path, BAM_EXT, BED_EXT, FASTA_EXT, MICROSAT_LIST_PRO_EXT
+from configs.paths import data_path, BAM_EXT, FASTA_EXT, MICROSAT_LIST_PRO_EXT
 
 import os
 import dash
@@ -254,26 +254,6 @@ def make_msi():
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
                     placeholder="Select tumor BAM file",
-                    searchable=True,
-                ),
-                dmc.Select(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("BED file", size="sm", fw=500),
-                            helper(
-                                "Optional BED file defining loci or regions to include in the analysis."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor-pro-msi-bed-file-select",
-                    data=[
-                        {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=BED_EXT)
-                    ],
-                    nothingFoundMessage="Nothing found",
-                    checkIconPosition="right",
-                    placeholder="Select BED file",
                     searchable=True,
                 ),
                 
@@ -547,26 +527,6 @@ def make_pro():
                     nothingFoundMessage="Nothing found",
                     checkIconPosition="right",
                     placeholder="Select tumor BAM file",
-                    searchable=True,
-                ),
-                dmc.Select(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("BED file", size="sm", fw=500),
-                            helper(
-                                "Optional BED file defining loci or regions to include in the analysis."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor-pro-pro-bed-file-select",
-                    data=[
-                        {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=BED_EXT)
-                    ],
-                    nothingFoundMessage="Nothing found",
-                    checkIconPosition="right",
-                    placeholder="Select BED file",
                     searchable=True,
                 ),
                 
@@ -917,7 +877,6 @@ def msisensor_pro_msi_start_button(microsatellite_list, normal_bam, tumor_bam):
     State("msisensor-pro-msi-normal-bam-file-select", "value"),
     State("msisensor-pro-msi-tumor-bam-file-select", "value"),
 
-    State("msisensor-pro-msi-bed-file-select", "value"),
     State("msisensor-pro-msi-coverage", "value"),
     State("msisensor-pro-msi-coverage-normalization", "checked"),
     State("msisensor-pro-msi-fdr-threshold", "value"),
@@ -940,7 +899,6 @@ def msisensor_pro_msi_start_job(
     normal_bam,
     tumor_bam,
 
-    bed_file,
     coverage,
     coverage_normalization,
     fdr_threshold,
@@ -967,7 +925,6 @@ def msisensor_pro_msi_start_job(
             tumor_bam=tumor_bam,
             output=build_output_name(os.path.splitext(os.path.basename(tumor_bam))[0], output_name, None),
             
-            bed_file=bed_file or None,
             fdr_threshold=fdr_threshold,
             coverage=coverage,
             coverage_normalization=int(bool(coverage_normalization)),
@@ -1002,7 +959,6 @@ def msisensor_pro_pro_start_button(microsatellite_list, tumor_bam):
     State("msisensor-pro-pro-microsat-list-file-select", "value"),
     State("msisensor-pro-pro-tumor-bam-file-select", "value"),
 
-    State("msisensor-pro-pro-bed-file-select", "value"),
     State("msisensor-pro-pro-instable-sites-threshold", "value"),
     State("msisensor-pro-pro-coverage", "value"),
     State("msisensor-pro-pro-min-homo-size-dist", "value"),
@@ -1023,7 +979,6 @@ def msisensor_pro_pro_start_job(
     microsatellite_list,
     tumor_bam,
 
-    bed_file,
     instable_sites_threshold,
     coverage,
     min_homo_size_dist,
@@ -1048,7 +1003,6 @@ def msisensor_pro_pro_start_job(
             tumor_bam=tumor_bam,
             output=build_output_name(os.path.splitext(os.path.basename(tumor_bam))[0], output_name, None),
             
-            bed_file=bed_file or None,
             instable_sites_threshold=instable_sites_threshold,
             coverage=coverage,
             min_homo_size_dist=min_homo_size_dist,

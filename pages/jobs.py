@@ -157,7 +157,7 @@ def make_job_item(job: Job):
                                 
 
                                 dmc.Text(job.get_mode(), size="xs", c="dimmed")
-                                if job.command.key in msi_analysis_commands
+                                if job.command.key in msi_analysis_commands and job.tool.key != "mslist-converter"
                                 else None,
                             ],
                             gap=2,

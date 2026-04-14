@@ -12,6 +12,7 @@ class Command:
     defaults: Dict[str, object] = field(default_factory=dict)   # default argument values (merged with user input)
     optionals: Dict[str, str] = field(default_factory=dict)     # optional CLI arguments mapping: {arg_name: flag}
     link_output_to_input_arg: Optional[str] = None              # optional: link output file next to this input argument (input file)
+    msi_threshold: Optional[float] = None                       # optional: msi detection threshold
 
 @dataclass(frozen=True)
 class Tool:

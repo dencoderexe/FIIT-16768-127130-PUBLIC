@@ -1,4 +1,4 @@
-from dash import Input, Output, State, callback, html, no_update, ctx
+from dash import Input, Output, State, callback, no_update, ctx
 from dash_iconify import DashIconify
 
 from components.helper import helper
@@ -7,7 +7,7 @@ from services.job_manager import create_job
 from services.file_manager import get_files, build_output_name
 
 from configs.tools import TOOLS
-from configs.paths import data_path, BAM_EXT, BED_EXT, FASTA_EXT, MICROSAT_LIST_EXT
+from configs.paths import data_path, BAM_EXT, BED_EXT, MICROSAT_LIST_EXT
 
 import os
 import re
@@ -17,171 +17,6 @@ import dash_mantine_components as dmc
 dash.register_page(__name__, path="/msisensor2")
 
 tool = TOOLS["msisensor2"]
-
-def make_scan():
-    main_options = dmc.Paper(
-        withBorder=True,
-        radius="md",
-        p="md",
-        h="100%",
-        children=dmc.Stack(
-            [
-                dmc.Title("Main options", order=4),
-                dmc.Select(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Reference genome file", size="sm", fw=500),
-                            dmc.Text("*", c="red", size="sm", fw=700),
-                            helper("Select the reference genome file in FASTA format."),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-scan-refgenome-file-select",
-                    data=[
-                        {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=FASTA_EXT)
-                    ],
-                    nothingFoundMessage="Nothing found",
-                    checkIconPosition="right",
-                    placeholder="Select reference genome FASTA file",
-                    searchable=True,
-                ),
-
-                dmc.Box(style={"flexGrow": 1}),
-
-                dmc.TextInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Output file name", size="sm", fw=500),
-                            helper("Optional. Enter a custom output file name without extension. The .microsatellite.list extension will be added automatically."),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-scan-output-name-input",
-                    placeholder="Leave empty to use the default file name",
-                ),
-
-                dmc.Button("Start", id="msisensor2-scan-start-button", disabled=True),
-            ],
-            gap="md",
-            h="100%",
-        ),
-    )
-
-    additional_options = dmc.Paper(
-        withBorder=True,
-        radius="md",
-        p="md",
-        h="100%",
-        children=dmc.Stack(
-            [
-                dmc.Title("Additional options", order=4),
-                dmc.NumberInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Minimum homopolymer size", size="sm", fw=500),
-                            helper(
-                                "Minimum homopolymer length to include in the scan.\n"
-                                "Example: with value 5, homopolymers shorter than 5 bases will be ignored."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-scan-min-homo-size",
-                    value=5,
-                    min=1,
-                    allowDecimal=False,
-                ),
-                dmc.NumberInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Maximum homopolymer size", size="sm", fw=500),
-                            helper(
-                                "Maximum homopolymer length to include in the scan.\n"
-                                "Example: with value 50, homopolymers longer than 50 bases will be ignored."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-scan-max-homo-size",
-                    value=50,
-                    min=1,
-                    allowDecimal=False,
-                ),
-                dmc.NumberInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Context length", size="sm", fw=500),
-                            helper(
-                                "Number of flanking bases to store on each side of the detected locus."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-scan-context-length",
-                    value=5,
-                    min=1,
-                    allowDecimal=False,
-                ),
-                dmc.NumberInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Maximum microsatellite motif length", size="sm", fw=500),
-                            helper(
-                                "Maximum repeat unit length to consider when scanning microsatellite loci.\n"
-                                "Example: with value 5, motifs longer than 5 bases will be ignored."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-scan-max-microsat-len",
-                    value=5,
-                    min=1,
-                    allowDecimal=False,
-                ),
-                dmc.NumberInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Minimum microsatellite repeats", size="sm", fw=500),
-                            helper(
-                                "Minimum number of repeat units required for a microsatellite to be reported.\n"
-                                "Example: with value 3, (AC)2 will be ignored."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-scan-min-microsat-rep",
-                    value=3,
-                    min=1,
-                    allowDecimal=False,
-                ),
-                dmc.Switch(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Homopolymer only", size="sm", fw=500),
-                            helper(
-                                "Restrict the output to homopolymer loci only."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-scan-homopolymer-only",
-                    checked=False,
-                ),
-            ],
-            gap="md",
-            h="100%",
-        ),
-    )
-
-    return dmc.Grid(
-        [
-            dmc.GridCol(main_options, span=6),
-            dmc.GridCol(additional_options, span=6),
-        ],
-        gutter="md",
-        align="stretch",
-    )
 
 def make_msi():
     main_options = dmc.Paper(
@@ -233,65 +68,6 @@ def make_msi():
                     placeholder="Select BAM file",
                     searchable=True,
                 ),
-                dmc.Select(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Normal BAM file", size="sm", fw=500),
-                            helper("Optional BAM file for the matched normal sample. Provide this to run tumor-normal analysis."),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-msi-normal-bam-file-select",
-                    data=[
-                        {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=BAM_EXT)
-                    ],
-                    nothingFoundMessage="Nothing found",
-                    checkIconPosition="right",
-                    placeholder="Select normal BAM file",
-                    searchable=True,
-                ),
-                dmc.Select(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Microsatellite list file", size="sm", fw=500),
-                            helper(
-                                "Optional microsatellite list file generated by scan. Use it to provide " \
-                                "predefined homopolymer and microsatellite loci for analysis."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-msi-microsat-list-file-select",
-                    data=[
-                        {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=MICROSAT_LIST_EXT)
-                    ],
-                    nothingFoundMessage="Nothing found",
-                    checkIconPosition="right",
-                    placeholder="Select microsatellite list file",
-                    searchable=True,
-                ),
-                dmc.Select(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("BED file", size="sm", fw=500),
-                            helper(
-                                "Optional BED file defining genomic regions or loci to include in the analysis."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-msi-bed-file-select",
-                    data=[
-                        {"value": str(file), "label": str(file).replace(data_path, "")}
-                        for file in get_files(extensions=BED_EXT)
-                    ],
-                    nothingFoundMessage="Nothing found",
-                    checkIconPosition="right",
-                    placeholder="Select BED file",
-                    searchable=True,
-                ),
 
                 dmc.Box(style={"flexGrow": 1}),
 
@@ -322,20 +98,6 @@ def make_msi():
         children=dmc.Stack(
             [
                 dmc.Title("Additional options", order=4),
-                dmc.TextInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Region", size="sm", fw=500),
-                            helper(
-                                "Optional genomic region in the format chr:start-end.\n"
-                                "Example: 1:10000000-20000000."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-msi-region",
-                    placeholder="e.g. 1:10000000-20000000",
-                ),
                 dmc.Select(
                     label=dmc.Group(
                         [
@@ -355,140 +117,6 @@ def make_msi():
                     ],
                     allowDeselect=False,
                     checkIconPosition="right",
-                ),
-                dmc.Switch(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Coverage normalization", size="sm", fw=500),
-                            helper(
-                                "Enable coverage normalization for paired tumor-normal analysis."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-msi-coverage-normalization",
-                    checked=False,
-                ),
-                dmc.NumberInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("FDR threshold", size="sm", fw=500),
-                            helper(
-                                "False discovery rate threshold used for calling unstable sites."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-msi-fdr-threshold",
-                    value=0.05,
-                    min=0,
-                    step=0.01,
-                    decimalScale=2,
-                ),
-                dmc.NumberInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Minimum homopolymer size", size="sm", fw=500),
-                            helper(
-                                "Minimum homopolymer length to include in MSI analysis."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-msi-min-homo-size",
-                    value=5,
-                    min=1,
-                    allowDecimal=False,
-                ),
-                dmc.NumberInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Minimum homopolymer size for distribution analysis", size="sm", fw=500),
-                            helper(
-                                "Minimum homopolymer length to include when computing repeat length distributions."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-msi-min-homo-size-dist",
-                    value=10,
-                    min=1,
-                    allowDecimal=False,
-                ),
-                dmc.NumberInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Maximum homopolymer size for distribution analysis", size="sm", fw=500),
-                            helper(
-                                "Maximum homopolymer length to include when computing repeat length distributions."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-msi-max-homo-size-dist",
-                    value=50,
-                    min=1,
-                    allowDecimal=False,
-                ),
-                dmc.NumberInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Minimum microsatellite motif length", size="sm", fw=500),
-                            helper(
-                                "Minimum microsatellite repeat unit length to include in MSI analysis."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-msi-min-microsat-size",
-                    value=3,
-                    min=1,
-                    allowDecimal=False,
-                ),
-                dmc.NumberInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Minimum microsatellite motif length for distribution analysis", size="sm", fw=500),
-                            helper(
-                                "Minimum microsatellite repeat unit length to include when computing repeat length distributions."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-msi-min-microsat-size-dist",
-                    value=5,
-                    min=1,
-                    allowDecimal=False,
-                ),
-                dmc.NumberInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Maximum microsatellite motif length for distribution analysis", size="sm", fw=500),
-                            helper(
-                                "Maximum microsatellite repeat unit length to include when computing repeat length distributions."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-msi-max-microsat-size-dist",
-                    value=40,
-                    min=1,
-                    allowDecimal=False,
-                ),
-                dmc.NumberInput(
-                    label=dmc.Group(
-                        [
-                            dmc.Text("Span size window", size="sm", fw=500),
-                            helper(
-                                "Window size around each locus used for read extraction."
-                            ),
-                        ],
-                        gap=6,
-                    ),
-                    id="msisensor2-msi-span-size-window",
-                    value=500,
-                    min=1,
-                    allowDecimal=False,
                 ),
                 dmc.NumberInput(
                     label=dmc.Group(
@@ -546,26 +174,15 @@ def make_msi():
         align="stretch",
     )
 
-command_select = dmc.Paper(
+command_description = dmc.Paper(
     withBorder=True,
     radius="md",
     p="md",
     w="100%",
     children=dmc.Stack(
         [
-            dmc.Title("Command", order=4),
-            dmc.Select(
-                label="Choose a command",
-                id="msisensor2-command-select",
-                value="scan",
-                data=[
-                    {"value": command.key, "label": command.name}
-                    for command in tool.commands.values()
-                ],
-                allowDeselect=False,
-            ),
             dmc.Text(
-                id="msisensor2-command-description",
+                tool.commands["msi"].description,
                 style={"whiteSpace": "pre-line"},
             ),
         ],
@@ -589,8 +206,8 @@ layout = dmc.Container(
                 ],
                 gap="xs",
             ),
-            command_select,
-            html.Div(id="msisensor2-command-container"),
+            command_description,
+            make_msi(),
         ],
         gap="md",
     ),
@@ -599,134 +216,19 @@ layout = dmc.Container(
 )
 
 @callback(
-    Output("msisensor2-command-container", "children"), 
-    Input("msisensor2-command-select", "value"),
-)
-def msisensor2_select_command(value):
-    if value == "scan":
-        return make_scan()
-    elif value == "msi":
-        return make_msi()
-    else:
-        return None
-    
-@callback(
-    Output("msisensor2-scan-start-button", "disabled"),
-    Input("msisensor2-scan-refgenome-file-select", "value"),
-)
-def msisensor2_scan_start_button(refgenome):
-    return not bool(refgenome)
-
-@callback(
-    Output("notification-container", "sendNotifications", allow_duplicate=True),
-    Input("msisensor2-scan-start-button", "n_clicks"),
-    State("msisensor2-command-select", "value"),
-    State("msisensor2-scan-refgenome-file-select", "value"),
-    State("msisensor2-scan-min-homo-size", "value"),
-    State("msisensor2-scan-max-homo-size", "value"),
-    State("msisensor2-scan-context-length", "value"),
-    State("msisensor2-scan-max-microsat-len", "value"),
-    State("msisensor2-scan-min-microsat-rep", "value"),
-    State("msisensor2-scan-homopolymer-only", "checked"),
-    State("msisensor2-scan-output-name-input", "value"),
-    prevent_initial_call=True,
-)
-def msisensor2_scan_start_job(
-    n_clicks,
-    command_key,
-    reference_genome,
-    min_homo_size,
-    max_homo_size,
-    context_len,
-    max_microsat_len,
-    min_microsat_rep,
-    homopolymer_only,
-    output_name,
-):
-    if not n_clicks:
-        return no_update
-
-    try:
-        create_job(
-            tool=tool,
-            command=tool.commands.get(command_key),
-            reference_genome=reference_genome,
-            output=build_output_name(os.path.splitext(os.path.basename(reference_genome))[0], output_name, MICROSAT_LIST_EXT[0]),
-
-            min_homo_size=min_homo_size,
-            max_homo_size=max_homo_size,
-            context_len=context_len,
-            max_microsat_len=max_microsat_len,
-            min_microsat_rep=min_microsat_rep,
-            homopolymer_only=int(bool(homopolymer_only)),
-        )
-
-        return job_started_notification(f"{tool.name} scan started")
-
-    except Exception as e:
-        return job_started_failed_notification(e)
-    
-@callback(
-    Output("msisensor2-msi-region", "error"),
-    Input("msisensor2-msi-region", "value"),
-)
-def msisensor2_validate_region_input(region):
-    if not region:
-        return None
-
-    _, error = validate_region(region)
-
-    return error
-
-def validate_region(region: str):
-    if not region:
-        return True, None
-
-    m = re.fullmatch(r"([^:\s]+):(\d+)-(\d+)", region.strip())
-    if not m:
-        return False, "Format: chr:start-end"
-
-    if int(m.group(2)) >= int(m.group(3)):
-        return False, "Start must be < End"
-
-    return True, None
-
-@callback(
     Output("msisensor2-msi-start-button", "disabled"),
     Input("msisensor2-msi-model-select", "value"),
     Input("msisensor2-msi-tumor-bam-file-select", "value"),
-    Input("msisensor2-msi-region", "value"),
 )
-def msisensor2_msi_start_button(model, tumor_bam, region):
-    if not all([model, tumor_bam]):
-        return True
-
-    if region:
-        valid, _ = validate_region(region)
-        return not valid
-
-    return False
+def msisensor2_msi_start_button(model, tumor_bam):
+    return not all([model, tumor_bam])
 
 @callback(
     Output("notification-container", "sendNotifications", allow_duplicate=True),
     Input("msisensor2-msi-start-button", "n_clicks"),
-    State("msisensor2-command-select", "value"),
     State("msisensor2-msi-model-select", "value"),
-    State("msisensor2-msi-microsat-list-file-select", "value"),
-    State("msisensor2-msi-normal-bam-file-select", "value"),
     State("msisensor2-msi-tumor-bam-file-select", "value"),
-    State("msisensor2-msi-bed-file-select", "value"),
-    State("msisensor2-msi-region", "value"),
     State("msisensor2-msi-coverage", "value"),
-    State("msisensor2-msi-coverage-normalization", "checked"),
-    State("msisensor2-msi-fdr-threshold", "value"),
-    State("msisensor2-msi-min-homo-size", "value"),
-    State("msisensor2-msi-min-homo-size-dist", "value"),
-    State("msisensor2-msi-max-homo-size-dist", "value"),
-    State("msisensor2-msi-min-microsat-size", "value"),
-    State("msisensor2-msi-min-microsat-size-dist", "value"),
-    State("msisensor2-msi-max-microsat-size-dist", "value"),
-    State("msisensor2-msi-span-size-window", "value"),
     State("msisensor2-msi-threads", "value"),
     State("msisensor2-msi-homopolymer-only", "checked"),
     State("msisensor2-msi-microsatellite-only", "checked"),
@@ -735,24 +237,10 @@ def msisensor2_msi_start_button(model, tumor_bam, region):
 )
 def msisensor2_msi_start_job(
     n_clicks,
-    command_key,
     model,
-    microsatellite_list,
-    normal_bam,
     tumor_bam,
-    bed_file,
 
-    region,
     coverage,
-    coverage_normalization,
-    fdr_threshold,
-    min_homo_size,
-    min_homo_size_dist,
-    max_homo_size_dist,
-    min_microsat_size,
-    min_microsat_size_dist,
-    max_microsat_size_dist,
-    span_size_window,
     threads,
     homopolymer_only,
     microsatellite_only,
@@ -764,25 +252,12 @@ def msisensor2_msi_start_job(
     try:
         create_job(
             tool=tool,
-            command=tool.commands.get(command_key),
+            command=tool.commands.get("msi"),
             model=model,
             tumor_bam=tumor_bam,
             output=build_output_name(os.path.splitext(os.path.basename(tumor_bam))[0], output_name, None),
             
-            bed_file=bed_file or None,
-            microsatellite_list=microsatellite_list or None,
-            normal_bam=normal_bam or None,
-            region=region or None,
-            fdr_threshold=fdr_threshold,
             coverage=coverage,
-            coverage_normalization=int(bool(coverage_normalization)),
-            min_homo_size=min_homo_size,
-            min_homo_size_dist=min_homo_size_dist,
-            max_homo_size_dist=max_homo_size_dist,
-            min_microsat_size=min_microsat_size,
-            min_microsat_size_dist=min_microsat_size_dist,
-            max_microsat_size_dist=max_microsat_size_dist,
-            span_size_window=span_size_window,
             threads=threads,
             homopolymer_only=int(bool(homopolymer_only)),
             microsatellite_only=int(bool(microsatellite_only)),
@@ -810,11 +285,3 @@ def msisensor2_msi_homopolymer_microsatellite_only_switch(homopolymer_only, micr
         return False, True
 
     return homopolymer_only, microsatellite_only
-
-@callback(
-    Output("msisensor2-command-description", "children"),
-    Input("msisensor2-command-select", "value"),
-)
-def msisensor2_command_description(command_key):
-    command = tool.commands.get(command_key)
-    return command.description if command else "No description available."
