@@ -157,8 +157,9 @@ class Job:
     memory_usage_history: List[Dict[str, Any]] = field(default_factory=list)
 
     # cpu usage tracking
-    _last_cpu_usage: float | None = None
+    _last_total_cpu_time: float | None = None
     _last_cpu_timestamp: datetime | None = None
+    _cpu_times_by_pid: Dict[int, float] = field(default_factory=dict)
 
     current_cpu_usage: float | None = None
     max_cpu_usage: float | None = None
@@ -371,7 +372,11 @@ class Job:
         
     def get_cpu_usage(self, append_last_recorded_cpu: bool = False) -> float | None:
         """
-        Calculate and optionally record current CPU usage of the job process group.
+        Calculate and optionally record current CPU usage of the job process tree.
+
+        CPU usage is estimated from accumulated user+system CPU time across the main
+        process and all discovered child processes. Per-process CPU time is stored by PID
+        so that finished child processes do not make the total accumulated CPU time drop.
         """
         now = datetime.now()
 
@@ -385,42 +390,47 @@ class Job:
         if not self.process:
             return None
 
+        # main process is a shell process, skip it
         try:
             proc = psutil.Process(self.process.pid)
         except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
             return None
-
-        cpu = 0.0
-        total_cpu_time = 0.0
         
         try:
             children = proc.children(recursive=True)
         except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
             return None
 
-        # sum cpu usage across all child processes spawned by the job
+        # update last known accumulated cpu time for all currently visible processes
         for child in children:
             try:
                 times = child.cpu_times()
-                total_cpu_time += times.user + times.system
+                self._cpu_times_by_pid[child.pid] = times.user + times.system
             except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):
                 pass
 
-        if self._last_cpu_usage is None or self._last_cpu_timestamp is None:
-            self._last_cpu_usage = total_cpu_time
+        # keep cpu time from all processes (also finished)
+        total_cpu_time = sum(self._cpu_times_by_pid.values())
+
+        # first attempt
+        if self._last_total_cpu_time is None or self._last_cpu_timestamp is None:
+            self._last_total_cpu_time = total_cpu_time
             self._last_cpu_timestamp = now
             return None
         
-        delta_cpu = total_cpu_time - self._last_cpu_usage
+        delta_cpu = total_cpu_time - self._last_total_cpu_time
         delta_time = (now - self._last_cpu_timestamp).total_seconds()
 
-        self._last_cpu_usage = total_cpu_time
+        self._last_total_cpu_time = total_cpu_time
         self._last_cpu_timestamp = now
 
         if delta_time <= 0:
             return None
         
         cpu = (delta_cpu / delta_time) * 100.0
+
+        if cpu < 0:
+            cpu = 0
 
         self.current_cpu_usage = cpu
 
@@ -450,6 +460,7 @@ class Job:
         if not self.process:
             return None
 
+        # main process is a shell process, skip it
         try:
             proc = psutil.Process(self.process.pid)
         except (psutil.NoSuchProcess, psutil.ZombieProcess, psutil.AccessDenied):

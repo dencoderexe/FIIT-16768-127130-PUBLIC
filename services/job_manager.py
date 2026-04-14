@@ -435,6 +435,10 @@ def run_job(job: Job):
         job.process = None
         job.thread = None
 
+        job._cpu_times_by_pid.clear()
+        job._last_total_cpu_time = None
+        job._last_cpu_timestamp = None
+
         # move the job from active to finished jobs
         with jobs_lock:
             active_jobs[:] = [j for j in active_jobs if j.id != job.id]
