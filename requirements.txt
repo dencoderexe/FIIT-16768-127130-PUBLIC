@@ -1,5 +1,0 @@
-dash==4.0.0
-dash-iconify==0.1.2
-dash-mantine-components==2.6.0
-psutil==7.2.2
-plotly==6.6.0

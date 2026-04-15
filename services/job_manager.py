@@ -334,7 +334,7 @@ def run_job(job: Job):
 
             proc = subprocess.Popen(
                 job.cmd,                    # command to execute
-                cwd=job.tool.dir,           # cwd for the process
+                cwd=job.tool.dir,           # cwd for the process (if specified)
                 shell=True,                 # run command with shell
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,

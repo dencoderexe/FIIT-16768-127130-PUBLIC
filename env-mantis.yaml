@@ -1,0 +1,7 @@
+name: mantis
+channels:
+  - conda-forge
+  - bioconda
+dependencies:
+  - python=3.8
+  - mantis-msi=1.0.5

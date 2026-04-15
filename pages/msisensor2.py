@@ -7,10 +7,9 @@ from services.job_manager import create_job
 from services.file_manager import get_files, build_output_name
 
 from configs.tools import TOOLS
-from configs.paths import data_path, BAM_EXT, BED_EXT, MICROSAT_LIST_EXT
+from configs.paths import data_path, BAM_EXT
 
 import os
-import re
 import dash
 import dash_mantine_components as dmc
 
@@ -41,9 +40,9 @@ def make_msi():
                     ),
                     id="msisensor2-msi-model-select",
                     data=[
-                        {"value": "models_b37_HumanG1Kv37", "label": "b37 (HumanG1Kv37)"},
-                        {"value": "models_hg19_GRCh37", "label": "hg19 / GRCh37"},
-                        {"value": "models_hg38", "label": "hg38 / GRCh38"},
+                        {"value": f"{data_path}msisensor2_models/models_b37_HumanG1Kv37", "label": "b37 (HumanG1Kv37)"},
+                        {"value": f"{data_path}msisensor2_models/models_hg19_GRCh37", "label": "hg19 / GRCh37"},
+                        {"value": f"{data_path}msisensor2_models/models_hg38", "label": "hg38 / GRCh38"},
                     ],
                     allowDeselect=False,
                     checkIconPosition="right",

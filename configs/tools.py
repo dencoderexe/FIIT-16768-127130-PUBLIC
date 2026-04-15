@@ -1,6 +1,5 @@
 from models.tools import Tool, Command
 
-
 msi_analysis_commands = ("msi", "pro", "mantis")
 
 TOOLS = {
@@ -12,7 +11,6 @@ TOOLS = {
             "primarily designed for tumor-only analysis using a pretrained model. "
             "It evaluates microsatellite loci directly from sequencing data without requiring a matched normal sample."
         ),
-        dir="/home/danilovd/tools/msisensor2/",
         commands={
             "msi": Command(
                 key="msi",
@@ -29,7 +27,7 @@ TOOLS = {
                     "based on learned patterns from the selected model."
                 ),
                 template=(
-                    "./msisensor2 msi "
+                    "msisensor2 msi "
                     "-M {model} "
                     "-t {tumor_bam} "
                     "-o {output} "
@@ -63,7 +61,6 @@ TOOLS = {
             "MSIsensor is a tool for microsatellite instability (MSI) detection that analyzes "
             "repeat length distributions at microsatellite loci using paired tumor-normal sequencing data."
         ),
-        dir="/home/danilovd/tools/msisensor/",
         commands={
             "scan": Command(
                 key="scan",
@@ -80,7 +77,7 @@ TOOLS = {
                     "- Homopolymer only limits the output to homopolymer sites."
                 ),
                 template=(
-                    "./msisensor.linux scan "
+                    "msisensor scan "
                     "-d {reference_genome} "
                     "-o {output} "
                     "-l {min_homo_size} "
@@ -126,7 +123,7 @@ TOOLS = {
                     "In practice, it should be treated as a prototype feature rather than a fully supported analysis mode."
                 ),
                 template=(
-                    "./msisensor.linux msi "
+                    "msisensor msi "
                     "-d {microsatellite_list} "
                     "-n {normal_bam} "
                     "-t {tumor_bam} "
@@ -190,7 +187,6 @@ TOOLS = {
             "It accepts the whole genome sequencing, whole exome sequencing "
             "and target region (panel) sequencing data as input. "
         ),
-        dir="/home/danilovd/tools/msisensor-pro/",
         commands={
             "scan": Command(
                 key="scan",
@@ -207,7 +203,7 @@ TOOLS = {
                     "- Homopolymer only limits the output to homopolymer sites."
                 ),
                 template=(
-                    "./binary/msisensor-pro-v1.3.0 scan "
+                    "msisensor-pro scan "
                     "-d {reference_genome} "
                     "-o {output} "
 
@@ -248,7 +244,7 @@ TOOLS = {
                     "- Include sites with no read coverage controls whether zero-coverage sites are retained in the output."
                 ),
                 template=(
-                    "./binary/msisensor-pro-v1.3.0 msi "
+                    "msisensor-pro msi "
                     "-d {microsatellite_list} "
                     "-n {normal_bam} "
                     "-t {tumor_bam} "
@@ -310,7 +306,7 @@ TOOLS = {
                     "MSI classification therefore relies on a manually selected unstable sites threshold."
                 ),
                 template=(
-                    "./binary/msisensor-pro-v1.3.0 pro "
+                    "msisensor-pro pro "
                     "-d {microsatellite_list} "
                     "-t {tumor_bam} "
                     "-o {output} "
@@ -361,7 +357,6 @@ TOOLS = {
             "(produced using the same pipeline) to determine the instability score between the "
             "two samples within the pair."
         ),
-        dir="/home/danilovd/tools/MANTIS-1.0.5/",
         commands={
             "mantis": Command(
                 key="mantis",
@@ -382,7 +377,7 @@ TOOLS = {
                     "microsatellite loci and can be removed during quality control."
                 ),
                 template=(
-                    "/home/danilovd/.conda/envs/mantis/bin/python -u ./mantis.py "
+                    "micromamba run -n mantis mantis-msi.py "
                     "-n {normal_bam} "
                     "-t {tumor_bam} "
                     "--genome {reference_genome} "
@@ -422,7 +417,6 @@ TOOLS = {
             "RepeatFinder is a tool included with MANTIS for detecting microsatellite "
             "regions in a reference genome and generating a BED file for MSI analysis."
         ),
-        dir="/home/danilovd/tools/MANTIS-1.0.5/tools/",
         commands={
             "repeatfinder": Command(
                 key="repeatfinder",
@@ -438,7 +432,7 @@ TOOLS = {
                     "The default maximum k-mer length is 5, as larger values may include telomeric repeats."
                 ),
                 template=(
-                    "./RepeatFinder "
+                    "RepeatFinder "
                     "-i {reference_genome} "
                     "-o {output} "
 
@@ -469,7 +463,6 @@ TOOLS = {
             "SAMtools is a set of utilities for interacting with and processing "
             "sequence alignment files in SAM, BAM and CRAM formats."
         ),
-        dir="/home/danilovd/tools/",
         commands={
             "index": Command(
                 key="index",

@@ -19,5 +19,5 @@ class Tool:
     key: str                                        # unique identifier of the tool (used internally)
     name: str
     description: str
-    dir: str                                        # directory where the tool is located
+    dir: Optional[str] = None                                   # optional: directory where the tool is located (tool can be installed via conda, etc.)
     commands: Dict[str, Command] = field(default_factory=dict)  # available commands for this tool

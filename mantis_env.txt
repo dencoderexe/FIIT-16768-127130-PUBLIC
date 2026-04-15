@@ -1,1 +1,0 @@
-mamba create -n mantis -c conda-forge -c bioconda python=3.8.20 pysam numpy
