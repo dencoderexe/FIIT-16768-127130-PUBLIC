@@ -1023,4 +1023,5 @@ clientside_callback(
     State({"type": "job-output-button", "job_id": ALL}, "id"),
     State({"type": "job-output-too-big-button", "job_id": ALL}, "id"),
     State({"type": "job-delete-button", "job_id": ALL}, "id"),
+    prevent_initial_call=True,
 )

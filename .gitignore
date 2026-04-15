@@ -1,2 +1,8 @@
 __pycache__/
 .logs/
+.vscode/
+
+jobs/
+data/
+logs/
+tools/

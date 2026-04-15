@@ -1,15 +1,15 @@
-name: main
+name: base
 channels:
   - conda-forge
   - bioconda
 dependencies:
-  - python=3.14
+  - python=3.14.3
   - psutil=7.2.2
   - dash=4.0.0
   - dash-iconify=0.1.2
   - dash-mantine-components=2.6.0
   - plotly=6.6.0
-
+  # external tools
   - samtools=1.23.1
   - msisensor=0.5
   - msisensor2=0.1

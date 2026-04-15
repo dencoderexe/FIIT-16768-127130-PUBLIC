@@ -1,0 +1,12 @@
+.git
+.gitignore
+.vscode
+.logs/
+__pycache__
+
+data
+jobs
+logs
+tools
+
+.env
