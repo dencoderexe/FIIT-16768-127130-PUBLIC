@@ -14,5 +14,4 @@ services:
       - ./data:/data
       - ./jobs:/jobs
       - ./logs:/logs
-      - ./tools:/tools
     command: python app.py

@@ -2,11 +2,10 @@
 .gitignore
 .vscode
 .logs/
-__pycache__
+__pycache__/
 
 data
 jobs
 logs
-tools
 
 .env

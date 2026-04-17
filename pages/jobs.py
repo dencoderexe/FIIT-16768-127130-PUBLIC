@@ -123,15 +123,19 @@ def make_job_item(job: Job):
                     ), 
                     dmc.GridCol(
                         dmc.Center(dmc.Text("Output", size="xs", c="dimmed")), 
-                        span=2,
+                        span=3,
                     ), 
                     dmc.GridCol(
                         dmc.Center(dmc.Text("Duration", size="xs", c="dimmed")), 
-                        span=2,
+                        span=1,
                     ), 
                     dmc.GridCol(
-                        dmc.Center(dmc.Text("Memory usage" if job.status not in (Status.SUCCESS, Status.FAILED) else "Max. memory usage", size="xs", c="dimmed")), 
-                        span=2,
+                        dmc.Center(dmc.Text("CPU usage" if job.status not in (Status.SUCCESS, Status.FAILED) else "Max. CPU usage", size="xs", c="dimmed")), 
+                        span=1,
+                    ),
+                    dmc.GridCol(
+                        dmc.Center(dmc.Text("RAM usage" if job.status not in (Status.SUCCESS, Status.FAILED) else "Max. RAM usage", size="xs", c="dimmed")), 
+                        span=1,
                     ),
                     dmc.GridCol(
                         dmc.Center(dmc.Text("Status", size="xs", c="dimmed")), 
@@ -168,13 +172,31 @@ def make_job_item(job: Job):
                         dmc.Center(
                             dmc.Text(job.args.get("output", "-"), size="xs", c="dimmed")
                         ),
-                        span=2,
+                        span=3,
                     ),
                     dmc.GridCol(
                         dmc.Center(
                             dmc.Text(job.get_duration() or "—", size="xs", c="dimmed")
                         ),
-                        span=2,
+                        span=1,
+                    ),
+                    dmc.GridCol(
+                        dmc.Center(
+                            dmc.Text(
+                                f"{round(cpu_usage, 2)} %"
+                                if (
+                                    cpu_usage := (
+                                        job.current_cpu_usage
+                                        if job.current_cpu_usage is not None and job.status not in (Status.SUCCESS, Status.FAILED)
+                                        else job.max_cpu_usage
+                                    )
+                                ) is not None
+                                else "—",
+                                size="xs",
+                                c="dimmed",
+                            )
+                        ),
+                        span=1,
                     ),
                     dmc.GridCol(
                         dmc.Center(
@@ -190,7 +212,7 @@ def make_job_item(job: Job):
                                 c="dimmed",
                             )
                         ),
-                        span=2,
+                        span=1,
                     ),
                     dmc.GridCol(
                         dmc.Center(status_icon(job.status)),

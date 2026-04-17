@@ -195,7 +195,11 @@ def make_results_content(job: Job):
                 dmc.TableTd(job.get_duration() or "—"),
             ]),
             dmc.TableTr([
-                dmc.TableTh("Max memory usage:", w=160),
+                dmc.TableTh("Max CPU usage:", w=160),
+                dmc.TableTd(job.max_cpu_usage or "—"),
+            ]),
+            dmc.TableTr([
+                dmc.TableTh("Max RAM usage:", w=160),
                 dmc.TableTd(memory_to_str(job.max_memory_usage) or "—"),
             ]),
         ])
@@ -319,82 +323,51 @@ def layout(job_id=None):
         p="md",
     )
 
-# cpu usage graph theme switch client-side callback
+# cpu and memory usage graph theme switch client-side callback
 clientside_callback(
     """
-    function(checked, figure) {
-        if (!figure) {
-            return window.dash_clientside.no_update;
+    function(checked, cpu_graph, memory_graph) {
+        function updateGraphTheme(figure) {
+            if (!figure) {
+                return window.dash_clientside.no_update;
+            }
+
+            const newFigure = JSON.parse(JSON.stringify(figure));
+            newFigure.layout = newFigure.layout || {};
+            newFigure.layout.xaxis = newFigure.layout.xaxis || {};
+            newFigure.layout.yaxis = newFigure.layout.yaxis || {};
+
+            if (checked) {
+                newFigure.layout.paper_bgcolor = "rgba(0,0,0,0)";
+                newFigure.layout.plot_bgcolor = "rgba(0,0,0,0)";
+                newFigure.layout.font = {color: "#ffffff"};
+                newFigure.layout.xaxis.gridcolor = "rgba(255,255,255,0.08)";
+                newFigure.layout.yaxis.gridcolor = "rgba(255,255,255,0.08)";
+                newFigure.layout.xaxis.zerolinecolor = "rgba(255,255,255,0.12)";
+                newFigure.layout.yaxis.zerolinecolor = "rgba(255,255,255,0.12)";
+            } else {
+                newFigure.layout.paper_bgcolor = "rgba(0,0,0,0)";
+                newFigure.layout.plot_bgcolor = "rgba(0,0,0,0)";
+                newFigure.layout.font = {color: "#000000"};
+                newFigure.layout.xaxis.gridcolor = "rgba(0,0,0,0.08)";
+                newFigure.layout.yaxis.gridcolor = "rgba(0,0,0,0.08)";
+                newFigure.layout.xaxis.zerolinecolor = "rgba(0,0,0,0.12)";
+                newFigure.layout.yaxis.zerolinecolor = "rgba(0,0,0,0.12)";
+            }
+
+            return newFigure;
         }
 
-        const newFigure = JSON.parse(JSON.stringify(figure));
-        newFigure.layout = newFigure.layout || {};
-        newFigure.layout.xaxis = newFigure.layout.xaxis || {};
-        newFigure.layout.yaxis = newFigure.layout.yaxis || {};
-
-        if (checked) {
-            newFigure.layout.paper_bgcolor = "rgba(0,0,0,0)";
-            newFigure.layout.plot_bgcolor = "rgba(0,0,0,0)";
-            newFigure.layout.font = {color: "#ffffff"};
-            newFigure.layout.xaxis.gridcolor = "rgba(255,255,255,0.08)";
-            newFigure.layout.yaxis.gridcolor = "rgba(255,255,255,0.08)";
-            newFigure.layout.xaxis.zerolinecolor = "rgba(255,255,255,0.12)";
-            newFigure.layout.yaxis.zerolinecolor = "rgba(255,255,255,0.12)";
-        } else {
-            newFigure.layout.paper_bgcolor = "rgba(0,0,0,0)";
-            newFigure.layout.plot_bgcolor = "rgba(0,0,0,0)";
-            newFigure.layout.font = {color: "#000000"};
-            newFigure.layout.xaxis.gridcolor = "rgba(0,0,0,0.08)";
-            newFigure.layout.yaxis.gridcolor = "rgba(0,0,0,0.08)";
-            newFigure.layout.xaxis.zerolinecolor = "rgba(0,0,0,0.12)";
-            newFigure.layout.yaxis.zerolinecolor = "rgba(0,0,0,0.12)";
-        }
-
-        return newFigure;
+        return [
+            updateGraphTheme(cpu_graph),
+            updateGraphTheme(memory_graph)
+        ];
     }
     """,
     Output("cpu-usage-graph", "figure"),
-    Input("color-scheme-toggle", "checked"),
-    State("cpu-usage-graph", "figure"),
-    prevent_initial_call=True,
-)
-
-# memory usage graph theme switch client-side callback
-clientside_callback(
-    """
-    function(checked, figure) {
-        if (!figure) {
-            return window.dash_clientside.no_update;
-        }
-
-        const newFigure = JSON.parse(JSON.stringify(figure));
-        newFigure.layout = newFigure.layout || {};
-        newFigure.layout.xaxis = newFigure.layout.xaxis || {};
-        newFigure.layout.yaxis = newFigure.layout.yaxis || {};
-
-        if (checked) {
-            newFigure.layout.paper_bgcolor = "rgba(0,0,0,0)";
-            newFigure.layout.plot_bgcolor = "rgba(0,0,0,0)";
-            newFigure.layout.font = {color: "#ffffff"};
-            newFigure.layout.xaxis.gridcolor = "rgba(255,255,255,0.08)";
-            newFigure.layout.yaxis.gridcolor = "rgba(255,255,255,0.08)";
-            newFigure.layout.xaxis.zerolinecolor = "rgba(255,255,255,0.12)";
-            newFigure.layout.yaxis.zerolinecolor = "rgba(255,255,255,0.12)";
-        } else {
-            newFigure.layout.paper_bgcolor = "rgba(0,0,0,0)";
-            newFigure.layout.plot_bgcolor = "rgba(0,0,0,0)";
-            newFigure.layout.font = {color: "#000000"};
-            newFigure.layout.xaxis.gridcolor = "rgba(0,0,0,0.08)";
-            newFigure.layout.yaxis.gridcolor = "rgba(0,0,0,0.08)";
-            newFigure.layout.xaxis.zerolinecolor = "rgba(0,0,0,0.12)";
-            newFigure.layout.yaxis.zerolinecolor = "rgba(0,0,0,0.12)";
-        }
-
-        return newFigure;
-    }
-    """,
     Output("memory-usage-graph", "figure"),
     Input("color-scheme-toggle", "checked"),
+    State("cpu-usage-graph", "figure"),
     State("memory-usage-graph", "figure"),
-    prevent_initial_call=True,
+    prevent_initial_call=False,
 )

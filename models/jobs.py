@@ -152,8 +152,8 @@ class Job:
     finished_at: Optional[datetime] = None
 
     # memory usage tracking
-    max_memory_usage: int = None
-    current_memory_usage: int = None
+    max_memory_usage: int | None = None
+    current_memory_usage: int | None = None
     memory_usage_history: List[Dict[str, Any]] = field(default_factory=list)
 
     # cpu usage tracking
@@ -264,6 +264,7 @@ class Job:
             "started_at": datetime_to_str(self.started_at),
             "finished_at": datetime_to_str(self.finished_at),
 
+            "max_cpu_usage": self.max_cpu_usage,
             "max_memory_usage": self.max_memory_usage,
 
             "status": self.status.name,
@@ -292,6 +293,7 @@ class Job:
             started_at=datetime_from_str(data.get("started_at")),
             finished_at=datetime_from_str(data.get("finished_at")),
 
+            max_cpu_usage=data.get("max_cpu_usage", 0),
             max_memory_usage=data.get("max_memory_usage", 0),
 
             notified=True,

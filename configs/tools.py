@@ -377,7 +377,7 @@ TOOLS = {
                     "microsatellite loci and can be removed during quality control."
                 ),
                 template=(
-                    "micromamba run -n mantis mantis-msi.py "
+                    "mamba run -n mantis mantis-msi.py "
                     "-n {normal_bam} "
                     "-t {tumor_bam} "
                     "--genome {reference_genome} "
@@ -583,7 +583,7 @@ TOOLS = {
             "into formats compatible with other tools such as MSIsensor-pro and MANTIS.\n"
             "It supports conversion to MSIsensor-pro format and BED format (RepeatFinder/MANTIS compatible)."
         ),
-        dir="/home/danilovd/tools/",
+        dir="./tools/",
         commands={
             "msisensor-pro": Command(
                 key="msisensor-pro",

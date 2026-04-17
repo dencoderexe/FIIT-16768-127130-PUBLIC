@@ -1,8 +1,10 @@
 # MAIN DIR PATHS
-logs_path   = "/logs/"
-jobs_path   = "/jobs/"
-data_path   = "/data/"
-tools_path  = "/tools/"
+logs_path   = "/home/danilovd/logs/"
+jobs_path   = "/home/danilovd/jobs2/"
+data_path   = "/home/danilovd/data/"
+# logs_path   = "/logs/"
+# jobs_path   = "/jobs/"
+# data_path   = "/data/"
 
 # TOOL PATHS
 
@@ -20,3 +22,4 @@ BAM_IDX_EXT = (".bai",)
 MICROSAT_LIST_EXT = (".microsatellite.list",)
 MICROSAT_LIST_PRO_EXT = (".microsatellite.list.pro",)
 BED_EXT = (".bed",)
+MSISENSOR2_MODELS = (".msisensor2.model",)
