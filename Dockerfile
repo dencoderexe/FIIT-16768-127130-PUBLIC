@@ -55,6 +55,4 @@ COPY . /app
 ENV PYTHONUNBUFFERED=1
 EXPOSE 8050
 
-RUN /opt/conda/bin/msisensor
-
 CMD ["python", "app.py"]

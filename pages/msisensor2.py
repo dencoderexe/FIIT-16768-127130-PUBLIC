@@ -4,10 +4,10 @@ from dash_iconify import DashIconify
 from components.helper import helper
 from components.notifications import job_started_notification, job_started_failed_notification
 from services.job_manager import create_job
-from services.file_manager import get_files, build_output_name
+from services.file_manager import get_files, get_dirs, build_output_name
 
 from configs.tools import TOOLS
-from configs.paths import data_path, BAM_EXT
+from configs.paths import data_path, BAM_EXT, MSISENSOR2_MODELS
 
 import os
 import dash
@@ -40,9 +40,8 @@ def make_msi():
                     ),
                     id="msisensor2-msi-model-select",
                     data=[
-                        {"value": f"{data_path}msisensor2_models/models_b37_HumanG1Kv37", "label": "b37 (HumanG1Kv37)"},
-                        {"value": f"{data_path}msisensor2_models/models_hg19_GRCh37", "label": "hg19 / GRCh37"},
-                        {"value": f"{data_path}msisensor2_models/models_hg38", "label": "hg38 / GRCh38"},
+                        {"value": str(dir), "label": str(dir).replace(data_path, "")}
+                        for dir in get_dirs(extensions=MSISENSOR2_MODELS)
                     ],
                     allowDeselect=False,
                     checkIconPosition="right",

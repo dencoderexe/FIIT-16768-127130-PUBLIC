@@ -19,9 +19,9 @@ def get_files(extensions):
     Recursively collect files from the configured data directory.
 
     Rules:
-    - do not follow symlinked directories
-    - do not include symlinked files
-    - do not include files outside DATA_ROOT
+    # - do not follow symlinked directories
+    # - do not include symlinked files
+    # - do not include files outside DATA_ROOT
     - optionally filter by file extensions
 
     Returns a sorted list of absolute file paths.
@@ -48,33 +48,46 @@ def get_files(extensions):
 
     return sorted(list(files))
 
-def get_dirs() -> list[str]:
+def get_dirs(extensions) -> list[str]:
     """
     Recursively collect all directories from the configured data directory.
+
+    Rules:
+    - do not follow symlinked directories
+    - do not include symlinked directories
+    - do not include directories outside DATA_ROOT
+    - optionally filter by directory extensions (example: mkdir hg38.msisensor2.model)
 
     Returns a sorted list of directory paths.
     """
     dirs = []
 
-    for current_root, dirnames, _ in os.walk(data_path, followlinks=True):
-        # safe_dirnames = []
+    for current_root, dirnames, _ in os.walk(data_path, followlinks=False):
+        safe_dirnames = []
 
         for dirname in dirnames:
             dir_path = os.path.join(current_root, dirname)
 
-            # # skip symlink files
-            # if os.path.islink(dir_path):
-            #     continue
+            # skip symlink dirs
+            if os.path.islink(dir_path):
+                continue
 
-            # real_dir_path = os.path.realpath(dir_path)
+            real_dir_path = os.path.realpath(dir_path)
 
-            # if not is_within_root(real_dir_path):
-            #     continue
+            # skip directories outside the allowed root
+            if not is_within_root(real_dir_path):
+                continue
 
-            # safe_dirnames.append(dirname)
+            # keep directory for further traversal
+            safe_dirnames.append(dirname)
+
+            # optionally filter which directories are returned
+            if extensions and not any(dirname.endswith(extension) for extension in extensions):
+                continue
+
             dirs.append(dir_path)
         
-        # dirnames[:] = safe_dirnames
+        dirnames[:] = safe_dirnames
 
     return sorted(dirs)
 
