@@ -12,7 +12,7 @@ data_path   = "/home/danilovd/data/"
 job_output_excluded_extensions = {".log", ".json", ".hist",}
 job_output_excluded_files = {}
 
-MAX_OUTPUT_SIZE = 200 * 1024 * 1024 # 200 MiB
+MAX_OUTPUT_SIZE = 400 * 1024 * 1024 # 400 MiB
 
 # EXTENSIONS
 FASTA_EXT = (".fasta", ".fas", ".fa", ".fna", ".ffn", ".faa", ".mpfa", ".frn",)

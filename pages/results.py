@@ -1,4 +1,5 @@
 from dash import html, dcc, Input, Output, State, callback, clientside_callback
+from plotly.subplots import make_subplots
 
 import dash
 import plotly.graph_objects as go
@@ -140,7 +141,7 @@ def make_memory_usage_graph(job):
 
     fig.update_layout(
         title=dict(
-            text="Memory Usage Over Time",
+            text="Memory/RAM Usage Over Time",
             x=0.5,
             xanchor="center"
         ),
@@ -165,6 +166,116 @@ def make_memory_usage_graph(job):
                     },
             },
         ),
+    ]
+
+def make_loci_status_graph(job, total: int, analyzed: int, unstable: int):
+    not_analyzed = max(total - analyzed, 0)
+    stable = max(analyzed - unstable, 0)
+    unstable = max(unstable, 0)
+
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        specs=[[{"type": "domain"}, {"type": "domain"}]],
+        subplot_titles=("Total / Analyzed", "Analyzed / Unstable"),
+    )
+
+    fig.add_trace(
+        go.Pie(
+            labels=["Analyzed", "Filtered out"],
+            values=[analyzed, not_analyzed],
+            hole=0.50,
+            sort=False,
+            direction="clockwise",
+            textinfo="value",
+            textfont=dict(size=16),
+            textposition="auto",
+            hoverinfo="label+percent",
+            marker=dict(
+                colors=["#ffe100", "#6c757d"],
+                line=dict(color="#000000", width=1),
+            ),
+        ),
+        row=1,
+        col=1,
+    )
+
+    fig.add_trace(
+        go.Pie(
+            labels=["Stable", "Unstable"],
+            values=[stable, unstable],
+            hole=0.50,
+            sort=False,
+            direction="clockwise",
+            textinfo="value",
+            textfont=dict(size=16),
+            textposition="auto",
+            hoverinfo="label+percent",
+            marker=dict(
+                colors=["#00c853", "#ff5252"],
+                line=dict(color="#000000", width=1),
+            ),
+        ),
+        row=1,
+        col=2,
+    )
+
+    left_center_x = (fig.data[0].domain.x[0] + fig.data[0].domain.x[1]) / 2
+    left_center_y = (fig.data[0].domain.y[0] + fig.data[0].domain.y[1]) / 2
+
+    right_center_x = (fig.data[1].domain.x[0] + fig.data[1].domain.x[1]) / 2
+    right_center_y = (fig.data[1].domain.y[0] + fig.data[1].domain.y[1]) / 2
+
+    fig.update_layout(
+        title=dict(
+            text="Loci Сlassification",
+            x=0.5,
+            xanchor="center",
+        ),
+        height=320,
+        margin=dict(l=20, r=20, t=60, b=20),
+        showlegend=True,
+        template="plotly_dark",
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        uirevision=f"loci-status-{job.id}",
+        annotations=[
+            dict(
+                text=f"{analyzed}/{total}<br>analyzed" if total else "0",
+                x=left_center_x,
+                y=left_center_y,
+                xref="paper",
+                yref="paper",
+                xanchor="center",
+                yanchor="middle",
+                showarrow=False,
+                font=dict(size=14),
+            ),
+            dict(
+                text=f"{unstable}/{analyzed}<br>unstable" if analyzed else "0",
+                x=right_center_x,
+                y=right_center_y,
+                xref="paper",
+                yref="paper",
+                xanchor="center",
+                yanchor="middle",
+                showarrow=False,
+                font=dict(size=14),
+            ),
+        ],
+    )
+
+    return [
+        dcc.Graph(
+            id="loci-status-graph",
+            figure=fig,
+            config={
+                "displayModeBar": "hover",
+                "toImageButtonOptions": {
+                    "filename": f"loci_status_{job.id}",
+                },
+            },
+        )
     ]
 
 def make_results_content(job: Job):
@@ -196,7 +307,7 @@ def make_results_content(job: Job):
             ]),
             dmc.TableTr([
                 dmc.TableTh("Max CPU usage:", w=160),
-                dmc.TableTd(job.max_cpu_usage or "—"),
+                dmc.TableTd(f"{round(job.max_cpu_usage, 2)}%" if job.max_cpu_usage is not None else "—"),
             ]),
             dmc.TableTr([
                 dmc.TableTh("Max RAM usage:", w=160),
@@ -230,13 +341,61 @@ def make_results_content(job: Job):
         ),
     ]
 
+    report = get_brief_report(job)
+
+    if report is None:
+        brief_report = dmc.Text("Brief report is unavailable", c="dimmed", size="sm")
+    else:
+        total, analyzed, unstable, status, (score_type, score) = report
+
+        brief_report = dmc.Table(
+            highlightOnHover=True,
+            withTableBorder=True,
+            withColumnBorders=True,
+            variant="vertical",
+            children=[
+                dmc.TableTbody([
+                    dmc.TableTr([
+                        dmc.TableTh("Total number of input sites", w=160),
+                        dmc.TableTd(total),
+                    ]),
+                    dmc.TableTr([
+                        dmc.TableTh("Number of analyzed sites"),
+                        dmc.TableTd(analyzed),
+                    ]),
+                    dmc.TableTr([
+                        dmc.TableTh("Number of unstable sites"),
+                        dmc.TableTd(unstable),
+                    ]),
+                    dmc.TableTr([
+                        dmc.TableTh("Status"),
+                        dmc.TableTd(
+                            dmc.Text(
+                                status,
+                                c="red" if status == "MSI" else "green",
+                                fw=600,
+                            )
+                        ),
+                    ]),
+                    dmc.TableTr([
+                        dmc.TableTh(score_type),
+                        dmc.TableTd(f"{round(score, 4)}" if job.command.key not in ("msi", "pro") else f"{round(score, 4)}%"),
+                    ]),
+                    dmc.TableTr([
+                        dmc.TableTh("Threshold" if job.command.key not in ("msi", "pro") else "Threshold"),
+                        dmc.TableTd(job.command.msi_threshold if job.command.key not in ("msi", "pro") else f"{job.command.msi_threshold * 100}%"),
+                    ]),
+                ])
+            ],
+        )
+
     return dmc.Container(
         dmc.Accordion(
             chevronPosition="right",
             variant="separated",
             radius="md",
             multiple=True,
-            value=["basic-info", "run-params", "brief-report", "steps", "graphs"],
+            value=["basic-info", "brief-report", "graphs"],
             children=[
                 make_section(
                     "basic-info",
@@ -263,24 +422,6 @@ def make_results_content(job: Job):
                     icon="bi:sliders",
                 ),
                 make_section(
-                    "brief-report",
-                    "Brief report",
-                    dmc.Textarea(
-                        value=get_brief_report(job),
-                        readOnly=True,
-                        autosize=True,
-                        variant="default",
-                        styles={
-                            "input": {
-                                "fontFamily": "monospace",
-                                "whiteSpace": "pre-wrap",
-                                "wordBreak": "break-word",
-                            }
-                        },
-                    ),
-                    icon="bi:terminal",
-                ),
-                make_section(
                     "steps",
                     "Steps",
                     dmc.Stack(
@@ -290,11 +431,19 @@ def make_results_content(job: Job):
                     icon="bi:list-check",
                 ),
                 make_section(
+                    "brief-report",
+                    "Brief report",
+                    brief_report,
+                    icon="bi:terminal",
+                ),
+                make_section(
                     "graphs",
                     "Graphs",
                     dmc.Stack(
                         gap="md",
                         children=[
+                            *make_loci_status_graph(job, total, analyzed, unstable),
+                            dmc.Divider(),
                             *make_cpu_usage_graph(job),
                             dmc.Divider(),
                             *make_memory_usage_graph(job),
@@ -369,5 +518,114 @@ clientside_callback(
     Input("color-scheme-toggle", "checked"),
     State("cpu-usage-graph", "figure"),
     State("memory-usage-graph", "figure"),
+    prevent_initial_call=False,
+)
+
+# loci status graph theme switch client-side callback
+clientside_callback(
+    """
+    function(checked, loci_graph) {
+        if (!loci_graph) {
+            return window.dash_clientside.no_update;
+        }
+
+        const newFigure = JSON.parse(JSON.stringify(loci_graph));
+        newFigure.layout = newFigure.layout || {};
+
+        if (newFigure.data) {
+            newFigure.data = newFigure.data.map(trace => {
+                if (trace.type === "pie" && trace.marker) {
+                    return {
+                        ...trace,
+                        marker: {
+                            ...trace.marker,
+                            line: {
+                                ...(trace.marker.line || {}),
+                                color: checked ? "#ffffff" : "#000000",
+                                width: 1,
+                            },
+                        },
+                    };
+                }
+                return trace;
+            });
+        }
+
+        if (checked) {
+            newFigure.layout.paper_bgcolor = "rgba(0,0,0,0)";
+            newFigure.layout.plot_bgcolor = "rgba(0,0,0,0)";
+            newFigure.layout.font = { color: "#ffffff" };
+
+            if (newFigure.layout.legend) {
+                newFigure.layout.legend = {
+                    ...newFigure.layout.legend,
+                    font: {
+                        ...(newFigure.layout.legend.font || {}),
+                        color: "#ffffff",
+                    },
+                };
+            }
+
+            if (newFigure.layout.annotations) {
+                newFigure.layout.annotations = newFigure.layout.annotations.map(annotation => ({
+                    ...annotation,
+                    font: {
+                        ...(annotation.font || {}),
+                        color: "#ffffff",
+                    },
+                }));
+            }
+
+            newFigure.layout.hoverlabel = {
+                ...(newFigure.layout.hoverlabel || {}),
+                bgcolor: "#1A1B1E",
+                bordercolor: "rgba(255,255,255,0.12)",
+                font: {
+                    ...((newFigure.layout.hoverlabel || {}).font || {}),
+                    color: "#ffffff",
+                },
+            };
+        } else {
+            newFigure.layout.paper_bgcolor = "rgba(0,0,0,0)";
+            newFigure.layout.plot_bgcolor = "rgba(0,0,0,0)";
+            newFigure.layout.font = { color: "#000000" };
+
+            if (newFigure.layout.legend) {
+                newFigure.layout.legend = {
+                    ...newFigure.layout.legend,
+                    font: {
+                        ...(newFigure.layout.legend.font || {}),
+                        color: "#000000",
+                    },
+                };
+            }
+
+            if (newFigure.layout.annotations) {
+                newFigure.layout.annotations = newFigure.layout.annotations.map(annotation => ({
+                    ...annotation,
+                    font: {
+                        ...(annotation.font || {}),
+                        color: "#000000",
+                    },
+                }));
+            }
+
+            newFigure.layout.hoverlabel = {
+                ...(newFigure.layout.hoverlabel || {}),
+                bgcolor: "#ffffff",
+                bordercolor: "rgba(0,0,0,0.12)",
+                font: {
+                    ...((newFigure.layout.hoverlabel || {}).font || {}),
+                    color: "#000000",
+                },
+            };
+        }
+
+        return newFigure;
+    }
+    """,
+    Output("loci-status-graph", "figure"),
+    Input("color-scheme-toggle", "checked"),
+    State("loci-status-graph", "figure"),
     prevent_initial_call=False,
 )

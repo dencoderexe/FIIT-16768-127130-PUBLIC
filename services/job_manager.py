@@ -5,7 +5,7 @@ from models.jobs import Status, Job
 from models.tools import Tool, Command
 
 from configs.tools import msi_analysis_commands
-from configs.paths import jobs_path
+from configs.paths import jobs_path, BED_EXT, MICROSAT_LIST_EXT, MICROSAT_LIST_PRO_EXT
 
 import os
 import re
@@ -625,37 +625,105 @@ def start_job_resource_monitor() -> None:
     thread.start()
     logger.info("Job resource monitor thread started")
 
-def get_brief_report(job: Job):
+def get_brief_report(job: Job) -> tuple[int, int, int, str, tuple[str, float]] | None:
     """
-    Read and return a short text summary from the main output file
-    for supported successful jobs.
+    Returns:
+        total_number_of_sites, number_of_analyzed_sites, number_of_somatic_sites, status, score
     """
     if job.status != Status.SUCCESS:
-        return ""
+        return None
 
     if job.command.key not in msi_analysis_commands:
-        return ""
-
-    output = job.args.get("output")
+        return None
+    
+    output: str = job.args.get("output")
     if output is None:
-        return ""
+        return None
+    
+    sites_source: str = job.args.get("microsatellite_list", None) or job.args.get("bed_file", None) or job.args.get("model", None)
+    if sites_source is None:
+        return None
+    
+    total_number_of_sites = 0
+    number_of_analyzed_sites = 0
+    number_of_somatic_sites = 0
+
+    def count_lines_fast(path: str, skip_header: bool = False) -> int:
+        result = subprocess.run(
+            ["wc", "-l", path],
+            capture_output=True,
+            text=True
+        )
+        count = int(result.stdout.strip().split()[0])
+        # skip header and last \n
+        return count - 1 if skip_header else count
 
     try:
-        brief_report = ""
-        if job.command.key in ("msi", "pro"):
-            file_path = os.path.join(job.job_dir, output)
-            with open(file_path, "r", encoding="utf-8") as file:
-                brief_report = file.read()
-                brief_report = brief_report.rstrip("\n")
-                brief_report = brief_report.expandtabs(28)
-        elif job.command.key in ("mantis",):
-            file_path = os.path.join(job.job_dir, output + ".status")
-            with open(file_path, "r", encoding="utf-8") as file:
-                brief_report = file.read()
-                brief_report = brief_report[::-1].replace("\n", " ", 3)[::-1]
+        if os.path.isfile(sites_source):
+            if sites_source.endswith(BED_EXT):
+                total_number_of_sites = count_lines_fast(sites_source, False)
+            else:
+                total_number_of_sites = count_lines_fast(sites_source, True)
+        # msisensor2 model
+        else:
+            # tt seems that the developers of msisensor2 have included one more file in the model 
+            # than in the original site list; this might be the info file
+            total_number_of_sites = len(os.listdir(sites_source)) - 1
+        
+        if job.tool.key == "mantis":
+            with open(f"{job.job_dir}/{output}.status", "r", encoding="utf-8") as file:
+                # skip first row
+                next(file, None)
 
-        return brief_report
+                line = next(file, None)
+                if line is None:
+                    raise ValueError("Empty MANTIS status file")
+                
+                parts = line.strip().split(sep="\t")
+                if len(parts) != 4:
+                    raise ValueError("Invalid MANTIS status file format")
+                
+                step_wise_difference = float(parts[1])
+                score = ("Step-Wise Difference", step_wise_difference)
+                status = "MSI" if step_wise_difference > job.command.msi_threshold else "MSS"
+            
+            with open(f"{job.job_dir}/{output}", "r", encoding="utf-8") as file:
+                # skip first row
+                next(file, None)
 
+                for line in file:
+                    parts = line.strip().split(sep="\t")
+
+                    if len(parts) != 6:
+                        raise ValueError("Invalid MANTIS output file format")
+                    
+                    if str(parts[0]) == "Average":
+                        break
+                    
+                    number_of_analyzed_sites += 1
+                    number_of_somatic_sites += 1 if float(parts[3]) > 1 else 0
+        elif job.command.key in ("msi", "pro"):
+            with open(f"{job.job_dir}/{output}", "r", encoding="utf-8") as file:
+                # skip first row
+                next(file, None)
+
+                line = next(file, None)
+                if line is None:
+                    raise ValueError("Empty MSIsensor output file")
+                
+                parts = line.strip().split(sep="\t")
+                if len(parts) != 3:
+                    raise ValueError("Invalid MSIsensor output file format")
+                
+                number_of_analyzed_sites = int(parts[0])
+                number_of_somatic_sites = int(parts[1])
+                percent_score = float(parts[2])
+                score = ("Score", percent_score)
+                status = "MSI" if percent_score > job.command.msi_threshold * 100 else "MSS"
+        else:
+            raise ValueError(f"Unsupported tool key: {job.tool.key}")
     except Exception:
-        logger.exception("Failed to read job [%s] output file", job.id)
-        return ""
+        logger.exception("Failed to read job [%s] output files", job.id)
+        return None
+    
+    return total_number_of_sites, number_of_analyzed_sites, number_of_somatic_sites, status, score
