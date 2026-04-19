@@ -26,6 +26,7 @@ def make_stop_button(job: Job) -> dmc.Button:
         id={"type": "job-stop-button", "job_id": job.id},
         variant="subtle",
         color="red",
+        size="md",
         leftSection=DashIconify(icon="bi:x-octagon-fill"),
         fullWidth=True,
     )
@@ -35,6 +36,7 @@ def make_log_button(job: Job) -> dmc.Button:
         "Log",
         id={"type": "job-log-button", "job_id": job.id},
         variant="light",
+        size="md",
         leftSection=DashIconify(icon="bi:file-earmark-text"),
         fullWidth=True,
     )
@@ -44,6 +46,7 @@ def make_empty_log_button(job: Job) -> dmc.Button:
         "Log",
         id={"type": "job-empty-log-button", "job_id": job.id},
         variant="light",
+        size="md",
         leftSection=DashIconify(icon="bi:file-earmark-text"),
         fullWidth=True,
     )
@@ -53,6 +56,7 @@ def make_output_button(job: Job) -> dmc.Button:
         "Output",
         id={"type": "job-output-button", "job_id": job.id},
         variant="light",
+        size="md",
         leftSection=DashIconify(icon="bi:download"),
         fullWidth=True,
     )
@@ -62,6 +66,7 @@ def make_output_too_big_button(job: Job) -> dmc.Button:
         "Output",
         id={"type": "job-output-too-big-button", "job_id": job.id},
         variant="light",
+        size="md",
         leftSection=DashIconify(icon="bi:download"),
         fullWidth=True,
     )
@@ -71,6 +76,7 @@ def make_delete_button(job: Job) -> dmc.Button:
         "Delete",
         id={"type": "job-delete-button", "job_id": job.id},
         variant="subtle",
+        size="md",
         color="red",
         leftSection=DashIconify(icon="bi:trash"),
         fullWidth=True,
@@ -96,7 +102,7 @@ def make_job_actions(job: Job):
         return []
 
     return dmc.Stack(
-        gap="xs",
+        gap="sm",
         children=actions,
         w=180,
         align="stretch",
@@ -116,29 +122,29 @@ def make_job_item(job: Job):
                             f"{job.started_at.strftime("%d.%m.%Y %H:%M:%S")} - {job.finished_at.strftime("%d.%m.%Y %H:%M:%S")}" 
                             if job.finished_at 
                             else f"{job.started_at.strftime("%d.%m.%Y %H:%M:%S")}",
-                            size="xs",
+                            size="sm",
                             c="dimmed",
                         ), 
                         span=5,
                     ), 
                     dmc.GridCol(
-                        dmc.Center(dmc.Text("Output", size="xs", c="dimmed")), 
+                        dmc.Center(dmc.Text("Output", size="sm")), 
                         span=3,
                     ), 
                     dmc.GridCol(
-                        dmc.Center(dmc.Text("Duration", size="xs", c="dimmed")), 
+                        dmc.Center(dmc.Text("Duration", size="sm")), 
                         span=1,
                     ), 
                     dmc.GridCol(
-                        dmc.Center(dmc.Text("CPU usage" if job.status not in (Status.SUCCESS, Status.FAILED) else "Max. CPU usage", size="xs", c="dimmed")), 
+                        dmc.Center(dmc.Text("CPU usage" if job.status not in (Status.SUCCESS, Status.FAILED) else "Max. CPU usage", size="sm")), 
                         span=1,
                     ),
                     dmc.GridCol(
-                        dmc.Center(dmc.Text("RAM usage" if job.status not in (Status.SUCCESS, Status.FAILED) else "Max. RAM usage", size="xs", c="dimmed")), 
+                        dmc.Center(dmc.Text("RAM usage" if job.status not in (Status.SUCCESS, Status.FAILED) else "Max. RAM usage", size="sm")), 
                         span=1,
                     ),
                     dmc.GridCol(
-                        dmc.Center(dmc.Text("Status", size="xs", c="dimmed")), 
+                        dmc.Center(dmc.Text("Status", size="sm")), 
                         span=1,
                     ),
                 ],
@@ -152,15 +158,15 @@ def make_job_item(job: Job):
                             [
                                 dmc.Group(
                                     children = [
-                                        dmc.Text(f"{job.tool.name} [{job.command.name}]", size="sm", fw=600)
+                                        dmc.Text(f"{job.tool.name} [{job.command.name}]", size="md", fw=600)
                                         if len(job.tool.commands.keys()) > 1
-                                        else dmc.Text(f"{job.tool.name}", size="sm", fw=600),
+                                        else dmc.Text(f"{job.tool.name}", size="md", fw=600),
                                         helper(job),
                                     ]
                                 ),
                                 
 
-                                dmc.Text(job.get_mode(), size="xs", c="dimmed")
+                                dmc.Text(job.get_mode(), size="sm", c="dimmed")
                                 if job.command.key in msi_analysis_commands and job.tool.key != "mslist-converter"
                                 else None,
                             ],
@@ -170,13 +176,13 @@ def make_job_item(job: Job):
                     ),
                      dmc.GridCol(
                         dmc.Center(
-                            dmc.Text(job.args.get("output", "-"), size="xs", c="dimmed")
+                            dmc.Text(job.args.get("output", "-"), size="sm", c="dimmed")
                         ),
                         span=3,
                     ),
                     dmc.GridCol(
                         dmc.Center(
-                            dmc.Text(job.get_duration() or "—", size="xs", c="dimmed")
+                            dmc.Text(job.get_duration() or "—", size="sm", c="dimmed")
                         ),
                         span=1,
                     ),
@@ -192,7 +198,7 @@ def make_job_item(job: Job):
                                     )
                                 ) is not None
                                 else "—",
-                                size="xs",
+                                size="sm",
                                 c="dimmed",
                             )
                         ),
@@ -208,7 +214,7 @@ def make_job_item(job: Job):
                                         else job.max_memory_usage
                                     )
                                 ) or "—",
-                                size="xs",
+                                size="sm",
                                 c="dimmed",
                             )
                         ),
@@ -235,16 +241,16 @@ def make_job_item(job: Job):
                     dmc.Grid(
                         children=[
                             dmc.GridCol(
-                                dmc.Text("Step:", size="sm", c="dimmed"), 
+                                dmc.Text("Step:", size="md"), 
                                 span=6,
                             ),
                             dmc.GridCol(
-                                dmc.Text("Started at:", size="sm", c="dimmed"), 
+                                dmc.Text("Started at:", size="md"), 
                                 span=3, 
                                 style={"textAlign": "center"},
                             ),
                             dmc.GridCol(
-                                dmc.Text("Finished at:", size="sm", c="dimmed"), 
+                                dmc.Text("Finished at:", size="md"), 
                                 span=3, 
                                 style={"textAlign": "center"},
                             ),
@@ -252,7 +258,7 @@ def make_job_item(job: Job):
                     ),
                     dmc.Stack(
                         [step_row(step) for step in job.steps],
-                        gap="xs",
+                        gap="sm",
                     ),
                 ],
             ),
@@ -268,6 +274,7 @@ def make_job_item(job: Job):
                 readOnly=True,
                 maxRows=4,
                 autosize=True,
+                size="md",
                 styles={
                     "input": {
                         "borderColor": "red",
@@ -288,6 +295,7 @@ def make_job_item(job: Job):
                     "Open results",
                     variant="light",
                     color="green",
+                    size="md",
                     fullWidth=True,
                 ),
                 href=f"/results/{job.id}",
@@ -305,7 +313,7 @@ def make_job_item(job: Job):
             *results,
             *error_message,
         ],
-        gap="sm",
+        gap="md",
     )
 
     return dmc.AccordionItem(
@@ -317,7 +325,7 @@ def make_job_item(job: Job):
     )
 
 filters = dmc.SimpleGrid(
-    cols={"base": 1, "sm": 2, "lg": 4},
+    cols={"base": 1, "md": 2, "lg": 4},
     spacing="sm",
     children=[
         dmc.MultiSelect(
@@ -325,6 +333,7 @@ filters = dmc.SimpleGrid(
             id="jobs-tool-filter",
             placeholder="Select tools",
             data=[],
+            size="md",
             clearable=True,
             searchable=True,
         ),
@@ -333,6 +342,7 @@ filters = dmc.SimpleGrid(
             id="jobs-command-filter",
             placeholder="Select commands",
             data=[],
+            size="md",
             clearable=True,
             searchable=True,
         ),
@@ -341,6 +351,7 @@ filters = dmc.SimpleGrid(
             id="jobs-output-filter",
             placeholder="Select output",
             data=[],
+            size="md",
             clearable=True,
             searchable=True,
         ),
@@ -349,6 +360,7 @@ filters = dmc.SimpleGrid(
             id="jobs-status-filter",
             placeholder="Select status",
             data=[],
+            size="md",
             clearable=True,
             searchable=True,
         ),
@@ -360,13 +372,13 @@ def make_status_legend():
         gap="lg",
         mb="md",
         children=[
-            dmc.Text("Job/Step status:", size="sm", fw=600),
+            dmc.Text("Job/Step status:", size="md"),
             *[
                 dmc.Group(
-                    gap="xs",
+                    gap="sm",
                     children=[
                         status_icon(status),
-                        dmc.Text(status.name.title(), size="sm"),
+                        dmc.Text(status.name.title(), size="md"),
                     ],
                 )
                 for status in Status
@@ -412,7 +424,31 @@ layout = dmc.Container(
                 make_section(
                     "introduction",
                     "Introduction",
-                    dmc.Text(""),
+                    dmc.Text(
+                        "This page provides a centralized overview of all submitted jobs, allowing you to "
+                        "monitor their execution, inspect results, and manage job lifecycle.\n"
+                        "\n"
+                        "Jobs are automatically grouped into active and finished categories. Each job entry contains detailed information, "
+                        "including running parameters, execution time, resource usage (CPU and RAM), status, and step-by-step progress. "
+                        "You can expand any job to view its internal steps, access logs, download outputs, or perform actions such as stopping or deleting the job.\n"
+                        "\n"
+                        "The page updates automatically, so you can track running processes in near real time without manual refresh. "
+                        "Filters are available to help you quickly locate specific jobs based on tool, command, output, or status.\n"
+                        "\n"
+                        "For completed jobs, additional actions become available:\n"
+                        "- View logs to inspect execution details or errors.\n"
+                        "- Download output files as an archive.\n"
+                        "- Open the results page for further analysis (only available for MSI analysis tools).\n"
+                        "\n"
+                        "Please note:\n"
+                        "- The results page is only available for MSI analysis tools. Preprocessing tools do not generate a results view.\n"
+                        "- Output files can be downloaded directly only if their size does not exceed the configured limit (200 MB). "
+                        "If the output is larger, you will be prompted to contact the administrator to retrieve the data.\n"
+                        "\n"
+                        "Use this page as the main control panel for managing and reviewing all analysis workflows.\n",
+                        style={"whiteSpace": "pre-line"},
+                        size="md",
+                    ),
                     icon="bi:info-circle",
                 ),
                 make_section(
@@ -457,14 +493,14 @@ layout = dmc.Container(
         dcc.Store(id="job-empty-log-id"),
         dmc.Modal(
             id="job-empty-log-modal",
-            title="Empty log file",
+            title=dmc.Text("Empty log file", size="lg", fw=600),
             centered=True,
             children=[
-                dmc.Text("This job log file is empty, so there is nothing to download."),
+                dmc.Text("This job log file is empty, so there is nothing to download.", size="lg"),
                 dmc.Space(h=15),
                 dmc.Group(
                     [
-                        dmc.Button("Ok", id="job-empty-log-ok", color="green"),
+                        dmc.Button("Ok", id="job-empty-log-ok", color="green", size="md"),
                     ],
                     justify="flex-end",
                 ),
@@ -473,20 +509,20 @@ layout = dmc.Container(
         dcc.Store(id="job-output-too-big-id"),
         dmc.Modal(
             id="job-output-too-big-modal",
-            title="Output is too large",
+            title=dmc.Text("Output is too large", size="lg", fw=600),
             centered=True,
             children=[
-                dmc.Text("This job output is too large to download from the web interface."),
+                dmc.Text("This job output is too large to download from the web interface.", size="lg"),
                 dmc.Text(
                     "If you still need these files, please contact the administrator.",
                     c="dimmed",
-                    size="sm",
-                    mt="xs",
+                    size="md",
+                    mt="sm",
                 ),
                 dmc.Space(h=15),
                 dmc.Group(
                     [
-                        dmc.Button("Ok", id="job-output-too-big-ok", color="green"),
+                        dmc.Button("Ok", id="job-output-too-big-ok", color="green", size="md"),
                     ],
                     justify="flex-end",
                 ),
@@ -496,21 +532,21 @@ layout = dmc.Container(
         dcc.Store(id="delete-job-id"),
         dmc.Modal(
             id="delete-job-modal",
-            title="Delete job",
+            title=dmc.Text("Delete job", size="lg", fw=600),
             centered=True,
             children=[
-                dmc.Text("Are you sure you want to delete this job?"),
+                dmc.Text("Are you sure you want to delete this job?", size="lg"),
                 dmc.Text(
                     "All job files will be permanently removed.",
                     c="dimmed",
-                    size="sm",
-                    mt="xs",
+                    size="md",
+                    mt="sm",
                 ),
                 dmc.Space(h=15),
                 dmc.Group(
                     [
-                        dmc.Button("No", id="delete-job-cancel", variant="outline"),
-                        dmc.Button("Yes", id="delete-job-confirm", color="red"),
+                        dmc.Button("No", id="delete-job-cancel", variant="outline", size="md"),
+                        dmc.Button("Yes", id="delete-job-confirm", color="red", size="md"),
                     ],
                     justify="flex-end",
                 ),
@@ -520,21 +556,21 @@ layout = dmc.Container(
         dcc.Store(id="stop-job-id"),
         dmc.Modal(
             id="stop-job-modal",
-            title="Stop job",
+            title=dmc.Text("Stop job", size="lg", fw=600),
             centered=True,
             children=[
-                dmc.Text("Are you sure you want to stop this job?"),
+                dmc.Text("Are you sure you want to stop this job?", size="lg"),
                 dmc.Text(
                     "The running process will be terminated.",
                     c="dimmed",
-                    size="sm",
-                    mt="xs",
+                    size="md",
+                    mt="sm",
                 ),
                 dmc.Space(h=15),
                 dmc.Group(
                     [
-                        dmc.Button("No", id="stop-job-no", variant="outline"),
-                        dmc.Button("Yes", id="stop-job-yes", color="red"),
+                        dmc.Button("No", id="stop-job-no", variant="outline", size="md"),
+                        dmc.Button("Yes", id="stop-job-yes", color="red", size="md"),
                     ],
                     justify="flex-end",
                 ),
@@ -586,6 +622,7 @@ def render_active_jobs(_, selected_tools, selected_commands, selected_outputs, s
                 "There are no active jobs matching the selected filters.",
                 color="gray",
                 variant="light",
+                fz="md",
             ),
         )
 
@@ -620,6 +657,7 @@ def render_finished_jobs(_, selected_tools, selected_commands, selected_outputs,
                 "There are no finished jobs matching the selected filters.",
                 color="gray",
                 variant="light",
+                fz="md",
             ),
         )
 

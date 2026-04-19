@@ -6,7 +6,7 @@ import dash_mantine_components as dmc
 
 def status_icon(status: Status):
     return dmc.ThemeIcon(
-        DashIconify(icon=status.icon, height=18),
+        DashIconify(icon=status.icon, height=22),
         color=status.color,
         variant="light",
         radius="xl",

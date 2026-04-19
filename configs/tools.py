@@ -514,8 +514,7 @@ TOOLS = {
                 description=(
                     "Samtools merge combines multiple sorted BAM files into a single output BAM file.\n"
                     "To run the command, select multiple BAM files. All input files should be sorted "
-                    "by genomic coordinates.\n"
-                    "The resulting file can optionally be indexed during the merge process."
+                    "by genomic coordinates (use samtools sort)."
                 ),
                 template=(
                     "samtools merge "

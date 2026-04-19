@@ -1,6 +1,6 @@
 import dash_mantine_components as dmc
 
-from dash import Input, Output, State, callback, clientside_callback, html
+from dash import Input, Output, State, callback, clientside_callback, html, dcc
 from dash_iconify import DashIconify
 
 # the main AppShell structure was inspired by the official Mantine example:
@@ -44,7 +44,16 @@ def make_appshell(content):
                                     opened=False,
                                 ),
                                 # FIIT STU logo
-                                dmc.Image(src=logo, h=50, flex=0),
+                                html.A(
+                                    dmc.Image(
+                                        src=logo,
+                                        h=50,
+                                        flex=0,
+                                        style={"cursor": "pointer"}
+                                    ),
+                                    href="https://www.fiit.stuba.sk/",
+                                    target="_blank",
+                                ),
                                 dmc.Title("MSI Pipeline Dashboard", c="blue"),
                             ]
                         ),
@@ -61,10 +70,10 @@ def make_appshell(content):
                 id="navbar",
                 children=[
                     # home page
-                    dmc.NavLink(label="Home", href="/", leftSection=DashIconify(icon="bi:house-door-fill", height=16)),
+                    dmc.NavLink(label=dmc.Text("Home", size="md"), href="/", leftSection=DashIconify(icon="bi:house-door-fill", height=16)),
                     # tool pages
                     dmc.NavLink(
-                        label="Tools",
+                        label=dmc.Text("Tools", size="md"),
                         childrenOffset=12,
                         leftSection=DashIconify(icon="bi:tools", height=16),
                         children=[
@@ -96,7 +105,7 @@ def make_appshell(content):
                         ],
                     ),
                     # jobs monitoring page
-                    dmc.NavLink(label="Jobs", href="/jobs", leftSection=DashIconify(icon="bi:terminal-fill", height=16)),
+                    dmc.NavLink(label=dmc.Text("Jobs", size="md"), href="/jobs", leftSection=DashIconify(icon="bi:terminal-fill", height=16)),
 
                     # pages related to thesis analysis and visualizations
                     dmc.Text(
@@ -106,8 +115,8 @@ def make_appshell(content):
                         fw=700, 
                         tt="uppercase"),
                     dmc.Divider(),
-                    dmc.NavLink(label="Dataset Overview", href="/dataset_overview", leftSection=DashIconify(icon="bi:database-fill", height=16)),
-                    dmc.NavLink(label="Tool Comparison & Agreement", href="/tool_comparison", leftSection=DashIconify(icon="bi:intersect", height=16)),
+                    dmc.NavLink(label=dmc.Text("Dataset Overview", size="md"), href="/dataset_overview", leftSection=DashIconify(icon="bi:database-fill", height=16)),
+                    dmc.NavLink(label=dmc.Text("Tool Comparison", size="md"), href="/tool_comparison", leftSection=DashIconify(icon="bi:intersect", height=16)),
                 ],
                 p="md",
             ),

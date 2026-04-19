@@ -16,13 +16,13 @@ def step_row(step: Step):
                     wrap="nowrap",
                     children=[
                         dmc.ThemeIcon(
-                            DashIconify(icon=step.status.icon, height=14),
+                            DashIconify(icon=step.status.icon, height=18),
                             color=step.status.color,
                             variant="light",
-                            radius="xl",
+                            radius="md",
                             size="sm",
                         ),
-                        dmc.Text(step.name, size="sm"),
+                        dmc.Text(step.name, size="md"),
                     ],
                 ),
                 span=6,
@@ -30,7 +30,7 @@ def step_row(step: Step):
             dmc.GridCol(
                 dmc.Text(
                     step.started_at.strftime("%d.%m.%Y %H:%M:%S") if step.started_at else "-",
-                    size="xs",
+                    size="sm",
                     c="dimmed",
                 ),
                 span=3,
@@ -58,7 +58,7 @@ def step_row(step: Step):
                             else [
                                 dmc.Text(
                                     step.finished_at.strftime("%d.%m.%Y %H:%M:%S") if step.finished_at else "-",
-                                    size="xs",
+                                    size="sm",
                                     c="dimmed",
                                 ),
                             ]

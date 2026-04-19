@@ -38,7 +38,7 @@ def helper(content: str|Job):
                     else dmc.Stack(
                         gap="xs",
                         children=[
-                            dmc.Text("Run parameters", size="sm", fw=500),
+                            dmc.Text("Run parameters", size="md", fw=500),
                             job_arg_table(content),
                         ],
                     )
