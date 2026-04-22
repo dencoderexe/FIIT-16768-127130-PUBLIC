@@ -121,7 +121,7 @@ def make_appshell(content):
         header={"height": 60},
         padding="md",
         navbar={
-            "width": 200,
+            "width": 180,
             "breakpoint": "sm",
             "collapsed": {"mobile": True},
         },

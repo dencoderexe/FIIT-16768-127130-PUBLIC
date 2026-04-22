@@ -517,7 +517,7 @@ class Job:
         normal_sample = bool(args.get("normal_bam"))
 
         if tumor_sample and normal_sample:
-            return "Tumor-Normal (paired)"
+            return "Tumor-normal (paired)"
         elif tumor_sample:
             return "Tumor-only"
         else:

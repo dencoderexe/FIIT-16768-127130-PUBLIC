@@ -89,7 +89,7 @@ def get_finished_jobs():
 
         finished_jobs = [job for job in loaded_jobs if job.id not in active_job_ids]
         finished_jobs.sort(
-            key=lambda job: job.started_at,
+            key=lambda job: job.finished_at,
             reverse=True
         )
 
