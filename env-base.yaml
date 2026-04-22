@@ -4,6 +4,7 @@ channels:
   - bioconda
 dependencies:
   - python=3.14.3
+  - pandas=3.0.2
   - psutil=7.2.2
   - dash=4.0.0
   - dash-iconify=0.1.2
