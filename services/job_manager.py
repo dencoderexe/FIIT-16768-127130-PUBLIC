@@ -548,7 +548,7 @@ def create_output_link(job: Job):
     if not input_arg:
         return
 
-    input_path = os.path.realpath(job.args.get(input_arg))
+    input_path = job.args.get(input_arg)
     output_path = os.path.join(job.job_dir, job.args.get("output"))
 
     if not input_path or not output_path:
@@ -641,7 +641,7 @@ def get_brief_report(job: Job) -> tuple[int, int, int, str, tuple[str, float]] |
         return None
     
     sites_source: str = job.args.get("microsatellite_list", None) or job.args.get("bed_file", None) or job.args.get("model", None)
-    if sites_source is None:
+    if sites_source is None or not os.path.exists(sites_source):
         return None
     
     total_number_of_sites = 0

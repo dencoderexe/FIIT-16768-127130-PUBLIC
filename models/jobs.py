@@ -45,6 +45,20 @@ class Status(Enum):
         self.icon = icon
         self.color = color
 
+def delta_seconds_to_str(delta_seconds: int) -> str:
+    if delta_seconds < 0:
+        return None
+    
+    hours, remainder = divmod(delta_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+
+    if hours > 0:
+        return f"{hours}h {minutes}m {seconds}s"
+    elif minutes > 0:
+        return f"{minutes}m {seconds}s"
+    else:
+        return f"{seconds}s"
+
 def datetime_to_str(dt) -> str|None:
     """
     Convert a datetime object to ISO string format.
@@ -154,7 +168,7 @@ class Job:
     # memory usage tracking
     max_memory_usage: int | None = None
     current_memory_usage: int | None = None
-    memory_usage_history: List[Dict[str, Any]] = field(default_factory=list)
+    memory_usage_history: List[Dict[str, Any]]|None = field(default_factory=list)
 
     # cpu usage tracking
     _last_total_cpu_time: float | None = None
@@ -163,7 +177,7 @@ class Job:
 
     current_cpu_usage: float | None = None
     max_cpu_usage: float | None = None
-    cpu_usage_history: List[Dict[str, Any]] = field(default_factory=list)
+    cpu_usage_history: List[Dict[str, Any]]|None = field(default_factory=list)
 
     # runtime flags
     notified: bool = False
@@ -359,18 +373,7 @@ class Job:
         end = self.finished_at or datetime.now()
         delta_seconds = int((end - self.started_at).total_seconds())
 
-        if delta_seconds < 0:
-            return None
-        
-        hours, remainder = divmod(delta_seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
-
-        if hours > 0:
-            return f"{hours}h {minutes}m {seconds}s"
-        elif minutes > 0:
-            return f"{minutes}m {seconds}s"
-        else:
-            return f"{seconds}s"
+        return delta_seconds_to_str(delta_seconds)
         
     def get_cpu_usage(self, append_last_recorded_cpu: bool = False) -> float | None:
         """

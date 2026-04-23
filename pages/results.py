@@ -287,7 +287,7 @@ def make_results_content(job: Job):
             ]),
             dmc.TableTr([
                 dmc.TableTh("Command:", w=160),
-                dmc.TableTd(job.command.name if job.tool.key not in ("mantis") else "-"),
+                dmc.TableTd(job.command.name if job.tool.key not in ("mantis",) else "-"),
             ]),
             dmc.TableTr([
                 dmc.TableTh("Mode:", w=160),
@@ -442,11 +442,14 @@ def make_results_content(job: Job):
                     dmc.Stack(
                         gap="md",
                         children=[
-                            *make_loci_status_graph(job, total, analyzed, unstable),
+                            *(make_loci_status_graph(job, total, analyzed, unstable)
+                              if report is not None else []),
                             dmc.Divider(),
-                            *make_cpu_usage_graph(job),
+                            *(make_cpu_usage_graph(job)
+                            if job.cpu_usage_history else []),
                             dmc.Divider(),
-                            *make_memory_usage_graph(job),
+                            *(make_memory_usage_graph(job)
+                            if job.memory_usage_history else []),
                         ],
                     ),
                     icon="bi:bar-chart",
@@ -465,12 +468,39 @@ def layout(job_id=None):
     return dmc.Container(
         [
             dcc.Store(id="results-job-id", data=job_id),
-            dmc.Title(f"Job results", order=2),
-            make_results_content(job),
+            dmc.Box(
+                pos="relative",
+                style={"minHeight": "80vh"},
+                children=[
+                    dmc.LoadingOverlay(
+                        id="loading-overlay-results",
+                        visible=False,
+                        overlayProps={"radius": "sm", "blur": 2},
+                        loaderProps={"type": "oval", "size": "xl"},
+                        zIndex=10,
+                    ),
+                    dmc.Title(f"Job results", order=2),
+                    html.Div(id="results-content"),
+                ],
+            ),
         ],
         fluid=True,
         p="md",
     )
+
+@callback(
+    Output("results-content", "children"),
+    Input("results-content", "id"),
+    State("results-job-id", "data"),
+    running=[
+        (Output("loading-overlay-results", "visible"), True, False),
+    ],
+)
+def load_job_results(_, job_id):
+    job = get_job_by_id(job_id)
+    return [
+        make_results_content(job),
+    ]
 
 # cpu and memory usage graph theme switch client-side callback
 clientside_callback(

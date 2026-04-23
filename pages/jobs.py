@@ -442,7 +442,7 @@ layout = dmc.Container(
                         "\n"
                         "Please note:\n"
                         "- The results page is only available for MSI analysis tools. Preprocessing tools do not generate a results view.\n"
-                        "- Output files can be downloaded directly only if their size does not exceed the configured limit (200 MB). "
+                        "- Output files can be downloaded directly only if their size does not exceed the configured limit (400 MB). "
                         "If the output is larger, you will be prompted to contact the administrator to retrieve the data.\n"
                         "\n"
                         "Use this page as the main control panel for managing and reviewing all analysis workflows.\n",
@@ -467,26 +467,52 @@ layout = dmc.Container(
         ),
 
         dmc.Divider(label="Active jobs", labelPosition="center"),
-        dmc.Accordion(
-            id="active-jobs-accordion",
-            multiple=True,
-            variant="separated",
-            radius="md",
-            children=[],
-            value=[],
+        dmc.Box(
+            pos="relative",
+            style={"minHeight": "50px"},
+            children=[
+                dmc.LoadingOverlay(
+                    id="loading-overlay-active-jobs",
+                    visible=False,
+                    overlayProps={"radius": "sm", "blur": 2},
+                    loaderProps={"type": "oval", "size": "md"},
+                    zIndex=10,
+                ),
+                dmc.Accordion(
+                    id="active-jobs-accordion",
+                    multiple=True,
+                    variant="separated",
+                    radius="md",
+                    children=[],
+                    value=[],
+                ),
+                html.Div(id="active-jobs-empty-text"),
+            ],
         ),
-        html.Div(id="active-jobs-empty-text"),
 
         dmc.Divider(label="Finished jobs", labelPosition="center"),
-        dmc.Accordion(
-            id="finished-jobs-accordion",
-            multiple=True,
-            variant="separated",
-            radius="md",
-            children=[],
-            value=[],
+        dmc.Box(
+            pos="relative",
+            style={"minHeight": "50px"},
+            children=[
+                dmc.LoadingOverlay(
+                    id="loading-overlay-finished-jobs",
+                    visible=False,
+                    overlayProps={"radius": "sm", "blur": 2},
+                    loaderProps={"type": "oval", "size": "md"},
+                    zIndex=10,
+                ),
+                dmc.Accordion(
+                    id="finished-jobs-accordion",
+                    multiple=True,
+                    variant="separated",
+                    radius="md",
+                    children=[],
+                    value=[],
+                ),
+                html.Div(id="finished-jobs-empty-text"),
+            ],
         ),
-        html.Div(id="finished-jobs-empty-text"),
         
         dcc.Store(id="download-busy", data=False),
         dcc.Download(id="job-download"),
@@ -604,6 +630,9 @@ def poll_jobs_signals(_, current_active_jobs_signal, current_finished_jobs_signa
     Input("jobs-command-filter", "value"),
     Input("jobs-output-filter", "value"),
     Input("jobs-status-filter", "value"),
+    running=[
+        (Output("loading-overlay-active-jobs", "visible"), True, False),
+    ],
 )
 def render_active_jobs(_, selected_tools, selected_commands, selected_outputs, selected_statuses):
     jobs = get_active_jobs()
@@ -639,6 +668,9 @@ def render_active_jobs(_, selected_tools, selected_commands, selected_outputs, s
     Input("jobs-command-filter", "value"),
     Input("jobs-output-filter", "value"),
     Input("jobs-status-filter", "value"),
+    running=[
+        (Output("loading-overlay-finished-jobs", "visible"), True, False),
+    ],
 )
 def render_finished_jobs(_, selected_tools, selected_commands, selected_outputs, selected_statuses):
     jobs = get_finished_jobs()

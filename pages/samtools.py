@@ -130,6 +130,7 @@ def make_merge():
                     checkIconPosition="right",
                     placeholder="Select BAM files",
                     searchable=True,
+                    clearable=True,
                 ),
                 
                 dmc.Box(style={"flexGrow": 1}),
