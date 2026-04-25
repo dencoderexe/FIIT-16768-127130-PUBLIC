@@ -54,7 +54,7 @@ def make_appshell(content):
                                     href="https://www.fiit.stuba.sk/",
                                     target="_blank",
                                 ),
-                                dmc.Title("MSI Pipeline Dashboard", c="blue"),
+                                dmc.Title("MSI Pipeline Dashboard", c="#00a9e0"),
                             ]
                         ),
                         theme_toggle,
