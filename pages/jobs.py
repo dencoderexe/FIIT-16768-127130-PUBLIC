@@ -12,9 +12,12 @@ from components.accordion_section import make_section
 
 from configs.tools import msi_analysis_commands
 
+import math
 import dash
 import logging
 import dash_mantine_components as dmc
+
+FINISHED_JOBS_PAGE_SIZE = 10
 
 logger = logging.getLogger(__name__)
 
@@ -511,6 +514,20 @@ layout = dmc.Container(
                     value=[],
                 ),
                 html.Div(id="finished-jobs-empty-text"),
+                dmc.Group(
+                    justify="center",
+                    mt="md",
+                    children=[
+                        dcc.Store(id="finished-jobs-page", data=1),
+                        dmc.Pagination(
+                            id="finished-jobs-pagination",
+                            total=1,
+                            value=1,
+                            withEdges=True,
+                            siblings=1,
+                        )
+                    ],
+                ),
             ],
         ),
         
@@ -630,9 +647,6 @@ def poll_jobs_signals(_, current_active_jobs_signal, current_finished_jobs_signa
     Input("jobs-command-filter", "value"),
     Input("jobs-output-filter", "value"),
     Input("jobs-status-filter", "value"),
-    running=[
-        (Output("loading-overlay-active-jobs", "visible"), True, False),
-    ],
 )
 def render_active_jobs(_, selected_tools, selected_commands, selected_outputs, selected_statuses):
     jobs = get_active_jobs()
@@ -663,16 +677,28 @@ def render_active_jobs(_, selected_tools, selected_commands, selected_outputs, s
 @callback(
     Output("finished-jobs-accordion", "children"),
     Output("finished-jobs-empty-text", "children"),
+    Output("finished-jobs-pagination", "total"),
+    Output("finished-jobs-pagination", "value"),
     Input("finished-jobs-signal", "data"),
     Input("jobs-tool-filter", "value"),
     Input("jobs-command-filter", "value"),
     Input("jobs-output-filter", "value"),
     Input("jobs-status-filter", "value"),
+    Input("finished-jobs-pagination", "value"),
     running=[
         (Output("loading-overlay-finished-jobs", "visible"), True, False),
     ],
 )
-def render_finished_jobs(_, selected_tools, selected_commands, selected_outputs, selected_statuses):
+def render_finished_jobs(
+    _,
+    selected_tools,
+    selected_commands,
+    selected_outputs,
+    selected_statuses,
+    page,
+):
+    page = page or 1
+
     jobs = get_finished_jobs()
     jobs = filter_jobs(
         jobs,
@@ -691,11 +717,24 @@ def render_finished_jobs(_, selected_tools, selected_commands, selected_outputs,
                 variant="light",
                 fz="md",
             ),
+            1,
+            1,
         )
 
+    total_pages = max(1, math.ceil(len(jobs) / FINISHED_JOBS_PAGE_SIZE))
+
+    if page > total_pages:
+        page = total_pages
+
+    start = (page - 1) * FINISHED_JOBS_PAGE_SIZE
+    end = start + FINISHED_JOBS_PAGE_SIZE
+    visible_jobs = jobs[start:end]
+
     return (
-        [make_job_item(job) for job in jobs],
+        [make_job_item(job) for job in visible_jobs],
         None,
+        total_pages,
+        page,
     )
 
 @callback(
