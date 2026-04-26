@@ -79,8 +79,6 @@ def build_jaccard_heatmap_data(data: list[dict]) -> dict:
             - tool (str): Tool name (e.g. "MSIsensor", "MANTIS")
             - mode (str): Mode of operation (e.g. "Tumor-only", "Tumor-normal")
             - output (str): Path to unstable loci output file
-        patient : str
-            Patient identifier used in the plot title.
 
     Returns:
         dict
@@ -91,7 +89,7 @@ def build_jaccard_heatmap_data(data: list[dict]) -> dict:
             union, and individual set sizes.
 
     Notes:
-    - For MANTIS, loci are filtered using a predefined MSI threshold.
+    - For MANTIS, loci are filtered using a predefined MSI threshold == 1.
     - For MSIsensor-based tools, loci are read directly from output files.
     - Coordinates are normalized to (chromosome, start) tuples.
     - If both sets are empty, Jaccard index is defined as 1.0.
@@ -152,6 +150,13 @@ def build_jaccard_heatmap_data(data: list[dict]) -> dict:
     }
 
 def build_comparison_data_from_jobs(comparison_group_dir: str) -> dict[str, list[dict]]|None:
+    """
+    Loads jobs from a comparison group directory and builds summary data per patient.
+
+    Each job directory must contain a JSON file with job metadata.
+
+    Returns a dict mapping patients to lists of job summaries, or None if directory does not exist.
+    """
     data_dir = os.path.join(comparison_data_dir, comparison_group_dir)
 
     if not os.path.exists(data_dir):
@@ -188,6 +193,7 @@ def build_comparison_data_from_jobs(comparison_group_dir: str) -> dict[str, list
             mode = job.get_mode()
             input_loci, analyzed_loci, unstable_loci, msi_status, _ = get_brief_report(job)
 
+            # different tools produce different unstable loci output files
             if tool == "MANTIS":
                 output = job.args["output"]
             elif tool in ("MSIsensor", "MSIsensor2"):
@@ -215,6 +221,9 @@ def build_comparison_data_from_jobs(comparison_group_dir: str) -> dict[str, list
     return data
 
 def get_comparison_data(comparison_group_dir: str) -> dict[str, list[dict]]|None:
+    """
+    Deserialize JSON file with tool comparizon data
+    """
     file = os.path.join(comparison_data_dir, comparison_group_dir, "data.json")
 
     if not os.path.isfile(file):
@@ -224,6 +233,9 @@ def get_comparison_data(comparison_group_dir: str) -> dict[str, list[dict]]|None
         return json.load(f)
 
 def get_heatmap_data(comparison_group_dir: str) -> dict|None:
+    """
+    Deserialize JSON file with tool Jacard index heatmap data
+    """
     file = os.path.join(comparison_data_dir, comparison_group_dir, "heatmap.json")
 
     if not os.path.isfile(file):
@@ -233,6 +245,9 @@ def get_heatmap_data(comparison_group_dir: str) -> dict|None:
         return json.load(f)
 
 def export_comparison_data(comparison_group_dir: str) -> None:
+    """
+    Deserialize tool comparizon data as JSON file
+    """
     data = build_comparison_data_from_jobs(comparison_group_dir)
 
     if data is None:
@@ -248,6 +263,9 @@ def export_comparison_data(comparison_group_dir: str) -> None:
     print(f"Exported comparison data to {output_file}")
 
 def export_heatmap_data(comparison_group_dir: str) -> None:
+    """
+    Serialize tool Jacard index heatmap data as JSON file
+    """
     data = build_comparison_data_from_jobs(comparison_group_dir)
 
     if data is None:
