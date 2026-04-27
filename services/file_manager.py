@@ -1,4 +1,5 @@
 from configs.paths import data_path, job_output_excluded_extensions, job_output_excluded_files, MAX_OUTPUT_SIZE
+from services.job_signal import bump_finished_jobs_signal
 
 import os
 import zipfile
@@ -91,37 +92,10 @@ def get_dirs(extensions) -> list[str]:
 
     return sorted(dirs)
 
-def write_zip(job_dir, bytes_io):
-    """
-    create a ZIP archive from files in a job directory:
-
-    - includes only files (no subdirs)
-
-    - exludes logs and metadata files by extension
-
-    - writes archive into an in-memory buffer (bytes_io)
-    """
-    
-    with zipfile.ZipFile(bytes_io, "w", zipfile.ZIP_DEFLATED) as z:
-        for file in os.listdir(job_dir):
-            file_path = os.path.join(job_dir, file)
-
-            # skip dirs
-            if not os.path.isfile(file_path):
-                continue
-
-            # skip explicitly excluded files
-            if file in job_output_excluded_files:
-                continue
-
-            # skip excluded files by extension
-            if os.path.splitext(file)[1] in job_output_excluded_extensions:
-                continue
-
-            # add file to archive
-            z.write(file_path, arcname=file)
-
 def is_file_empty(file: str) -> bool:
+    """
+    Check whether a file is missing or empty.
+    """
     if not os.path.exists(file):
         return True
 
@@ -129,36 +103,69 @@ def is_file_empty(file: str) -> bool:
         return True
     return False
 
-def get_job_dir_size(job_dir: str) -> int:
+def get_job_archive_path(job_dir: str) -> str:
     """
-    Calculate total size of files in a job directory, excluding filtered files and directories.
+    Return path to the job output archive.
     """
-    total_size = 0
-    
-    for file in os.listdir(job_dir):
-        file_path = os.path.join(job_dir, file)
+    return os.path.join(job_dir, "output.zip")
 
-        # skip dirs
-        if not os.path.isfile(file_path):
-            continue
-
-        # skip explicitly excluded files
-        if file in job_output_excluded_files:
-            continue
-
-        # skip excluded files by extension
-        if os.path.splitext(file)[1] in job_output_excluded_extensions:
-            continue
-
-        total_size += os.path.getsize(file_path)
-    
-    return total_size
-
-def is_output_too_big(output_dir: str) -> bool:
+def get_job_archive(job_dir: str) -> str | None:
     """
-    Check if total size of job output files exceeds the allowed limit.
+    Return job output archive path if it exists.
+
+    Returns None if the archive is not ready yet.
     """
-    return get_job_dir_size(output_dir) > MAX_OUTPUT_SIZE
+    archive_path = get_job_archive_path(job_dir)
+
+    if not os.path.exists(archive_path):
+        return None
+
+    return archive_path
+
+def is_job_archive_too_big(job_dir: str) -> bool:
+    """
+    Check whether the existing job archive exceeds the maximum download size.
+
+    Returns False if the archive does not exist yet.
+    """
+    archive_path = get_job_archive(job_dir)
+
+    if archive_path is None:
+        return False
+
+    return os.path.getsize(archive_path) > MAX_OUTPUT_SIZE
+
+def create_job_archive(job_dir: str) -> str:
+    """
+    Create a ZIP archive from job output files.
+
+    Uses a temporary file and replaces the final archive only after successful writing.
+    Excludes logs, metadata files, and configured file extensions.
+    """
+    archive_path = get_job_archive_path(job_dir)
+    tmp_path = archive_path + ".tmp"
+
+    if os.path.exists(tmp_path):
+        os.remove(tmp_path)
+
+    with zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zip:
+        for file in os.listdir(job_dir):
+            file_path = os.path.join(job_dir, file)
+
+            if not os.path.isfile(file_path):
+                continue
+
+            if file in job_output_excluded_files:
+                continue
+
+            if os.path.splitext(file)[1] in job_output_excluded_extensions:
+                continue
+
+            zip.write(file_path, arcname=file)
+
+    os.replace(tmp_path, archive_path)
+    bump_finished_jobs_signal()
+    return archive_path
 
 def build_output_name(default_name: str, custom_name: str | None, extension: str|None) -> str:
     """

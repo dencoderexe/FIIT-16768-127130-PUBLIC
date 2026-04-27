@@ -3,7 +3,7 @@ from dash_iconify import DashIconify
 
 from services.job_signal import get_active_jobs_signal, get_finished_jobs_signal
 from services.job_manager import get_active_jobs, get_finished_jobs, get_job_by_id, delete_job, terminate_job_process
-from services.file_manager import write_zip, is_file_empty, is_output_too_big
+from services.file_manager import get_job_archive, is_file_empty, is_job_archive_too_big
 from models.jobs import Status, Job, memory_to_str
 from components.status_icon import status_icon
 from components.step_row import step_row
@@ -74,6 +74,18 @@ def make_output_too_big_button(job: Job) -> dmc.Button:
         fullWidth=True,
     )
 
+def make_output_preparing_button(job: Job) -> dmc.Button:
+    return dmc.Button(
+        "Output",
+        id={"type": "job-output-preparing-button", "job_id": job.id},
+        variant="light",
+        size="md",
+        leftSection=DashIconify(icon="bi:download"),
+        fullWidth=True,
+        loading=True,
+        disabled=True,
+    )
+
 def make_delete_button(job: Job) -> dmc.Button:
     return dmc.Button(
         "Delete",
@@ -96,9 +108,18 @@ def make_job_actions(job: Job):
             make_delete_button(job),
         ]
     elif job.status == Status.SUCCESS:
+        archive_path = get_job_archive(job.job_dir)
+
+        if archive_path is None:
+            output_button = make_output_preparing_button(job)
+        elif is_job_archive_too_big(job.job_dir):
+            output_button = make_output_too_big_button(job)
+        else:
+            output_button = make_output_button(job)
+
         actions = [
             make_log_button(job) if not is_file_empty(job.log_file) else make_empty_log_button(job),
-            make_output_button(job) if not is_output_too_big(job.job_dir) else make_output_too_big_button(job),
+            output_button,
             make_delete_button(job),
         ]
     else:
@@ -1105,11 +1126,22 @@ def download_job_file(log_clicks, output_clicks):
         return dcc.send_file(job.log_file)
 
     if button_type == "job-output-button":
+        archive_path = get_job_archive(job.job_dir)
+
+        if archive_path is None:
+            logger.warning("[job:%s] Archive requested, but archive is not ready", job.id)
+            return no_update
+
         logger.info("[job:%s] Downloading job output archive", job.id)
-        return dcc.send_bytes(lambda bytes_io: write_zip(job.job_dir, bytes_io), f"{job.tool.name}_{job.command.name}_output.zip")
+
+        return dcc.send_file(
+            archive_path,
+            filename=f"{job.tool.name}_{job.command.name}_output.zip",
+        )
 
     return no_update
 
+# blocks download buttons and sets them as “loading” during any download to prevent downloads from overlapping
 clientside_callback(
     """
     function(busy, logIds, emptyLogIds, outputIds, tooBigOutputIds, deleteIds) {

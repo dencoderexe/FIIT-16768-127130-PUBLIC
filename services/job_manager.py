@@ -1,11 +1,12 @@
 from typing import List
 
 from services.job_signal import bump_active_jobs_signal, bump_finished_jobs_signal
+from services.file_manager import create_job_archive
 from models.jobs import Status, Job
 from models.tools import Tool, Command
 
 from configs.tools import msi_analysis_commands
-from configs.paths import jobs_path, BED_EXT, MICROSAT_LIST_EXT, MICROSAT_LIST_PRO_EXT
+from configs.paths import jobs_path, BED_EXT
 
 import os
 import re
@@ -413,6 +414,12 @@ def run_job(job: Job):
                 # optionally create a link to the output file next to the input file,
                 # if this behavior is configured for the tool (see configs/tools.py)
                 create_output_link(job)
+                # create output archive
+                threading.Thread(
+                    target=create_job_archive,
+                    args=(job.job_dir,),
+                    daemon=True,
+                ).start()
             except Exception as e:
                 logger.exception("[job:%s] Failed to create output link", job.id)
         
