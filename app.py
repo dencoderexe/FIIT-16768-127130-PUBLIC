@@ -40,7 +40,7 @@ def main():
     get_finished_jobs()
 
     # define run parameters and start app
-    app.run(host="0.0.0.0", port=50000, debug=True)
+    app.run(host="0.0.0.0", port=8050, debug=True)
 
 if __name__ == "__main__":
     main()
