@@ -119,7 +119,7 @@ TOOLS = {
                     "\nMSIsensor was originally designed for paired tumor-normal sequencing data and, in this configuration, "
                     "is used only in tumor-normal mode. "
                     "Although a tumor-only mode exists and is based on an entropy-based approach for analyzing microsatellite distributions, "
-                    "it is not well documented, lacks a formal publication, and is considered experimental. "
+                    "but it is not well documented, lacks a formal publication, and is considered experimental. "
                     "In practice, it should be treated as a prototype feature rather than a fully supported analysis mode."
                 ),
                 template=(
@@ -183,7 +183,7 @@ TOOLS = {
         description=(
             "MSIsensor-pro is an updated version of MSIsensor. MSIsensor-pro evaluates "
             "Microsatellite Instability (MSI) for cancer patients with next generation "
-            "sequencing data with support for both paired tumor-normal and tumor-only analysis." 
+            "sequencing data with support for both paired tumor-normal and tumor-only analysis. " 
             "It accepts the whole genome sequencing, whole exome sequencing "
             "and target region (panel) sequencing data as input. "
         ),
@@ -365,7 +365,7 @@ TOOLS = {
                     "To run the tool, select normal and tumor BAM files generated using the same pipeline, "
                     "a reference genome in FASTA format, and a BED file with microsatellite loci.\n"
                     "The BED file can be generated using the RepeatFinder (tool included with MANTIS), "
-                    "or by using our Microsat2Bed tool to convert microsatellite lists produced by MSIsensor.\n"
+                    "or by using our MSlist Converter tool to convert microsatellite lists produced by MSIsensor.\n"
                     "Additional parameters allow you to control quality filtering and analysis thresholds:\n"
                     "- Threads control parallel processing.\n"
                     "- Minimum read quality and locus quality define quality control thresholds.\n"
@@ -461,7 +461,8 @@ TOOLS = {
         name="Samtools",
         description=(
             "SAMtools is a set of utilities for interacting with and processing "
-            "sequence alignment files in SAM, BAM and CRAM formats."
+            "sequence alignment files in SAM, BAM and CRAM formats "
+            "(currently, the dashboard implements only selected commands for BAM files)."
         ),
         commands={
             "index": Command(
@@ -469,8 +470,8 @@ TOOLS = {
                 name="index",
                 description=(
                     "Samtools index creates an index for a BAM file to enable fast random access "
-                    "to alignment data.\n"
-                    "To run the command, select a BAM file. The resulting index file (.bai) allows "
+                    "to alignment data.\n\n"
+                    "To run the command, select a BAM file.\n The resulting index file (.bai) allows "
                     "efficient querying of specific genomic regions without reading the entire file."
                 ),
                 template=(
@@ -490,7 +491,7 @@ TOOLS = {
                 key="sort",
                 name="sort",
                 description=(
-                    "Samtools sort sorts a BAM file by genomic coordinates or read name.\n"
+                    "Samtools sort sorts a BAM file by genomic coordinates or read name.\n\n"
                     "To run the command, select a BAM file. Sorting is typically required before indexing "
                     "and for many downstream analyses.\n"
                     "By default, sorting is performed by genomic coordinates."
@@ -512,7 +513,7 @@ TOOLS = {
                 key="merge",
                 name="merge",
                 description=(
-                    "Samtools merge combines multiple sorted BAM files into a single output BAM file.\n"
+                    "Samtools merge combines multiple sorted BAM files into a single output BAM file.\n\n"
                     "To run the command, select multiple BAM files. All input files should be sorted "
                     "by genomic coordinates (use samtools sort)."
                 ),
@@ -533,7 +534,7 @@ TOOLS = {
                 key="faidx",
                 name="faidx",
                 description=(
-                    "Samtools faidx indexes a FASTA reference genome file.\n"
+                    "Samtools faidx indexes a FASTA reference genome file.\n\n"
                     "To run the command, select a FASTA file. The generated index (.fai) allows "
                     "fast random access to specific regions of the reference genome."
                 ),
@@ -554,10 +555,10 @@ TOOLS = {
                 key="stats",
                 name="stats",
                 description=(
-                    "Samtools stats generates comprehensive statistics from a BAM file.\n"
-                    "To run the command, select a BAM file. The output includes information such as "
+                    "Samtools stats generates comprehensive statistics from a BAM file.\n\n"
+                    "To run the command, select a BAM file.\n\n The output includes information such as "
                     "total reads, mapped reads, coverage, insert size distribution, and quality metrics.\n"
-                    "The resulting report can be used for quality control and downstream analysis."
+                    "The resulting report can be used for quality control and downstream analysis. "
                     "It can also be used to verify whether the BAM file is properly sorted."
                 ),
                 template=(
@@ -589,8 +590,9 @@ TOOLS = {
                 name="msisensor-pro",
                 description=(
                     "Convert an MSIsensor microsatellite list into MSIsensor-pro format.\n"
-                    "This adds required columns such as threshold, support_num, and filter.\n"
-                    "Default values are used (-1, -1, PASS), matching the default output of MSIsensor-pro scan.\n"
+                    "This allows consistent locus definitions across MSIsensor and MSIsensor-pro.\n\n"
+                    "Converter adds required columns such as threshold, support_num, and filter with "
+                    "default values: (-1, -1, PASS), matching the default output of MSIsensor-pro scan.\n"
                     "Note: Input must be generated by MSIsensor scan (not MSIsensor-pro)."
                 ),
                 template=(

@@ -170,7 +170,7 @@ layout = dmc.Container(
                     DashIconify(icon="bi:github", width=18),
                     dmc.Anchor(
                         "Tool source code on GitHub",
-                        href="https://github.com/dencoderexe/",
+                        href="https://github.com/xdanilovd/FIIT-16768-127130/blob/main/tools/mslist-converter.py",
                         target="_blank",
                     ),
                 ],
