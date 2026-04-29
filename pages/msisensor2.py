@@ -192,7 +192,10 @@ layout = dmc.Container(
     dmc.Stack(
         [
             dmc.Title(tool.name, order=2),
-            dmc.Text(tool.description),
+            dmc.Text(
+                tool.description,
+                style={"whiteSpace": "pre-line"},
+            ),
             dmc.Group(
                 [
                     DashIconify(icon="bi:github", width=18),

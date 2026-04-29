@@ -9,7 +9,10 @@ TOOLS = {
         description=(
             "MSIsensor2 is a machine learning-based tool for microsatellite instability (MSI) detection, "
             "primarily designed for tumor-only analysis using a pretrained model. "
-            "It evaluates microsatellite loci directly from sequencing data without requiring a matched normal sample."
+            "It evaluates microsatellite loci directly from sequencing data without requiring a matched normal sample.\n\n"
+            "Note: The original MSIsensor2 documentation mentions the scan command and that the msi command "
+            "supports tumor-normal analysis. However, this functionality is identical to that of the original MSIsensor, "
+            "and therefore is not duplicated in the dashboard."
         ),
         commands={
             "msi": Command(
@@ -75,6 +78,9 @@ TOOLS = {
                     "- Maximum microsatellite length defines the maximum motif size to search for.\n"
                     "- Minimum microsatellite repeats define how many repeat units are required for a microsatellite to be reported.\n"
                     "- Homopolymer only limits the output to homopolymer sites."
+                    "\n\nNote: The output of this command differs from the MSIsensor-pro scan format "
+                    "and is not directly compatible with it. If you need a single set of loci for "
+                    "all instruments, you can use the MSlist Converter."
                 ),
                 template=(
                     "msisensor scan "
@@ -116,11 +122,10 @@ TOOLS = {
                     "- Span size window defines the window around each site used for read extraction.\n"
                     "- Threads control parallel processing.\n"
                     "- Homopolymer only and microsatellite only restrict the analysis to one locus type.\n"
-                    "\nMSIsensor was originally designed for paired tumor-normal sequencing data and, in this configuration, "
-                    "is used only in tumor-normal mode. "
-                    "Although a tumor-only mode exists and is based on an entropy-based approach for analyzing microsatellite distributions, "
-                    "but it is not well documented, lacks a formal publication, and is considered experimental. "
-                    "In practice, it should be treated as a prototype feature rather than a fully supported analysis mode."
+                    "\nNote: This command can also work in tumor-only mode; however, this feature is currently "
+                    "in a PRE-beta stage, lacks proper documentation, and is planned to be removed in future versions "
+                    "of the tool. The developers also recommend using MSIsensor2 instead. "
+                    "Therefore, only the tumor-normal mode is implemented in the dashboard."
                 ),
                 template=(
                     "msisensor msi "
@@ -181,11 +186,11 @@ TOOLS = {
         key="msisensor-pro",
         name="MSIsensor-pro",
         description=(
-            "MSIsensor-pro is an updated version of MSIsensor. MSIsensor-pro evaluates "
-            "Microsatellite Instability (MSI) for cancer patients with next generation "
-            "sequencing data with support for both paired tumor-normal and tumor-only analysis. " 
-            "It accepts the whole genome sequencing, whole exome sequencing "
-            "and target region (panel) sequencing data as input. "
+            "MSIsensor-pro is an updated version of MSIsensor and can operate "
+            "in both tumor-normal and tumor-only modes. It introduces a multinomial "
+            "distribution model to quantify polymerase slippages for each tumor sample "
+            "and a discriminative sites selection method to enable MSI detection without "
+            "matched normal samples."
         ),
         commands={
             "scan": Command(
@@ -201,6 +206,9 @@ TOOLS = {
                     "- Maximum microsatellite motif length defines the maximum repeat unit size to search for.\n"
                     "- Minimum microsatellite repeats define how many repeat units are required for a microsatellite to be reported.\n"
                     "- Homopolymer only limits the output to homopolymer sites."
+                    "\n\nNote: The output of this command differs from the MSIsensor scan format "
+                    "and is not directly compatible with it. If you need a single set of loci for "
+                    "all instruments, you can use the MSlist Converter."
                 ),
                 template=(
                     "msisensor-pro scan "

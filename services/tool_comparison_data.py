@@ -6,7 +6,7 @@ from pandas.errors import EmptyDataError
 from services.job_manager import get_brief_report
 from models.jobs import Job
 
-comparison_data_dir = "data/"
+comparison_data_dir = "experiment_data/"
 
 def parse_unstable_loci_msisensor(unstable_file: str) -> pd.DataFrame:      
     """

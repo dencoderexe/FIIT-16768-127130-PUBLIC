@@ -153,7 +153,7 @@ layout = dmc.Container(
         dmc.Text(
             [
                 "The full source code of this project is available on GitHub: ",
-                dmc.Anchor("https://github.com/xdanilovd/FIIT-16768-127130", href="https://github.com/xdanilovd/FIIT-16768-127130", target="_blank"),
+                dmc.Anchor("https://github.com/dencoderexe/FIIT-16768-127130", href="https://github.com/dencoderexe/FIIT-16768-127130", target="_blank"),
                 ".",
             ],
             size="md",
