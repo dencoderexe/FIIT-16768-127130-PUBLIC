@@ -8,6 +8,9 @@ DATA_DIR="$(pwd)/data"
 JOBS_DIR="$(pwd)/jobs"
 LOGS_DIR="$(pwd)/logs"
 
+# Enter your port here
+PORT="8050"
+
 echo "Building Docker image..."
 docker build -t "$IMAGE_NAME" .
 
@@ -23,14 +26,14 @@ echo "Starting container..."
 docker run -d \
   --name "$CONTAINER_NAME" \
   --user "$(id -u):$(id -g)" \
-  -p 8050:8050 \
+  -p "$PORT":8050 \
   -v "$(pwd):/app" \
   -v "$DATA_DIR:/data" \
   -v "$JOBS_DIR:/jobs" \
   -v "$LOGS_DIR:/logs" \
   "$IMAGE_NAME"
 
-echo "App started at http://localhost:8050"
+echo "App started at http://localhost:$PORT"
 
 echo "Exporting image..."
 docker save -o "$IMAGE_NAME".tar "$IMAGE_NAME"

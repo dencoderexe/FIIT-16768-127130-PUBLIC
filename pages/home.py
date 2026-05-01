@@ -20,27 +20,27 @@ layout = dmc.Container(
         dmc.Space(h="md"),
 
         dmc.Text(
-            "The application should be understood as a working prototype or MVP (Minimum viable product). It was used during the experimental "
-            "part of the thesis to support analysis, testing, and comparison of different tools, while also serving "
-            "as a proof of concept for a more complete system.",
+            "The application should be understood as a working prototype or MVP (Minimum viable product). "
+            "It was developed during the practical implementation of the thesis and was used to simplify "
+            "the execution of experiments, their management, and the inspection of generated results.",
             size="md",
         ),
 
         dmc.Space(h="md"),
 
         dmc.Text(
-            "The dashboard is divided into two main parts. The first part provides the functional interface for running tools, "
-            "managing data, and monitoring submitted jobs. The second part presents selected experimental results obtained within the "
-            "thesis, together with an overview of the datasets and analysis setup.",
+            "The dashboard provides a functional interface for running tools, managing input data, monitoring submitted "
+            "jobs, and inspecting completed MSI analysis results in a more readable form.",
             size="md",
         ),
 
         dmc.Space(h="md"),
 
         dmc.Text(
-            "Navigation is available via the sidebar on the left, which is organized into logical sections:\n"
-            "- Functional part: Home, Tools, Jobs\n"
-            "- Summary of experiments: Dataset Overview, Tool Comparison",
+            "Navigation is available via the sidebar on the left, which provides access to the main functional pages:\n"
+            "- Home\n"
+            "- Tools\n"
+            "- Jobs",
             size="md",
             style={"whiteSpace": "pre-line"},
         ),
@@ -109,7 +109,7 @@ layout = dmc.Container(
         dmc.Text(
             "The output is processed into a unified format independent of the underlying tool. "
             "It includes consistent visualizations such as loci classification, as well as CPU and memory usage over time. "
-            "This standardization simplifies interpretation and enables direct comparison between runs.",
+            "This standardization simplifies interpretation and makes individual analysis runs easier to inspect.",
             size="md",
         ),
 
@@ -122,38 +122,16 @@ layout = dmc.Container(
 
         dmc.Space(h="md"),
 
-        dmc.Title("Experimental results", order=3),
-
-        dmc.Text(
-            "The Dataset Overview page summarizes the data used in the thesis, including input sequencing files, "
-            "preprocessed BAM files, tested reference genomes, and loci source files.",
-            size="md",
-        ),
-
-        dmc.Space(h="sm"),
-
-        dmc.Text(
-            "The Tool Comparison page presents selected experiment results, including summaries across patients and "
-            "Jaccard similarity heatmaps used to compare unstable loci detected by different tools.",
-            size="md",
-        ),
-
-        dmc.Space(h="sm"),
-
-        dmc.Text(
-            "For detailed explanations of datasets, experimental setup, and result interpretation, please refer directly "
-            "to the corresponding pages within the dashboard.",
-            size="md",
-        ),
-
-        dmc.Space(h="md"),
-
         dmc.Title("Project repository", order=3),
 
         dmc.Text(
             [
-                "The full source code of this project is available on GitHub: ",
-                dmc.Anchor("https://github.com/dencoderexe/FIIT-16768-127130", href="https://github.com/dencoderexe/FIIT-16768-127130", target="_blank"),
+                "The source code of this project is available on GitHub: ",
+                dmc.Anchor(
+                    "https://github.com/dencoderexe/FIIT-16768-127130",
+                    href="https://github.com/dencoderexe/FIIT-16768-127130",
+                    target="_blank",
+                ),
                 ".",
             ],
             size="md",

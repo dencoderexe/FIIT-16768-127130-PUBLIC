@@ -106,11 +106,6 @@ def make_appshell(content):
                     ),
                     # jobs monitoring page
                     dmc.NavLink(label=dmc.Text("Jobs", size="md"), href="/jobs", leftSection=DashIconify(icon="bi:terminal-fill", height=16)),
-
-                    # pages related to thesis analysis and visualizations
-                    dmc.Divider(),
-                    dmc.NavLink(label=dmc.Text("Dataset Overview", size="md"), href="/dataset_overview", leftSection=DashIconify(icon="bi:database-fill", height=16)),
-                    dmc.NavLink(label=dmc.Text("Tool Comparison", size="md"), href="/tool_comparison", leftSection=DashIconify(icon="bi:intersect", height=16)),
                 ],
                 p="md",
             ),
