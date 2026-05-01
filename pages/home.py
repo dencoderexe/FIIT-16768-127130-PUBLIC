@@ -40,7 +40,7 @@ layout = dmc.Container(
         dmc.Text(
             "Navigation is available via the sidebar on the left, which is organized into logical sections:\n"
             "- Functional part: Home, Tools, Jobs\n"
-            "- Experimental results: Dataset Overview, Tool Comparison",
+            "- Summary of experiments: Dataset Overview, Tool Comparison",
             size="md",
             style={"whiteSpace": "pre-line"},
         ),
