@@ -25,6 +25,10 @@ RUN curl -L https://github.com/dencoderexe/MANTIS/archive/31e626a.tar.gz \
 # ===STAGE2===
 FROM mambaorg/micromamba:2.5.0
 
+LABEL org.opencontainers.image.source="https://github.com/dencoderexe/msi-pipeline-dashboard-public"
+LABEL org.opencontainers.image.title="MSI Pipeline Dashboard"
+LABEL org.opencontainers.image.description="Dashboard for running, managing, and inspecting MSI analysis workflows."
+
 USER root
 WORKDIR /app
 
