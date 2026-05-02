@@ -129,7 +129,7 @@ layout = dmc.Container(
                 "The source code of this project is available on GitHub: ",
                 dmc.Anchor(
                     "https://github.com/dencoderexe/FIIT-16768-127130",
-                    href="https://github.com/dencoderexe/FIIT-16768-127130",
+                    href="https://github.com/dencoderexe/FIIT-16768-127130-PUBLIC",
                     target="_blank",
                 ),
                 ".",
