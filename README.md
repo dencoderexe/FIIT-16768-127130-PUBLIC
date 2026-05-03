@@ -2,6 +2,11 @@
 
 A Dash-based web dashboard for running preprocessing utilities and MSI analysis tools without writing command-line commands manually. The application provides pages for tool execution, job monitoring and result inspection.
 
+**Last update:** 04.05.2026  
+**Created by:** Denis Danilov, as part of a bachelor's thesis  
+**Supervised by:** Ing. Jana Boženka Liptak  
+**Bachelor's thesis ID:** FIIT-16768-127130
+
 ## Main features
 
 - Web interface for selected MSI and preprocessing tools
