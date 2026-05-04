@@ -9,7 +9,7 @@ A Dash-based web dashboard for running preprocessing utilities and MSI analysis 
 
 ## Main features
 
-- Web interface for selected MSI and preprocessing tools
+- Web interface for selected MSI analysis and preprocessing tools
 - Job execution and monitoring
 - Runtime, CPU, and memory tracking
 - Downloading outputs and logs
@@ -180,12 +180,18 @@ docker stop ghcr.io/dencoderexe/fiit-16768-127130-public:latest
 
 1. Open the dashboard in a browser.
 2. Use the left sidebar to navigate between pages.
-3. Open a tool page.
-4. Select input files, fill required and optional parameters.
-5. Start the job.
-6. Monitor execution on the Jobs page.
-7. Open logs, inspect errors, download outputs, or delete finished jobs.
-8. For completed MSI analysis jobs, open the Results page.
+    ![Home page](.github/assets/home.png)
+4. Open a tool page.
+5. Select input files, fill required and optional parameters.
+6. Start the job.
+    ![MSIsensor2 page](.github/assets/msisensor2.png)
+8. Monitor execution on the Jobs page.
+    ![Jobs page filters](.github/assets/jobs_filtered.png)
+10. Open logs, inspect errors, download outputs, or delete finished jobs.
+    ![Job actions](.github/assets/job_actions.png)
+12. For completed MSI analysis jobs, open the Results page.
+    ![Job results](.github/assets/job_results_1.png)
+    ![Job result graphs](.github/assets/job_results_2.png)
 
 The Jobs page shows active and finished jobs, selected parameters, execution steps, runtime, CPU usage, and memory usage. It updates automatically during execution.
 
@@ -203,28 +209,6 @@ Dedicated result pages are available only for MSI analysis jobs. They show a sta
 - CPU and memory usage graphs
 
 Preprocessing tools do not generate dedicated result pages.
-
-## Interface overview
-
-### Home page
-
-![Home page](.github/assets/home.png)
-
-### MSIsensor2 page
-
-![MSIsensor2 page](.github/assets/msisensor2.png)
-
-### Jobs page
-
-![Jobs page filters](.github/assets/jobs_filtered.png)
-
-![Job actions](.github/assets/job_actions.png)
-
-### Results page
-
-![Job results](.github/assets/job_results_1.png)
-
-![Job result graphs](.github/assets/job_results_2.png)
 
 ## References
 
