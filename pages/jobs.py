@@ -465,7 +465,7 @@ layout = dmc.Container(
                         "- Open the results page for further analysis (only available for MSI analysis tools).\n"
                         "\n"
                         "Please note:\n"
-                        "- The results page is only available for MSI analysis tools. Preprocessing tools do not generate a results view.\n"
+                        "- The Results page is only available for MSI analysis tools. Preprocessing tools do not generate a results view.\n"
                         "- Output files can be downloaded directly only if their size does not exceed the configured limit (250 MB). "
                         "If the output is larger, you will be prompted to contact the administrator to retrieve the data.\n"
                         "\n"

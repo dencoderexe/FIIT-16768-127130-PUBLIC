@@ -96,7 +96,7 @@ layout = dmc.Container(
 
         dmc.Space(h="md"),
 
-        dmc.Title("Results inspection", order=3),
+        dmc.Title("Results page", order=3),
 
         dmc.Text(
             "The Results page presents a completed MSI analysis job in a standardized and more readable form. "
