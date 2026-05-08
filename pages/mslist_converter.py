@@ -170,7 +170,7 @@ layout = dmc.Container(
                     DashIconify(icon="bi:github", width=18),
                     dmc.Anchor(
                         "Tool source code on GitHub",
-                        href="https://github.com/dencoderexe/FIIT-16768-127130/blob/main/tools/mslist-converter.py",
+                        href="https://github.com/dencoderexe/FIIT-16768-127130-PUBLIC/blob/main/tools/mslist-converter.py",
                         target="_blank",
                     ),
                 ],
@@ -226,7 +226,7 @@ def mslist_converter_pro_start_job(
             tool=tool,
             command=tool.commands.get(command_key),
             microsatellite_list=microsatellite_list,
-            output=build_output_name(microsatellite_list, output_name, MICROSAT_LIST_PRO_EXT),
+            output=build_output_name(microsatellite_list, output_name, MICROSAT_LIST_PRO_EXT[0]),
         )
 
         return job_started_notification(f"{tool.name} pro started")
