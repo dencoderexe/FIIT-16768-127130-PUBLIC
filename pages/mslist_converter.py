@@ -226,7 +226,7 @@ def mslist_converter_pro_start_job(
             tool=tool,
             command=tool.commands.get(command_key),
             microsatellite_list=microsatellite_list,
-            output=build_output_name(microsatellite_list, output_name, ".pro"),
+            output=build_output_name(microsatellite_list, output_name, MICROSAT_LIST_PRO_EXT),
         )
 
         return job_started_notification(f"{tool.name} pro started")
