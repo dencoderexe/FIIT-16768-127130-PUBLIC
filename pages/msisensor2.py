@@ -188,33 +188,34 @@ command_description = dmc.Paper(
     ),
 )
 
-layout = dmc.Container(
-    dmc.Stack(
-        [
-            dmc.Title(tool.name, order=2),
-            dmc.Text(
-                tool.description,
-                style={"whiteSpace": "pre-line"},
-            ),
-            dmc.Group(
-                [
-                    DashIconify(icon="bi:github", width=18),
-                    dmc.Anchor(
-                        "View original tool on GitHub",
-                        href="https://github.com/niu-lab/msisensor2",
-                        target="_blank",
-                    ),
-                ],
-                gap="xs",
-            ),
-            command_description,
-            make_msi(),
-        ],
-        gap="md",
-    ),
-    fluid=True,
-    p="md",
-)
+def layout():
+    return dmc.Container(
+        dmc.Stack(
+            [
+                dmc.Title(tool.name, order=2),
+                dmc.Text(
+                    tool.description,
+                    style={"whiteSpace": "pre-line"},
+                ),
+                dmc.Group(
+                    [
+                        DashIconify(icon="bi:github", width=18),
+                        dmc.Anchor(
+                            "View original tool on GitHub",
+                            href="https://github.com/niu-lab/msisensor2",
+                            target="_blank",
+                        ),
+                    ],
+                    gap="xs",
+                ),
+                command_description,
+                make_msi(),
+            ],
+            gap="md",
+        ),
+        fluid=True,
+        p="md",
+    )
 
 @callback(
     Output("msisensor2-msi-start-button", "disabled"),

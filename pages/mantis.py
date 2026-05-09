@@ -288,30 +288,31 @@ command_description = dmc.Paper(
     ),
 )
 
-layout = dmc.Container(
-    dmc.Stack(
-        [
-            dmc.Title(tool.name, order=2),
-            dmc.Text(tool.description),
-            dmc.Group(
-                [
-                    DashIconify(icon="bi:github", width=18),
-                    dmc.Anchor(
-                        "View original tool on GitHub",
-                        href="https://github.com/OSU-SRLab/MANTIS",
-                        target="_blank",
-                    ),
-                ],
-                gap="xs",
-            ),
-            command_description,
-            make_mantis(),
-        ],
-        gap="md",
-    ),
-    fluid=True,
-    p="md",
-)
+def layout():
+    return dmc.Container(
+        dmc.Stack(
+            [
+                dmc.Title(tool.name, order=2),
+                dmc.Text(tool.description),
+                dmc.Group(
+                    [
+                        DashIconify(icon="bi:github", width=18),
+                        dmc.Anchor(
+                            "View original tool on GitHub",
+                            href="https://github.com/OSU-SRLab/MANTIS",
+                            target="_blank",
+                        ),
+                    ],
+                    gap="xs",
+                ),
+                command_description,
+                make_mantis(),
+            ],
+            gap="md",
+        ),
+        fluid=True,
+        p="md",
+    )
     
 @callback(
     Output("mantis-start-button", "disabled"),

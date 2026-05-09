@@ -476,37 +476,38 @@ command_select = dmc.Paper(
     ),
 )
 
-layout = dmc.Container(
-    dmc.Stack(
-        [
-            dmc.Title(tool.name, order=2),
-            dmc.Text(tool.description),
-            dmc.Group(
-                [
-                    DashIconify(icon="bi:github", width=18),
-                    dmc.Anchor(
-                        "View original tool on GitHub",
-                        href="https://github.com/samtools/samtools",
-                        target="_blank",
-                    ),
-                    dmc.Text("|"),
-                    DashIconify(icon="bi:globe", width=18),
-                    dmc.Anchor(
-                        "Official website",
-                        href="https://www.htslib.org/",
-                        target="_blank",
-                    ),
-                ],
-                gap="xs",
-            ),
-            command_select,
-            html.Div(id="samtools-command-container"),
-        ],
-        gap="md",
-    ),
-    fluid=True,
-    p="md",
-)
+def layout():
+    return dmc.Container(
+        dmc.Stack(
+            [
+                dmc.Title(tool.name, order=2),
+                dmc.Text(tool.description),
+                dmc.Group(
+                    [
+                        DashIconify(icon="bi:github", width=18),
+                        dmc.Anchor(
+                            "View original tool on GitHub",
+                            href="https://github.com/samtools/samtools",
+                            target="_blank",
+                        ),
+                        dmc.Text("|"),
+                        DashIconify(icon="bi:globe", width=18),
+                        dmc.Anchor(
+                            "Official website",
+                            href="https://www.htslib.org/",
+                            target="_blank",
+                        ),
+                    ],
+                    gap="xs",
+                ),
+                command_select,
+                html.Div(id="samtools-command-container"),
+            ],
+            gap="md",
+        ),
+        fluid=True,
+        p="md",
+    )
 
 @callback(
     Output("samtools-command-container", "children"), 

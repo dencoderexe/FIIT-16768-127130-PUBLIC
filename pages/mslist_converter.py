@@ -160,30 +160,31 @@ command_select = dmc.Paper(
     ),
 )
 
-layout = dmc.Container(
-    dmc.Stack(
-        [
-            dmc.Title(tool.name, order=2),
-            dmc.Text(tool.description),
-            dmc.Group(
-                [
-                    DashIconify(icon="bi:github", width=18),
-                    dmc.Anchor(
-                        "Tool source code on GitHub",
-                        href="https://github.com/dencoderexe/FIIT-16768-127130-PUBLIC/blob/main/tools/mslist-converter.py",
-                        target="_blank",
-                    ),
-                ],
-                gap="xs",
-            ),
-            command_select,
-            html.Div(id="mslist-converter-command-container"),
-        ],
-        gap="md",
-    ),
-    fluid=True,
-    p="md",
-)
+def layout():
+    return dmc.Container(
+        dmc.Stack(
+            [
+                dmc.Title(tool.name, order=2),
+                dmc.Text(tool.description),
+                dmc.Group(
+                    [
+                        DashIconify(icon="bi:github", width=18),
+                        dmc.Anchor(
+                            "Tool source code on GitHub",
+                            href="https://github.com/dencoderexe/FIIT-16768-127130-PUBLIC/blob/main/tools/mslist-converter.py",
+                            target="_blank",
+                        ),
+                    ],
+                    gap="xs",
+                ),
+                command_select,
+                html.Div(id="mslist-converter-command-container"),
+            ],
+            gap="md",
+        ),
+        fluid=True,
+        p="md",
+    )
 
 @callback(
     Output("mslist-converter-command-container", "children"), 

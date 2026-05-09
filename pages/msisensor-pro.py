@@ -766,30 +766,31 @@ command_select = dmc.Paper(
     ),
 )
 
-layout = dmc.Container(
-    dmc.Stack(
-        [
-            dmc.Title(tool.name, order=2),
-            dmc.Text(tool.description),
-            dmc.Group(
-                [
-                    DashIconify(icon="bi:github", width=18),
-                    dmc.Anchor(
-                        "View original tool on GitHub",
-                        href="https://github.com/xjtu-omics/msisensor-pro",
-                        target="_blank",
-                    ),
-                ],
-                gap="xs",
-            ),
-            command_select,
-            html.Div(id="msisensor-pro-command-container"),
-        ],
-        gap="md",
-    ),
-    fluid=True,
-    p="md",
-)
+def layout():
+    return dmc.Container(
+        dmc.Stack(
+            [
+                dmc.Title(tool.name, order=2),
+                dmc.Text(tool.description),
+                dmc.Group(
+                    [
+                        DashIconify(icon="bi:github", width=18),
+                        dmc.Anchor(
+                            "View original tool on GitHub",
+                            href="https://github.com/xjtu-omics/msisensor-pro",
+                            target="_blank",
+                        ),
+                    ],
+                    gap="xs",
+                ),
+                command_select,
+                html.Div(id="msisensor-pro-command-container"),
+            ],
+            gap="md",
+        ),
+        fluid=True,
+        p="md",
+    )
 
 @callback(
     Output("msisensor-pro-command-container", "children"), 
