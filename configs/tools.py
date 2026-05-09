@@ -385,7 +385,7 @@ TOOLS = {
                     "microsatellite loci and can be removed during quality control."
                 ),
                 template=(
-                    "mamba run -n mantis mantis-msi.py "
+                    "micromamba run -n mantis mantis-msi.py "
                     "-n {normal_bam} "
                     "-t {tumor_bam} "
                     "--genome {reference_genome} "
